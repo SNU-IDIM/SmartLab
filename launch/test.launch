@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+<!--
+  <node pkg="snu_doosan" type="snu_demo.py" name="snu_dsr_demo" ns="R_001" output='screen'/>-->
+    <node name="Pub_client" pkg="rospy_websocker_client" type="ROSClient_Publisher.py" ns='R_001' output="screen"/>
+</launch>
+
