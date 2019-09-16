@@ -8,7 +8,8 @@ import threading, time
 import sys
 from sensor_msgs.msg import Joy
 sys.dont_write_bytecode = True
-sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__),"/home/syscon/catkin_ws/src/doosan-robot/common/imp")) ) # get import pass : DSR_ROBOT.py 
+HOME_DIR = os.getenv('HOME')
+sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__),"%s/catkin_ws/src/doosan-robot/common/imp"%HOME_DIR)) )
  # get import pass : DSR_ROBOT.py 
 
 # for single robot 
