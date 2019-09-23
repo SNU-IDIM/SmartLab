@@ -54,7 +54,9 @@ class MoveGroupPythonInteface(object):
     rospy.init_node('m1013_demo', anonymous=True)
 
     group_name = "arm"
-    reference_frame = "/base_link"
+    #reference_frame = "/base_link"
+    reference_frame = "base_0"
+    
 
     self.joints_state = None
     self.robotus = 'waiting'
@@ -66,14 +68,14 @@ class MoveGroupPythonInteface(object):
     self.dsr_status = rospy.Publisher('ur_status', URStatus, queue_size=1)
 
     rospy.Subscriber('ur_pnp', String, self.dsr_PickPlace_cb, queue_size=1)
-    rospy.Subscriber('dsr_moveit', Pose, self.dsr_moveit_cb, queue_size=1)
+    rospy.Subscriber('cmd_moveit', Pose, self.cmd_moveit_cb, queue_size=1)
     rospy.Subscriber('dsr/state', RobotState, self.dsr_state_cb, queue_size=1)
     rospy.Subscriber('dsr/joint_states',JointState, self.current_status_cb, queue_size=1)
 
     self.robot = moveit_commander.RobotCommander(robot_description="dsr/robot_description", ns="dsr") # outer-level interface to the robot
     self.scene = moveit_commander.PlanningSceneInterface(ns="dsr") # world surrounding the robot
     self.group = moveit_commander.MoveGroupCommander(group_name, robot_description="dsr/robot_description", ns="dsr") # interface to one group of joints (plan & execute)
-    #self.gruop.set_pose_reference_frame(reference_frame)
+    self.group.set_pose_reference_frame(reference_frame)
     
     Q0 = [0.0, 0.0, -90.0*DEG2RAD, 0.0, -90.0*DEG2RAD, 0.0]
     #self.default_joint_states = self.group.get_current_joint_values()
@@ -113,69 +115,66 @@ class MoveGroupPythonInteface(object):
   def current_status_cb(self, data):
 	  self.joints_state = data
 
-  def dsr_moveit_cb(self,msg):
+  def cmd_moveit_cb(self, msg):
     self.start_pose  = self.group.get_current_pose(self.end_effector_link).pose
     self.target_pose = self.start_pose
+    
+    self.target_pose.position.x = msg.position.x
+    self.target_pose.position.y = msg.position.y
+    self.target_pose.position.z = msg.position.z
 
-    self.target_pose.position.x += msg.position.x
-    self.target_pose.position.y += msg.position.y
-    self.target_pose.position.z += msg.position.z
+
+
+    
+    #self.target_pose.position    = msg.position
+    #self.target_pose.orientation = msg.orientation
+
+    print "\n\nmessage:"
+    print(msg)
+
+    print "\n\nStart Pose (eef):"
+    print(self.start_pose)
+
+    print "\n\nTarget Pose:"
+    print(self.target_pose)
+
+
+    #self.target_pose.position.x = msg.position.x
+    #self.target_pose.position.y = msg.position.y
+    #self.target_pose.position.z = msg.position.z
     
 
-
-
-
-    q1 = []
-    q1.append(self.target_pose.orientation.x)
-    q1.append(self.target_pose.orientation.y)
-    q1.append(self.target_pose.orientation.z)
-    q1.append(self.target_pose.orientation.w)
+    #q1 = []
+    #q1.append(self.target_pose.orientation.x)
+    #q1.append(self.target_pose.orientation.y)
+    #q1.append(self.target_pose.orientation.z)
+    #q1.append(self.target_pose.orientation.w)
+    #
+    #q2 = []
+    #q2.append(msg.orientation.x)
+    #q2.append(msg.orientation.y)
+    #q2.append(msg.orientation.z)
+    #q2.append(msg.orientation.w)
+    #
+    #q3 = [] 
+    #q3 = quaternion_multiply(quaternion_multiply(q1, q2), quaternion_conjugate(q1))
+    #self.target_pose.orientation.x = q3[0]
+    #self.target_pose.orientation.y = q3[1]
+    #self.target_pose.orientation.z = q3[2]
+    #self.target_pose.orientation.w = q3[3]
     
-    q2 = []
-    q2.append(msg.orientation.x)
-    q2.append(msg.orientation.y)
-    q2.append(msg.orientation.z)
-    q2.append(msg.orientation.w)
 
-    q3 = [] 
-    q3 = quaternion_multiply(quaternion_multiply(q1, q2), quaternion_conjugate(q1))
-    print'1111111111111111111111111111111111111111111111111111'
-    print(q3)
-    self.target_pose.orientation.x = q3[0]
-    self.target_pose.orientation.y = q3[1]
-    self.target_pose.orientation.z = q3[2]
-    self.target_pose.orientation.w = q3[3]
-
-    print'2222222222222222222222222222222222222222222222222222'
-    print(self.target_pose.orientation)
     
     waypoints = []
     waypoints.append(self.start_pose)
     waypoints.append(self.target_pose)
 
-    print(waypoints)
+    #print(waypoints)
     
-    #print(target_pose.position.x)
-    #target_pose.position.x    = start_pose.position.x + 0.1
-    #target_pose.position.y    = start_pose.position.y
-    #target_pose.position.z    = start_pose.position.z
-    #target_pose.orientation.x = msg.orientation.x
-    #target_pose.orientation.y = msg.orientation.y
-    #target_pose.orientation.z = msg.orientation.z
-    #target_pose.orientation.w = msg.orientation.w
-    #print(target_pose)
-    
-    
-    #waypoints.append(deepcopy(target_pose))
-    
-    
-    #print 'start pose: %s'%start_pose
-    #print 'target pose :%s'%target_pose
-    #print 'waypoints :%s'%waypoints
     self.group.set_start_state_to_current_state()
     plan, fraction = self.group.compute_cartesian_path(waypoints, 0.01, 0.0, True)
-    if 1-fraction < 0.2:
-       self.group.execute(plan)
+    #if 1-fraction < 0.2:
+    #   self.group.execute(plan)
     
 
   def dsr_PickPlace_cb(self,msg):
@@ -240,7 +239,7 @@ class MoveGroupPythonInteface(object):
 
 
 '''
-  def dsr_moveit_cb(self,msg):
+  def cmd_moveit_cb(self,msg):
         print(msg)
         waypoints = []
         

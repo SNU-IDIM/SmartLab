@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-
 import rospy
 import os
 import threading, time
@@ -12,9 +10,10 @@ HOME_DIR = os.getenv('HOME')
 sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__),"%s/catkin_ws/src/doosan-robot/common/imp"%HOME_DIR)) )
  # get import pass : DSR_ROBOT.py 
 
-# for single robot 
-ROBOT_ID     = "R_001/dsr"
-ROBOT_MODEL  = ""
+# for single robot
+NS_           = "R_001"
+ROBOT_ID_     = "dsr"
+ROBOT_MODEL_  = ""
 import DR_init
 m_joyAnalogFlag = False
 m_TxyCompareFlag = False
@@ -22,11 +21,11 @@ m_RxyCompareFlag = False
 m_joyButtonFlag = False
 m_joyJogFlag = False
 m_joyJogVel = False
-DR_init.__dsr__id = ROBOT_ID
-DR_init.__dsr__model = ROBOT_MODEL
+DR_init.__dsr__id = NS_+'/'+ROBOT_ID_
+DR_init.__dsr__model = ROBOT_MODEL_
 from DSR_ROBOT import *
 
-ROBOT_SPEED_LINEAR  = 100.0 # in [mm/s]
+ROBOT_SPEED_LINEAR  = 50.0 # in [mm/s]
 ROBOT_SPEED_ANGULAR = 10.0 # in [deg/s]
 EPSILON = 0.001
 
@@ -83,11 +82,11 @@ def msgRobotState_cb(msg):
 msgRobotState_cb.count = 0
 
 def thread_subscriber():
-    rospy.Subscriber('/'+ROBOT_ID +ROBOT_MODEL+'/state', RobotState, msgRobotState_cb)
+    rospy.Subscriber(ROBOT_ID_ +ROBOT_MODEL_+'/state', RobotState, msgRobotState_cb)
     rospy.spin()
     #rospy.spinner(2)    -
 
-r = CDsrRobot(ROBOT_ID, ROBOT_MODEL)
+r = CDsrRobot(NS_+'/'+ROBOT_ID_, ROBOT_MODEL_)
 
 def joy_cb(msg):
     global m_joyAnalogFlag  # Global flag
@@ -99,13 +98,18 @@ def joy_cb(msg):
 
     targetPos = [0, 0, -90, 0, -90, 0]
     hommingPos = [0, 0, 0, 0, 0, 0]
-##  
-    print(msg.axes)
-    print(msg.buttons)
+
+
     if msg.buttons[BOTTON_START] == 1:
         r.movej(targetPos, 50, 50)
     elif msg.buttons[BOTTON_BACK] == 1:
         r.movej(hommingPos, 50, 50)
+
+    if msg.buttons[BOTTON_UPPER_LEFT] == 1:
+        pub_pnp.publish('open')
+    if msg.buttons[BOTTON_UPPER_RIGHT] == 1:
+        pub_pnp.publish('close')
+
     
     # Analog 신호 하나라도 들어오면 m_joyAnalogFlag -> set 됨 (global flag)
     if msg.axes[AXIS_LEFT_V] != 0 or msg.axes[AXIS_LEFT_H] != 0 or msg.axes[AXIS_RIGHT_V] != 0 or msg.axes[AXIS_RIGHT_H] != 0 or msg.axes[AXIS_DIR_V] != 0 or msg.axes[AXIS_DIR_H] != 0:
@@ -133,52 +137,10 @@ def joy_cb(msg):
     else:
         m_ZCompareFlag = False
 
-    ## 버튼 -> m_joyButtonFlag 로 구분 (버튼을 위한 flag -> 수정 필요)
-    #if msg.axes[AXIS_DIR_H] != 0 or msg.axes[AXIS_DIR_V] != 0:
-    #    m_joyButtonFlag = True
-    #else:
-    #    m_joyButtonFlag = False
-
-
-
-    ### BOTTON 제어
-    #if m_joyJogFlag == -1 and not m_joyAnalogFlag and m_joyButtonFlag:
-    #    # BOTTON_LEFT_UP/DOWN -> Z-direction Translation
-    #    if msg.axes[AXIS_DIR_V] == 1:
-    #        m_joyJogFlag = JOG_AXIS_TASK_Z
-    #        m_joyJogVel = ROBOT_SPEED_LINEAR
-    #    if msg.axes[AXIS_DIR_V] == -1:
-    #        m_joyJogFlag = JOG_AXIS_TASK_Z
-    #        m_joyJogVel = -ROBOT_SPEED_LINEAR
-    #
-    #    # BOTTON_LEFT_LEFT/RIGHT -> Z-direction Rotation
-    #    if msg.axes[AXIS_DIR_H] == 1:
-    #        m_joyJogFlag = JOG_AXIS_TASK_RZ
-    #        m_joyJogVel  = -ROBOT_SPEED_LINEAR
-    #    if msg.axes[AXIS_DIR_H] == -1:
-    #        m_joyJogFlag = JOG_AXIS_TASK_RZ
-    #        m_joyJogVel  = ROBOT_SPEED_LINEAR
-    #
-    #    r.jog(m_joyJogFlag, MOVE_REFERENECE_TOOL, m_joyJogVel)
 
 
     ### ANALOG 제어
-    print "B: m_joyJogFlag: %s"%m_joyJogFlag
-    print "B: m_joyButtonFlag: %s"%m_joyButtonFlag
-    print "B: m_joyAnalogFlag: %s"%m_joyAnalogFlag
     if m_joyJogFlag == -1 and not m_joyButtonFlag and m_joyAnalogFlag: # m_joyAnalogFlag에 대한 움직임
-        print "A: m_joyJogFlag: %s"%m_joyJogFlag
-        print "A: m_joyButtonFlag: %s"%m_joyButtonFlag
-        print "A: m_joyAnalogFlag: %s"%m_joyAnalogFlag
-        ## AXIS_UPPER_LEFT/RIGHT -> Z-direction Translation (-> 나중에 Gripper Open/Close로 바꾸기)
-        #if msg.axes[AXIS_UPPER_LEFT] < 1.0:
-        #    m_joyJogFlag = JOG_AXIS_TASK_Z
-        #    m_joyJogVel = ROBOT_SPEED_LINEAR
-        #if msg.axes[AXIS_UPPER_RIGHT] < 1.0:
-        #    m_joyJogFlag = JOG_AXIS_TASK_Z
-        #    m_joyJogVel = -ROBOT_SPEED_LINEAR
-        
-        # AXIS_DIR_LEFT/RIGHT -> Z-direction Rotation
         if m_ZCompareFlag:
             if msg.axes[AXIS_DIR_H] == 1:
                 m_joyJogFlag = JOG_AXIS_TASK_RZ
@@ -245,8 +207,9 @@ if __name__ == "__main__":
     #t1.daemon = True 
     #t1.start()
 
-    pub_stop = rospy.Publisher('/'+ROBOT_ID +ROBOT_MODEL+'/stop', RobotStop, queue_size=1)
-    sub_joy  = rospy.Subscriber("/R_001/dsr_cmd", Joy, joy_cb)
+    pub_stop = rospy.Publisher(ROBOT_ID_ +ROBOT_MODEL_+'/stop', RobotStop, queue_size=1)
+    pub_pnp = rospy.Publisher('ur_pnp', String, queue_size=1)
+    sub_joy  = rospy.Subscriber("dsr_cmd", Joy, joy_cb)
     while not rospy.is_shutdown():
         pass
 
