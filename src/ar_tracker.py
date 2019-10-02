@@ -6,8 +6,9 @@ import threading, time
 import sys
 import math
 import tf
+import tf2_ros
 from std_msgs.msg import String
-from geometry_msgs.msg import Twist, Pose
+from geometry_msgs.msg import Twist, Pose, TransformStamped
 from ar_track_alvar_msgs.msg import *
 from tf.transformations import *
 
@@ -17,19 +18,22 @@ RAD2DEG = 180.0 / math.pi
 MM2M = 1.0 / 1000.0
 M2MM  = 1000.0
 
-REFERENCE_FRAME_ = 'base_0'
-AR_FRAME_PREFIX_ = 'ar_marker_'
+REFERENCE_FRAME_     = 'base_0'
+AR_FRAME_PREFIX_     = 'ar_marker_'
+TARGET_FRAME_PREFIX_ = 'ar_target_'
 
 
-OFFSET_FROM_TARGET = 150.0 * MM2M # [mm]
+OFFSET_FROM_TARGET = 200.0 * MM2M # [mm]
 
 class snu_ar_tracker():
     def __init__(self):        
         rospy.init_node('snu_ar_tracker', anonymous=True)
         self.listener = tf.TransformListener()
+        self.broadcaster = tf2_ros.StaticTransformBroadcaster()
+        self.static_transformStamped = TransformStamped()
 
         rospy.Subscriber('ur_pnp', String, self.pnp_cb, queue_size=1)
-        #rospy.Subscriber('ar_pose_marker', AlvarMarkers, self.ar_sub_cb, queue_size=1)
+        rospy.Subscriber('ar_pose_marker', AlvarMarkers, self.ar_sub_cb, queue_size=1)
         
         self.pub1 = rospy.Publisher('cmd_moveit', Pose, queue_size=1)
 
@@ -39,22 +43,22 @@ class snu_ar_tracker():
     def update_pose(self, trans, rot):
         self.cmd_pose.position.x    = trans[0]
         self.cmd_pose.position.y    = trans[1] - 0.020
-        self.cmd_pose.position.z    = trans[2] + OFFSET_FROM_TARGET
-        #self.cmd_pose.orientation.x = rot[0]
-        #self.cmd_pose.orientation.y = rot[1]
-        #self.cmd_pose.orientation.z = rot[2]
-        #self.cmd_pose.orientation.w = rot[3]
+        self.cmd_pose.position.z    = trans[2]
+        self.cmd_pose.orientation.x = rot[0]
+        self.cmd_pose.orientation.y = rot[1]
+        self.cmd_pose.orientation.z = rot[2]
+        self.cmd_pose.orientation.w = rot[3]
 
     def pnp_cb(self, msg): # Version 2: "/tf" topic 이용
         try:
             #print(AR_FRAME_PREFIX_ + msg.data)
-            self.listener.waitForTransform(REFERENCE_FRAME_, AR_FRAME_PREFIX_ + msg.data, rospy.Time(), rospy.Duration(0.5))
-            (trans,rot) = self.listener.lookupTransform(REFERENCE_FRAME_, AR_FRAME_PREFIX_ + msg.data, rospy.Time(0))
-            #print(trans)
+            self.listener.waitForTransform(REFERENCE_FRAME_, TARGET_FRAME_PREFIX_ + msg.data, rospy.Time(), rospy.Duration(0.5))
+            (trans,rot) = self.listener.lookupTransform(REFERENCE_FRAME_, TARGET_FRAME_PREFIX_ + msg.data, rospy.Time(0))
+            #print(rot)
        
 
             self.update_pose(trans, rot)
-            print(self.cmd_pose)
+            #print(self.cmd_pose)
             
             self.pub1.publish(self.cmd_pose)
 
@@ -62,25 +66,36 @@ class snu_ar_tracker():
             print "[ERROR]: AR Tag not detected!"
             pass
         
-'''
+
     def ar_sub_cb(self, msg): # Version 1: "ar_pose_marker" topic 이용
         n_tags = len(msg.markers)
-        #print "Number of detected tags: %d"%n_tags
+        print "Number of detected tags: %d"%n_tags
 
         if n_tags is not 0:
             idx = 0
             for x in msg.markers:
-                if msg.markers[idx].id == 1:
-                    self.cmd_pose = msg.markers[idx].pose.pose
-                    self.cmd_pose.position.x += OFFSET_FROM_TARGET
-                    self.cmd_pose.orientation
-                    self.pub1.publish(self.cmd_pose)
-                    return 1
+                self.static_transformStamped.header.stamp    = rospy.Time.now()
+                self.static_transformStamped.header.frame_id = AR_FRAME_PREFIX_ + str(msg.markers[idx].id)
+                self.static_transformStamped.child_frame_id  = TARGET_FRAME_PREFIX_ + str(msg.markers[idx].id)
+            
+                self.static_transformStamped.transform.translation.x = 0.0
+                self.static_transformStamped.transform.translation.y = 0.0
+                self.static_transformStamped.transform.translation.z = OFFSET_FROM_TARGET
+            
+                quat = tf.transformations.quaternion_from_euler(math.pi, 0.0, math.pi/2.0)
+                self.static_transformStamped.transform.rotation.x = quat[0]
+                self.static_transformStamped.transform.rotation.y = quat[1]
+                self.static_transformStamped.transform.rotation.z = quat[2]
+                self.static_transformStamped.transform.rotation.w = quat[3]
+
+                self.broadcaster.sendTransform(self.static_transformStamped)
+
                 idx += 1
+            return 1
         else:
             return -1
         
-'''
+
 
 
     

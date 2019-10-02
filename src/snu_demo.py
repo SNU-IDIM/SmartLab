@@ -68,7 +68,7 @@ class MoveGroupPythonInteface(object):
     self.dsr_status = rospy.Publisher('ur_status', URStatus, queue_size=1)
     self.pnp_pub = rospy.Publisher('ur_pnp', String, queue_size=1)
 
-    rospy.Subscriber('ur_pnp', String, self.dsr_PickPlace_cb, queue_size=1)
+    rospy.Subscriber('ur_pnp', String, self.pnp_cb, queue_size=1)
     rospy.Subscriber('cmd_moveit', Pose, self.cmd_moveit_cb, queue_size=1)
     rospy.Subscriber('dsr/state', RobotState, self.dsr_state_cb, queue_size=1)
     rospy.Subscriber('dsr/joint_states',JointState, self.current_status_cb, queue_size=1)
@@ -123,6 +123,10 @@ class MoveGroupPythonInteface(object):
     self.target_pose.position.x = msg.position.x
     self.target_pose.position.y = msg.position.y
     self.target_pose.position.z = msg.position.z
+    self.target_pose.orientation.x = msg.orientation.x
+    self.target_pose.orientation.y = msg.orientation.y
+    self.target_pose.orientation.z = msg.orientation.z
+    self.target_pose.orientation.w = msg.orientation.w
     ##q1 = []
     ##q1.append(self.target_pose.orientation.x)
     ##q1.append(self.target_pose.orientation.y)
@@ -166,7 +170,7 @@ class MoveGroupPythonInteface(object):
     plan = self.group.plan()
     self.group.execute(plan)
 
-  def dsr_PickPlace_cb(self,msg):
+  def pnp_cb(self,msg):
     print(msg.data)
     self.start_flag = msg.data
     Q0 = [0.0*DEG2RAD,  0.0*DEG2RAD,  -90.0*DEG2RAD,  0.0*DEG2RAD,  -90.0*DEG2RAD,  0.0*DEG2RAD]
@@ -183,18 +187,17 @@ class MoveGroupPythonInteface(object):
       self.moveit_joint_cmd(Q2)
     
     if(self.start_flag=="demo"):
-      print "DEMO!!!"
       waypoints = []
       self.start_pose = self.group.get_current_pose(self.end_effector_link).pose
       waypoints.append(deepcopy(self.start_pose))
       waypoints.append(deepcopy(self.target_pose))
-      print "!!!!!!!!!!!!!!!!!!!!!!!!"
-      print(waypoints)
+      #print(waypoints)
       
       self.group.set_start_state_to_current_state()
       plan, fraction = self.group.compute_cartesian_path(waypoints, 0.01, 0.0, True)
       if 1-fraction < 0.2:
          self.group.execute(plan)
+      self.moveit_joint_cmd(Q0)
     
   
 

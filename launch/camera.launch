@@ -1,8 +1,8 @@
 <launch>
-  <arg name="ns" value="dsr"/>
+  <arg name="ns" value=""/>
 
-  <include file="$(find snu_doosan)/launch/realsense_setup.launch.xml" ns="$(arg ns)"/>
+  <include file="$(find snu_doosan)/launch/realsense_setup.launch.xml"/>
 
-  <include file="$(find snu_doosan)/launch/ar_tracker_alvar.launch.xml" ns="$(arg ns)"/>
+  <include file="$(find snu_doosan)/launch/ar_tracker_alvar.launch.xml"/>
 
 </launch>
