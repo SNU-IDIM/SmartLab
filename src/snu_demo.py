@@ -117,7 +117,12 @@ class MoveGroupPythonInteface(object):
 	  self.joints_state = data
 
   def cmd_moveit_cb(self, msg):
-    pass
+    self.start_pose  = self.group.get_current_pose(self.end_effector_link).pose
+    self.target_pose = self.start_pose
+    
+    self.target_pose.position.x = msg.position.x
+    self.target_pose.position.y = msg.position.y
+    self.target_pose.position.z = msg.position.z
     ##q1 = []
     ##q1.append(self.target_pose.orientation.x)
     ##q1.append(self.target_pose.orientation.y)
