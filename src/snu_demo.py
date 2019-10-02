@@ -66,6 +66,7 @@ class MoveGroupPythonInteface(object):
     self.artag = AlvarMarkers()
     
     self.dsr_status = rospy.Publisher('ur_status', URStatus, queue_size=1)
+    self.pnp_pub = rospy.Publisher('ur_pnp', String, queue_size=1)
 
     rospy.Subscriber('ur_pnp', String, self.dsr_PickPlace_cb, queue_size=1)
     rospy.Subscriber('cmd_moveit', Pose, self.cmd_moveit_cb, queue_size=1)
@@ -116,160 +117,82 @@ class MoveGroupPythonInteface(object):
 	  self.joints_state = data
 
   def cmd_moveit_cb(self, msg):
-    self.start_pose  = self.group.get_current_pose(self.end_effector_link).pose
-    self.target_pose = self.start_pose
-    
-    self.target_pose.position.x = msg.position.x
-    self.target_pose.position.y = msg.position.y
-    self.target_pose.position.z = msg.position.z
+    pass
+    ##q1 = []
+    ##q1.append(self.target_pose.orientation.x)
+    ##q1.append(self.target_pose.orientation.y)
+    ##q1.append(self.target_pose.orientation.z)
+    ##q1.append(self.target_pose.orientation.w)
+    ##
+    ##q2 = []
+    ##q2.append(msg.orientation.x)
+    ##q2.append(msg.orientation.y)
+    ##q2.append(msg.orientation.z)
+    ##q2.append(msg.orientation.w)
+    ##
+    ##q3 = [] 
+    ##q3 = quaternion_multiply(quaternion_multiply(q1, q2), quaternion_conjugate(q1))
+    ##self.target_pose.orientation.x = q3[0]
+    ##self.target_pose.orientation.y = q3[1]
+    ##self.target_pose.orientation.z = q3[2]
+    ##self.target_pose.orientation.w = q3[3]
 
-
-
-    
-    #self.target_pose.position    = msg.position
-    #self.target_pose.orientation = msg.orientation
-
-    print "\n\nmessage:"
-    print(msg)
-
-    print "\n\nStart Pose (eef):"
-    print(self.start_pose)
-
-    print "\n\nTarget Pose:"
-    print(self.target_pose)
-
-
-    #self.target_pose.position.x = msg.position.x
-    #self.target_pose.position.y = msg.position.y
-    #self.target_pose.position.z = msg.position.z
-    
-
-    #q1 = []
-    #q1.append(self.target_pose.orientation.x)
-    #q1.append(self.target_pose.orientation.y)
-    #q1.append(self.target_pose.orientation.z)
-    #q1.append(self.target_pose.orientation.w)
-    #
-    #q2 = []
-    #q2.append(msg.orientation.x)
-    #q2.append(msg.orientation.y)
-    #q2.append(msg.orientation.z)
-    #q2.append(msg.orientation.w)
-    #
-    #q3 = [] 
-    #q3 = quaternion_multiply(quaternion_multiply(q1, q2), quaternion_conjugate(q1))
-    #self.target_pose.orientation.x = q3[0]
-    #self.target_pose.orientation.y = q3[1]
-    #self.target_pose.orientation.z = q3[2]
-    #self.target_pose.orientation.w = q3[3]
-    
-
-    
-    waypoints = []
-    waypoints.append(self.start_pose)
-    waypoints.append(self.target_pose)
-
-    #print(waypoints)
-    
+  def joints_plan_and_execute(self, joints):
+    self.default_joint_states = joints
+    self.group.set_joint_value_target(self.default_joint_states)
     self.group.set_start_state_to_current_state()
-    plan, fraction = self.group.compute_cartesian_path(waypoints, 0.01, 0.0, True)
-    #if 1-fraction < 0.2:
-    #   self.group.execute(plan)
-    
+    plan = self.group.plan()
+    self.group.execute(plan)
+
+  def List_to_Pose(self, list):
+    pose = Pose()
+    pose.position.x    = list[0]
+    pose.position.y    = list[1]
+    pose.position.z    = list[2]
+    pose.orientation.x = list[3]
+    pose.orientation.y = list[4]
+    pose.orientation.z = list[5]
+    pose.orientation.w = list[6]
+    return pose
+
+  def moveit_joint_cmd(self, target_joint):
+    self.group.set_joint_value_target(target_joint)
+    self.group.set_start_state_to_current_state()
+    plan = self.group.plan()
+    self.group.execute(plan)
 
   def dsr_PickPlace_cb(self,msg):
     print(msg.data)
-    self.start_flag = msg.data 
-    if(self.start_flag=="1.0"):
-      Q2 = [90*DEG2RAD, 0.0, -90*DEG2RAD, 0.0, -90.0*DEG2RAD, 0.0]
-      self.default_joint_states = Q2
-      self.group.set_joint_value_target(self.default_joint_states)
-      self.group.set_start_state_to_current_state()
-      plan = self.group.plan()
-      self.group.execute(plan)
-      self.start_flag="0.0"
-
-    if(self.start_flag=="-1.0"):
-      Q1 = [-90*DEG2RAD, 0.0, -90.0*DEG2RAD, 0.0, -90.0*DEG2RAD, 0.0]
-      self.default_joint_states = Q1
-      self.group.set_joint_value_target(self.default_joint_states)
-      self.group.set_start_state_to_current_state()
-      plan = self.group.plan()
-      self.group.execute(plan)
-      self.start_flag="0.0"
+    self.start_flag = msg.data
+    Q0 = [0.0*DEG2RAD,  0.0*DEG2RAD,  -90.0*DEG2RAD,  0.0*DEG2RAD,  -90.0*DEG2RAD,  0.0*DEG2RAD]
+    Q1 = [90*DEG2RAD,   0.0*DEG2RAD,  -90*DEG2RAD,    0.0*DEG2RAD,  -90.0*DEG2RAD,  0.0*DEG2RAD]
+    Q2 = [-90*DEG2RAD,  0.0*DEG2RAD,  -90.0*DEG2RAD,  0.0*DEG2RAD,  -90.0*DEG2RAD,  0.0*DEG2RAD]
 
     if(self.start_flag=="0.0"):
-      Q0 = [0.0, 0.0, -90.0*DEG2RAD, 0.0, -90.0*DEG2RAD, 0.0]
-      self.default_joint_states = Q0
-      self.group.set_joint_value_target(self.default_joint_states)
+      self.moveit_joint_cmd(Q0)
+
+    if(self.start_flag=="1.0"):
+      self.moveit_joint_cmd(Q1)
+
+    if(self.start_flag=="-1.0"):
+      self.moveit_joint_cmd(Q2)
+    
+    if(self.start_flag=="demo"):
+      print "DEMO!!!"
+      waypoints = []
+      self.start_pose = self.group.get_current_pose(self.end_effector_link).pose
+      waypoints.append(deepcopy(self.start_pose))
+      waypoints.append(deepcopy(self.target_pose))
+      print "!!!!!!!!!!!!!!!!!!!!!!!!"
+      print(waypoints)
+      
       self.group.set_start_state_to_current_state()
-      plan = self.group.plan()
-      self.group.execute(plan)
+      plan, fraction = self.group.compute_cartesian_path(waypoints, 0.01, 0.0, True)
+      if 1-fraction < 0.2:
+         self.group.execute(plan)
+    
+  
 
-    if(self.start_flag=="10.0"):
-
-        
-        self.start_pose = self.group.get_current_pose(self.end_effector_link).pose
-        self.waypoints.append(deepcopy(self.start_pose))
-        print(self.start_pose)
-        
-        self.target_pose = self.artag.markers[idx].pose.position.x 
-        #print(target_pose.position.x)
-        target_pose.position.x    = start_pose.position.x + 0.1
-        #target_pose.position.y    = start_pose.position.y
-        #target_pose.position.z    = start_pose.position.z
-        #target_pose.orientation.x = msg.orientation.x
-        #target_pose.orientation.y = msg.orientation.y
-        #target_pose.orientation.z = msg.orientation.z
-        #target_pose.orientation.w = msg.orientation.w
-        print(target_pose)
-        
-        
-        waypoints.append(deepcopy(target_pose))
-        
-        
-        #print 'start pose: %s'%start_pose
-        #print 'target pose :%s'%target_pose
-        #print 'waypoints :%s'%waypoints
-        self.group.set_start_state_to_current_state()
-        plan, fraction = self.group.compute_cartesian_path(waypoints, 0.01, 0.0, True)
-        if 1-fraction < 0.2:
-           self.group.execute(plan)
-
-
-
-'''
-  def cmd_moveit_cb(self,msg):
-        print(msg)
-        waypoints = []
-        
-        start_pose = self.group.get_current_pose(self.end_effector_link).pose
-        waypoints.append(deepcopy(start_pose))
-        print(start_pose)
-        
-        # target_pose = start_pose
-        #print(target_pose.position.x)
-        target_pose.position.x    = start_pose.position.x + 100
-        #target_pose.position.y    = start_pose.position.y
-        #target_pose.position.z    = start_pose.position.z
-        #target_pose.orientation.x = msg.orientation.x
-        #target_pose.orientation.y = msg.orientation.y
-        #target_pose.orientation.z = msg.orientation.z
-        #target_pose.orientation.w = msg.orientation.w
-        print(target_pose)
-        
-        
-        waypoints.append(deepcopy(target_pose))
-        
-        
-        #print 'start pose: %s'%start_pose
-        #print 'target pose :%s'%target_pose
-        #print 'waypoints :%s'%waypoints
-        self.group.set_start_state_to_current_state()
-        plan, fraction = self.group.compute_cartesian_path(waypoints, 0.01, 0.0, True)
-        if 1-fraction < 0.2:
-           self.group.execute(plan)
-'''
 ##############################################################################################################
 
 if __name__=='__main__':

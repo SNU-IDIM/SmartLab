@@ -67,6 +67,30 @@ class GripperControl:
             print "Gripper: open"
             self.open()
             rospy.sleep(1)
+        if msg.data == "2.0":
+            print "SNU IDIM Demo Start!!!"
+            
+            #p0 = posj(-0.29, 2.76, -109.19, -0.82, -71.49, 1.12)
+            ##p1 = posj(-0.92, -15.61, -127.27, -1, -36.5, 1)
+	        #p1 = posj(-0.84, -20.21, -126.6, -1.02, -31.81, 1.12)
+            #p2 = posj(-90.04, -4.69, -94.56, -0.12, -76.05, 1.12)
+            #p3 = posj(-84.23, -18.93, -99.84, -0.26, -60.67, 4.62)
+            p0 = posj(3.05, 1.18, -105.17, -0.61, -75.53, 4.01)
+            p1 = posj(2.24, -21.83, -124.98, -0.72, -33.04, 3.83)
+            p2 = posj(-79.28, -44.42, -34.49, -0.34, -102.54, 3.65)
+            p3 = posj(-79.45, -46.55, -64.83, -0.25, -71.00, 3.64)
+
+            movej(p0, vel=60, acc=30)
+            movej(p1, vel=60, acc=30)
+            gripper.close()
+            rospy.sleep(1)
+            movej(p0, vel=60, acc=30)
+            movej(p2, vel=60, acc=30)
+            movej(p3, vel=60, acc=30)
+            gripper.open()
+            rospy.sleep(1)
+            movej(p2, vel=60, acc=30)
+            movej(p0, vel=60, acc=30)
         
 
 
@@ -75,6 +99,7 @@ class GripperControl:
 if __name__ == "__main__":
 
     gripper = GripperControl()   
+    
 
     while not rospy.is_shutdown():
         pass

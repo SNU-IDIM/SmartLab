@@ -21,7 +21,7 @@ REFERENCE_FRAME_ = 'base_0'
 AR_FRAME_PREFIX_ = 'ar_marker_'
 
 
-OFFSET_FROM_TARGET = 100.0 * MM2M # [mm]
+OFFSET_FROM_TARGET = 150.0 * MM2M # [mm]
 
 class snu_ar_tracker():
     def __init__(self):        
@@ -37,24 +37,25 @@ class snu_ar_tracker():
         self.cmd_pose = Pose()
 
     def update_pose(self, trans, rot):
-        self.cmd_pose.position.x    = trans[0] + OFFSET_FROM_TARGET
-        self.cmd_pose.position.y    = trans[1]
-        self.cmd_pose.position.z    = trans[2]
-        self.cmd_pose.orientation.x = rot[0]
-        self.cmd_pose.orientation.y = rot[1]
-        self.cmd_pose.orientation.z = rot[2]
-        self.cmd_pose.orientation.w = rot[3]
+        self.cmd_pose.position.x    = trans[0]
+        self.cmd_pose.position.y    = trans[1] - 0.020
+        self.cmd_pose.position.z    = trans[2] + OFFSET_FROM_TARGET
+        #self.cmd_pose.orientation.x = rot[0]
+        #self.cmd_pose.orientation.y = rot[1]
+        #self.cmd_pose.orientation.z = rot[2]
+        #self.cmd_pose.orientation.w = rot[3]
 
     def pnp_cb(self, msg): # Version 2: "/tf" topic 이용
         try:
-            print(AR_FRAME_PREFIX_ + msg.data)
-            self.listener.waitForTransform(AR_FRAME_PREFIX_ + msg.data, REFERENCE_FRAME_, rospy.Time(), rospy.Duration(0.5))
-            print "1"
-            (trans,rot) = self.listener.lookupTransform(AR_FRAME_PREFIX_ + msg.data, REFERENCE_FRAME_, rospy.Time(0))
-            print "2"
+            #print(AR_FRAME_PREFIX_ + msg.data)
+            self.listener.waitForTransform(REFERENCE_FRAME_, AR_FRAME_PREFIX_ + msg.data, rospy.Time(), rospy.Duration(0.5))
+            (trans,rot) = self.listener.lookupTransform(REFERENCE_FRAME_, AR_FRAME_PREFIX_ + msg.data, rospy.Time(0))
+            #print(trans)
+       
 
             self.update_pose(trans, rot)
             print(self.cmd_pose)
+            
             self.pub1.publish(self.cmd_pose)
 
         except (tf.Exception):

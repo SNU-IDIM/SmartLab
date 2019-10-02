@@ -1,5 +1,5 @@
 <launch>
-  <arg name="ns" value="R_001/dsr"/>
+  <arg name="ns" value="dsr"/>
 
   <include file="$(find snu_doosan)/launch/realsense_setup.launch.xml" ns="$(arg ns)"/>
 

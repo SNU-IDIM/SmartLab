@@ -25,8 +25,10 @@ DR_init.__dsr__id = NS_+'/'+ROBOT_ID_
 DR_init.__dsr__model = ROBOT_MODEL_
 from DSR_ROBOT import *
 
-ROBOT_SPEED_LINEAR  = 50.0 # in [mm/s]
-ROBOT_SPEED_ANGULAR = 10.0 # in [deg/s]
+MAX_ROBOT_SPEED_LINEAR  = 100.0
+MAX_ROBOT_SPEED_ANGULAR = 100.0
+ROBOT_SPEED_LINEAR      = 50.0 # in [mm/s]
+ROBOT_SPEED_ANGULAR     = 50.0 # in [deg/s]
 EPSILON = 0.001
 
 BOTTON_A           = 0
@@ -95,6 +97,8 @@ def joy_cb(msg):
     global m_joyButtonFlag
     global m_joyJogFlag     # Jog flag
     global m_joyJogVel
+    global ROBOT_SPEED_LINEAR
+    global ROBOT_SPEED_ANGULAR
 
     targetPos = [0, 0, -90, 0, -90, 0]
     hommingPos = [0, 0, 0, 0, 0, 0]
@@ -109,6 +113,18 @@ def joy_cb(msg):
         pub_pnp.publish('open')
     if msg.buttons[BOTTON_UPPER_RIGHT] == 1:
         pub_pnp.publish('close')
+
+    if msg.buttons[BOTTON_B] == 1:
+        ROBOT_SPEED_LINEAR  += 10
+        if ROBOT_SPEED_LINEAR >= MAX_ROBOT_SPEED_LINEAR: ROBOT_SPEED_LINEAR = MAX_ROBOT_SPEED_LINEAR
+        ROBOT_SPEED_ANGULAR += 10
+        if ROBOT_SPEED_ANGULAR >= MAX_ROBOT_SPEED_ANGULAR: ROBOT_SPEED_ANGULAR = MAX_ROBOT_SPEED_ANGULAR
+    
+    if msg.buttons[BOTTON_A] == 1:
+        ROBOT_SPEED_LINEAR  -= 10
+        if ROBOT_SPEED_LINEAR <= 0.0: ROBOT_SPEED_LINEAR = 0.0
+        ROBOT_SPEED_ANGULAR -= 10
+        if ROBOT_SPEED_ANGULAR >= 0.0: ROBOT_SPEED_ANGULAR = 0.0
 
     
     # Analog 신호 하나라도 들어오면 m_joyAnalogFlag -> set 됨 (global flag)
