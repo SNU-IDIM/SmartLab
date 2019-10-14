@@ -23,7 +23,7 @@ AR_FRAME_PREFIX_     = 'ar_marker_'
 TARGET_FRAME_PREFIX_ = 'ar_target_'
 
 
-OFFSET_FROM_TARGET = 200.0 * MM2M # [mm]
+OFFSET_FROM_TARGET = 175.0 * MM2M # [mm]
 
 class snu_ar_tracker():
     def __init__(self):        
@@ -41,8 +41,8 @@ class snu_ar_tracker():
         self.cmd_pose = Pose()
 
     def update_pose(self, trans, rot):
-        self.cmd_pose.position.x    = trans[0]
-        self.cmd_pose.position.y    = trans[1] - 0.020
+        self.cmd_pose.position.x    = trans[0] - 0.020 # 보정 @(arm -> 측면)
+        self.cmd_pose.position.y    = trans[1]# - 0.020 # 보정 @(arm -> 정면)
         self.cmd_pose.position.z    = trans[2]
         self.cmd_pose.orientation.x = rot[0]
         self.cmd_pose.orientation.y = rot[1]
@@ -50,21 +50,29 @@ class snu_ar_tracker():
         self.cmd_pose.orientation.w = rot[3]
 
     def pnp_cb(self, msg): # Version 2: "/tf" topic 이용
-        try:
-            #print(AR_FRAME_PREFIX_ + msg.data)
-            self.listener.waitForTransform(REFERENCE_FRAME_, TARGET_FRAME_PREFIX_ + msg.data, rospy.Time(), rospy.Duration(0.5))
-            (trans,rot) = self.listener.lookupTransform(REFERENCE_FRAME_, TARGET_FRAME_PREFIX_ + msg.data, rospy.Time(0))
-            #print(rot)
-       
+        print "@@@@@@@@@@@@@@@@@@@@@@@@@1"
+        print(msg.data)
+        if msg.data == 'search':
+            print "@@@@@@@@@@@@@@@@@@@@@@@@@2"
+            try:
+                print(AR_FRAME_PREFIX_ + '1') # msg.data 나중에 이 부분 바꿔야함@@@@@@@@@@@@@@@@@@
+                self.listener.waitForTransform(REFERENCE_FRAME_, TARGET_FRAME_PREFIX_ + '1', rospy.Time(), rospy.Duration(0.5)) # msg.data 나중에 이 부분 바꿔야함@@@@@@@@@@@@@@@@@@
+                (trans,rot) = self.listener.lookupTransform(REFERENCE_FRAME_, TARGET_FRAME_PREFIX_ + '1', rospy.Time(0)) # msg.data 나중에 이 부분 바꿔야함@@@@@@@@@@@@@@@@@@
+                #print(rot)
+        
 
-            self.update_pose(trans, rot)
-            #print(self.cmd_pose)
-            
-            self.pub1.publish(self.cmd_pose)
+                self.update_pose(trans, rot)
+                #print(self.cmd_pose)
+                
+                self.pub1.publish(self.cmd_pose)
+                print(self.cmd_pose)
 
-        except (tf.Exception):
-            print "[ERROR]: AR Tag not detected!"
-            pass
+            except (tf.Exception):
+                print "[ERROR]: AR Tag not detected!"
+                pass
+            return 1
+        else:
+            return -1
         
 
     def ar_sub_cb(self, msg): # Version 1: "ar_pose_marker" topic 이용
@@ -102,12 +110,12 @@ class snu_ar_tracker():
 if __name__ == "__main__":
     ar = snu_ar_tracker()
 
-    test = String()
-    test.data = '1'
-    ar.pnp_cb(test)
+    #test = String()
+    #test.data = '1'
+    #ar.pnp_cb(test)
 
     while not rospy.is_shutdown():
-        ar.pnp_cb(test)
+        #ar.pnp_cb(test)
         pass
 
     print 'good bye!'

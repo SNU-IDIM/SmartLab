@@ -28,6 +28,15 @@ ROLL = 180.0 * DEG2RAD
 PITCH = 0.0 * DEG2RAD
 YAW = 0.0 * DEG2RAD
 
+Q0 = [0.0*DEG2RAD,    0.0*DEG2RAD,    -90.0*DEG2RAD,    0.0*DEG2RAD,    -90.0*DEG2RAD,    0.0*DEG2RAD]
+Q1 = [90.0*DEG2RAD,   0.0*DEG2RAD,    -90*DEG2RAD,      0.0*DEG2RAD,    -90.0*DEG2RAD,    0.0*DEG2RAD]
+Q2 = [-90.0*DEG2RAD,  0.0*DEG2RAD,    -90.0*DEG2RAD,    0.0*DEG2RAD,    -90.0*DEG2RAD,    0.0*DEG2RAD]
+Q3 = [0.0*DEG2RAD,    15.0*DEG2RAD,   -70.0*DEG2RAD,    0.0*DEG2RAD,    -125.0*DEG2RAD,   0.0*DEG2RAD]
+Q4 = [0.0*DEG2RAD,    0.0*DEG2RAD,    -90.0*DEG2RAD,    0.0*DEG2RAD,    -90.0*DEG2RAD,    180.0*DEG2RAD]
+Q5 = [-5.993828130492754e-05, 0.3384384062003861, -1.574394656901861, 9.300767452392647e-05, -1.9054921594259837, 0.00014209506981415032]
+Q_SEARCH_RIGHT = [-1.587211119647868, 0.04192579550122713, -2.42067574545383, 0.02488730488522477, 0.060036456046744055, 5.683802467473106e-05]
+Q_SEARCH_LEFT  = [1.587211119647868, 0.04192579550122713, -2.42067574545383, 0.02488730488522477, 0.060036456046744055, 5.683802467473106e-05]
+#Q_SEARCH_RIGHT = [-0.021912608043065707, 0.3745233068645807, -2.515318099008636, -0.0016689710660107685, -0.9671584417422292, 0.00014467861565142695]
 
 
 def all_close(goal, actual, tolerance):
@@ -78,9 +87,8 @@ class MoveGroupPythonInteface(object):
     self.group = moveit_commander.MoveGroupCommander(group_name, robot_description="dsr/robot_description", ns="dsr") # interface to one group of joints (plan & execute)
     self.group.set_pose_reference_frame(reference_frame)
     
-    Q0 = [0.0, 0.0, -90.0*DEG2RAD, 0.0, -90.0*DEG2RAD, 0.0]
     #self.default_joint_states = self.group.get_current_joint_values()
-    self.default_joint_states = Q0
+    self.default_joint_states = Q5
 
     # Allow replanning to increase the odds of a solution
     self.group.allow_replanning(True) 
@@ -173,9 +181,6 @@ class MoveGroupPythonInteface(object):
   def pnp_cb(self,msg):
     print(msg.data)
     self.start_flag = msg.data
-    Q0 = [0.0*DEG2RAD,  0.0*DEG2RAD,  -90.0*DEG2RAD,  0.0*DEG2RAD,  -90.0*DEG2RAD,  0.0*DEG2RAD]
-    Q1 = [90*DEG2RAD,   0.0*DEG2RAD,  -90*DEG2RAD,    0.0*DEG2RAD,  -90.0*DEG2RAD,  0.0*DEG2RAD]
-    Q2 = [-90*DEG2RAD,  0.0*DEG2RAD,  -90.0*DEG2RAD,  0.0*DEG2RAD,  -90.0*DEG2RAD,  0.0*DEG2RAD]
 
     if(self.start_flag=="0.0"):
       self.moveit_joint_cmd(Q0)
@@ -187,17 +192,35 @@ class MoveGroupPythonInteface(object):
       self.moveit_joint_cmd(Q2)
     
     if(self.start_flag=="demo"):
+      self.moveit_joint_cmd(Q_SEARCH_RIGHT)
+      self.pnp_pub.publish('open')
+      rospy.sleep(8)
+
+      
+      self.pnp_pub.publish('search')
+      rospy.sleep(1)
+
       waypoints = []
+      #self.group.stop()
+      #self.group.clear_pose_targets()
+
       self.start_pose = self.group.get_current_pose(self.end_effector_link).pose
       waypoints.append(deepcopy(self.start_pose))
+      self.target_pose.position.z += 0.05
+      waypoints.append(deepcopy(self.target_pose))
+      self.target_pose.position.z -= 0.05
       waypoints.append(deepcopy(self.target_pose))
       #print(waypoints)
+
       
       self.group.set_start_state_to_current_state()
       plan, fraction = self.group.compute_cartesian_path(waypoints, 0.01, 0.0, True)
       if 1-fraction < 0.2:
          self.group.execute(plan)
-      self.moveit_joint_cmd(Q0)
+      rospy.sleep(15)
+      self.pnp_pub.publish('close')
+      rospy.sleep(1)
+      self.moveit_joint_cmd(Q5)
     
   
 
