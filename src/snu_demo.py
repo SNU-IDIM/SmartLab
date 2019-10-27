@@ -18,6 +18,10 @@ from dsr_msgs.msg import RobotState
 from ar_track_alvar_msgs.msg import AlvarMarkers
 from tf.transformations import *
 
+
+TASK_ARM_PICK  = '3.0'
+TASK_ARM_PLACE = '4.0'
+
 # Some of Contstants
 DISTANCE_AWAY_FROM_TARGET = 0.2
 
@@ -155,11 +159,14 @@ class MoveGroupPythonInteface(object):
     ##self.target_pose.orientation.w = q3[3]
 
   def joints_plan_and_execute(self, joints):
+    self.group.stop()
+    self.group.clear_pose_targets()
     self.default_joint_states = joints
     self.group.set_joint_value_target(self.default_joint_states)
     self.group.set_start_state_to_current_state()
     plan = self.group.plan()
-    self.group.execute(plan)
+    #self.group.aysncExecute(plan)
+    self.group.execute(plan, wait=False)
 
   def List_to_Pose(self, list):
     pose = Pose()
@@ -191,7 +198,7 @@ class MoveGroupPythonInteface(object):
     if(self.start_flag=="-1.0"):
       self.moveit_joint_cmd(Q2)
     
-    if(self.start_flag=="demo"):
+    if(self.start_flag == TASK_ARM_PICK):
       self.moveit_joint_cmd(Q_SEARCH_RIGHT)
       self.pnp_pub.publish('open')
       rospy.sleep(8)
@@ -217,9 +224,49 @@ class MoveGroupPythonInteface(object):
       plan, fraction = self.group.compute_cartesian_path(waypoints, 0.01, 0.0, True)
       if 1-fraction < 0.2:
          self.group.execute(plan)
-      rospy.sleep(15)
+      rospy.sleep(20)
       self.pnp_pub.publish('close')
       rospy.sleep(1)
+      self.moveit_joint_cmd(Q5)
+
+    if(self.start_flag == TASK_ARM_PLACE):
+      self.moveit_joint_cmd(Q_SEARCH_RIGHT)
+      self.pnp_pub.publish('close')
+      rospy.sleep(8)
+
+      
+      self.pnp_pub.publish('search')
+      rospy.sleep(1)
+
+      waypoints = []
+      #self.group.stop()
+      #self.group.clear_pose_targets()
+
+      self.start_pose = self.group.get_current_pose(self.end_effector_link).pose
+      waypoints.append(deepcopy(self.start_pose))
+      self.target_pose.position.z += 0.10
+      waypoints.append(deepcopy(self.target_pose))
+      self.target_pose.position.z -= 0.05
+      waypoints.append(deepcopy(self.target_pose))
+      #print(waypoints)
+
+      
+      self.group.set_start_state_to_current_state()
+      plan, fraction = self.group.compute_cartesian_path(waypoints, 0.01, 0.0, True)
+      if 1-fraction < 0.2:
+         self.group.execute(plan)
+      rospy.sleep(20)
+      self.pnp_pub.publish('open')
+      rospy.sleep(1)
+      waypoints = []
+      self.start_pose = self.group.get_current_pose(self.end_effector_link).pose
+      waypoints.append(deepcopy(self.start_pose))
+      self.start_pose.position.z += 0.05
+      waypoints.append(deepcopy(self.start_pose))
+      #self.group.set_start_state_to_current_state()
+      plan, fraction = self.group.compute_cartesian_path(waypoints, 0.01, 0.0, True)
+      if 1-fraction < 0.2:
+         self.group.execute(plan)
       self.moveit_joint_cmd(Q5)
     
   
