@@ -157,6 +157,11 @@ class MoveGroupPythonInteface(object):
     ##self.target_pose.orientation.y = q3[1]
     ##self.target_pose.orientation.z = q3[2]
     ##self.target_pose.orientation.w = q3[3]
+  
+  def wait_for_complete_motion(self):
+    rospy.sleep(1)
+    while self.dsr_flag == 2:
+      print "Robot is Running!"
 
   def joints_plan_and_execute(self, joints):
     self.group.stop()
@@ -200,74 +205,73 @@ class MoveGroupPythonInteface(object):
     
     if(self.start_flag == TASK_ARM_PICK):
       self.moveit_joint_cmd(Q_SEARCH_RIGHT)
-      self.pnp_pub.publish('open')
-      rospy.sleep(8)
+      self.wait_for_complete_motion()
 
+      self.pnp_pub.publish('open')
+      self.wait_for_complete_motion()
       
       self.pnp_pub.publish('search')
-      rospy.sleep(1)
+      self.wait_for_complete_motion()
 
       waypoints = []
-      #self.group.stop()
-      #self.group.clear_pose_targets()
-
       self.start_pose = self.group.get_current_pose(self.end_effector_link).pose
       waypoints.append(deepcopy(self.start_pose))
       self.target_pose.position.z += 0.05
       waypoints.append(deepcopy(self.target_pose))
       self.target_pose.position.z -= 0.05
       waypoints.append(deepcopy(self.target_pose))
-      #print(waypoints)
-
-      
       self.group.set_start_state_to_current_state()
       plan, fraction = self.group.compute_cartesian_path(waypoints, 0.01, 0.0, True)
       if 1-fraction < 0.2:
          self.group.execute(plan)
-      rospy.sleep(20)
+      self.wait_for_complete_motion()
+
       self.pnp_pub.publish('close')
-      rospy.sleep(1)
+      self.wait_for_complete_motion()
+
       self.moveit_joint_cmd(Q5)
+      self.wait_for_complete_motion()
+
 
     if(self.start_flag == TASK_ARM_PLACE):
       self.moveit_joint_cmd(Q_SEARCH_RIGHT)
+      self.wait_for_complete_motion()
+
       self.pnp_pub.publish('close')
-      rospy.sleep(8)
+      self.wait_for_complete_motion()
 
       
       self.pnp_pub.publish('search')
-      rospy.sleep(1)
+      self.wait_for_complete_motion()
 
       waypoints = []
-      #self.group.stop()
-      #self.group.clear_pose_targets()
-
       self.start_pose = self.group.get_current_pose(self.end_effector_link).pose
       waypoints.append(deepcopy(self.start_pose))
       self.target_pose.position.z += 0.10
       waypoints.append(deepcopy(self.target_pose))
-      self.target_pose.position.z -= 0.05
-      waypoints.append(deepcopy(self.target_pose))
-      #print(waypoints)
-
-      
+      self.target_pose.position.z -= 0.07
+      waypoints.append(deepcopy(self.target_pose))    
       self.group.set_start_state_to_current_state()
       plan, fraction = self.group.compute_cartesian_path(waypoints, 0.01, 0.0, True)
       if 1-fraction < 0.2:
          self.group.execute(plan)
-      rospy.sleep(20)
+      self.wait_for_complete_motion()
+
       self.pnp_pub.publish('open')
-      rospy.sleep(1)
+      self.wait_for_complete_motion()
+
       waypoints = []
       self.start_pose = self.group.get_current_pose(self.end_effector_link).pose
       waypoints.append(deepcopy(self.start_pose))
       self.start_pose.position.z += 0.05
       waypoints.append(deepcopy(self.start_pose))
-      #self.group.set_start_state_to_current_state()
       plan, fraction = self.group.compute_cartesian_path(waypoints, 0.01, 0.0, True)
       if 1-fraction < 0.2:
          self.group.execute(plan)
+      self.wait_for_complete_motion()
+      
       self.moveit_joint_cmd(Q5)
+      self.wait_for_complete_motion()
     
   
 
