@@ -1,6 +1,6 @@
 <launch>
 
-	<arg name="marker_size" default="6.1" />
+	<arg name="marker_size" default="1.8" /> <!-- 6.1 -->
 	<arg name="max_new_marker_error" default="0.08" />
 	<arg name="max_track_error" default="0.2" />
 
@@ -19,6 +19,7 @@
                 $(arg cam_info_topic) 
                 $(arg output_frame) 
                 $(arg med_filt_size) 
-                $(arg bundle_files)" />
+                $(arg bundle_files)">
+    </node>
 
 </launch>

@@ -15,7 +15,7 @@
 <arg name="pos_4_y" default="-23.25" />
 <arg name="pos_4_z" default="0.0" />-->
 
-<multimarker markers="3">
+<!--<multimarker markers="3">
     <marker index="0" status="1">
         <corner x="-9.05" y="3.05" z="0" />
         <corner x="-3.05" y="3.05" z="0" />
@@ -34,31 +34,31 @@
         <corner x="9.35" y="-3.25" z="0" />
         <corner x="3.25" y="-3.25" z="0" />
     </marker>
-</multimarker>
+</multimarker>-->
 
-<!--<multimarker markers="4">
+<multimarker markers="4">
     <marker index="6" status="1">
-        <corner x="-4.225" y="+41.25" z="+0"/>
-        <corner x="-2.425" y="+41.25" z="+0"/>
-        <corner x="-2.425" y="+23.25" z="+0"/>
-        <corner x="-4.225" y="+23.25" z="+0"/>
+        <corner x="-4.225" y="+4.125" z="+0"/>
+        <corner x="-2.425" y="+4.125" z="+0"/>
+        <corner x="-2.425" y="+2.325" z="+0"/>
+        <corner x="-4.225" y="+2.325" z="+0"/>
     </marker>
     <marker index="5" status="1">
-        <corner x="+2.425" y="+41.25" z="0"/>
-        <corner x="+4.225" y="+41.25" z="0"/>
-        <corner x="+4.225" y="+23.25" z="0"/>
-        <corner x="+2.425" y="+23.25" z="0"/>
+        <corner x="+2.425" y="+4.125" z="0"/>
+        <corner x="+4.225" y="+4.125" z="0"/>
+        <corner x="+4.225" y="+2.325" z="0"/>
+        <corner x="+2.425" y="+2.325" z="0"/>
     </marker>
     <marker index="3" status="1">
-        <corner x="+2.425" y="-23.25" z="0"/>
-        <corner x="+4.225" y="-23.25" z="0"/>
-        <corner x="+4.225" y="-41.25" z="0"/>
-        <corner x="+2.425" y="-41.25" z="0"/>
+        <corner x="+2.425" y="-2.325" z="0"/>
+        <corner x="+4.225" y="-2.325" z="0"/>
+        <corner x="+4.225" y="-4.125" z="0"/>
+        <corner x="+2.425" y="-4.125" z="0"/>
     </marker>
     <marker index="4" status="1">
-        <corner x="-4.225" y="-23.25" z="0"/>
-        <corner x="-2.425" y="-23.25" z="0"/>
-        <corner x="-2.425" y="-41.25" z="0"/>
-        <corner x="-4.225" y="-41.25" z="0"/>
+        <corner x="-4.225" y="-2.325" z="0"/>
+        <corner x="-2.425" y="-2.325" z="0"/>
+        <corner x="-2.425" y="-4.125" z="0"/>
+        <corner x="-4.225" y="-4.125" z="0"/>
     </marker>
-</multimarker>-->
+</multimarker>
