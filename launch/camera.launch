@@ -3,6 +3,7 @@
 
   <include file="$(find snu_doosan)/launch/realsense_setup.launch.xml"/>
 
-  <include file="$(find snu_doosan)/launch/ar_tracker_alvar.launch.xml"/>
+  <include file="$(find snu_doosan)/launch/ar_tracker_single.launch.xml"/>
+  <!--<include file="$(find snu_doosan)/launch/ar_tracker_bundles.launch.xml"/>-->
 
 </launch>
