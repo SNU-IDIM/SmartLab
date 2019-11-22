@@ -7,7 +7,7 @@ import sys
 import math
 import tf
 import tf2_ros
-from std_msgs.msg import String
+from std_msgs.msg import String, Float32MultiArray
 from geometry_msgs.msg import Twist, Pose, TransformStamped
 from ar_track_alvar_msgs.msg import *
 from tf.transformations import *
@@ -22,15 +22,16 @@ AR_MARKER_FRAME_PREFIX_ = 'ar_marker_'
 AR_TARGET_FRAME_PREFIX_ = 'ar_target_'
 
 
-OFFSET_FROM_TARGET = 175.0 * MM2M # [mm]
+OFFSET_FROM_TARGET = 250.0 * MM2M # 175.0 [mm]
 
 class snu_object_tracker():
     def __init__(self):
         rospy.init_node('snu_obejct_tracker', anonymous=True)
         
         rospy.set_param("snu_object_tracker/reference_frame", 'base_0')
-        rospy.set_param("snu_object_tracker/object_frame", 'ar_marker_1')
-        rospy.set_param("snu_object_tracker/target_frame", 'ar_target_1')
+        rospy.set_param("snu_object_tracker/object_frame", 'object_27') # ar_marker_1
+        rospy.set_param("snu_object_tracker/target_frame", 'target_27') # ar_target_1
+        rospy.set_param("snu_object_tracker/offset_from_target", OFFSET_FROM_TARGET)
 
         self.listener = tf.TransformListener()
         self.broadcaster = tf2_ros.StaticTransformBroadcaster()
@@ -40,12 +41,14 @@ class snu_object_tracker():
         self.reference_frame_name = rospy.get_param("snu_object_tracker/reference_frame")
         self.object_frame_name    = rospy.get_param("snu_object_tracker/object_frame")
         self.target_frame_name    = rospy.get_param("snu_object_tracker/target_frame")
+        self.offset_from_target   = rospy.get_param("snu_object_tracker/offset_from_target")
         self.tags = AlvarMarkers()
         self.cmd_pose = Pose()
 
         ### Topics to Subscribe ###
         rospy.Subscriber('ur_pnp', String, self.pnp_cb, queue_size=1) # Trigger Topic
-        rospy.Subscriber('ar_pose_marker', AlvarMarkers, self.ar_sub_cb, queue_size=1) # Object Pose Topic
+        rospy.Subscriber('ar_pose_marker', AlvarMarkers, self.ar_sub_cb, queue_size=1) # AR Marker Topic
+        rospy.Subscriber('objects', Float32MultiArray, self.object_sub_cb, queue_size=1) # Object Pose Topic
         
         ### Topics to Publish ###
         self.pub1 = rospy.Publisher('cmd_moveit', Pose, queue_size=1) # Final target pose to be tracked
@@ -96,6 +99,27 @@ class snu_object_tracker():
         else:
             return -1
 
+    def object_sub_cb(self, msg):
+        self.object_frame_name    = rospy.get_param("snu_object_tracker/object_frame")
+        self.target_frame_name    = rospy.get_param("snu_object_tracker/target_frame")
+        self.offset_from_target   = rospy.get_param("snu_object_tracker/offset_from_target")
+        
+        self.static_transformStamped.header.stamp    = rospy.Time.now()
+        self.static_transformStamped.header.frame_id = self.object_frame_name
+        self.static_transformStamped.child_frame_id  = self.target_frame_name
+        
+        self.static_transformStamped.transform.translation.x = self.offset_from_target
+        self.static_transformStamped.transform.translation.y = 0.0
+        self.static_transformStamped.transform.translation.z = 0.0
+        
+        quat = tf.transformations.quaternion_from_euler(0.0, -math.pi/2.0, 0.0)
+        self.static_transformStamped.transform.rotation.x = quat[0]
+        self.static_transformStamped.transform.rotation.y = quat[1]
+        self.static_transformStamped.transform.rotation.z = quat[2]
+        self.static_transformStamped.transform.rotation.w = quat[3]
+        #print "%s"%self.static_transformStamped
+        
+        self.broadcaster.sendTransform(self.static_transformStamped)
 
     '''
         "/ur_pnp" Subscribe -> if) data == "search" -> TF Subscribe -> "cmd_pose" Publish

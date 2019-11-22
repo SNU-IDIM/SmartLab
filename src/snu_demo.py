@@ -19,6 +19,7 @@ from ar_track_alvar_msgs.msg import AlvarMarkers
 from tf.transformations import *
 
 
+TASK_POINTING  = 'pointing'
 TASK_ARM_PICK  = '3.0'
 TASK_ARM_PLACE = '4.0'
 
@@ -202,7 +203,27 @@ class MoveGroupPythonInteface(object):
 
     if(self.start_flag=="-1.0"):
       self.moveit_joint_cmd(Q2)
-    
+
+    if(self.start_flag==TASK_POINTING):
+      self.moveit_joint_cmd(Q0)
+      self.wait_for_complete_motion()
+      
+      self.pnp_pub.publish('search')
+      self.wait_for_complete_motion()
+
+      waypoints = []
+      self.start_pose = self.group.get_current_pose(self.end_effector_link).pose
+      waypoints.append(deepcopy(self.start_pose))
+      waypoints.append(deepcopy(self.target_pose))
+      self.group.set_start_state_to_current_state()
+      plan, fraction = self.group.compute_cartesian_path(waypoints, 0.01, 0.0, True)
+      if 1-fraction < 0.2:
+         self.group.execute(plan)
+      self.wait_for_complete_motion()
+
+      self.moveit_joint_cmd(Q5)
+      self.wait_for_complete_motion()
+
     if(self.start_flag == TASK_ARM_PICK):
       self.moveit_joint_cmd(Q_SEARCH_RIGHT)
       self.wait_for_complete_motion()
