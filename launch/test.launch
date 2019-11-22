@@ -5,7 +5,10 @@
 
     <node pkg="snu_doosan" type="snu_demo.py" name="snu_dsr_demo" ns="$(arg ns)" output='screen'/>
     <include file="$(find snu_doosan)/launch/camera.launch" ns="$(arg ns)"/>
-    <node pkg="snu_doosan" type="ar_tracker.py" name="ar_tracker" ns="$(arg ns)" output='screen'/>
+    <node pkg="snu_doosan" type="snu_object_tracker.py" name="snu_object_tracker" ns="$(arg ns)" output='screen'/>
+    <!--<node pkg="snu_doosan" type="ar_tracker.py" name="ar_tracker" ns="$(arg ns)" output='screen'/>-->
+
+
 
     <!--<node pkg="snu_doosan" type="doosan_joy_controller.py" name="joy_controller" ns="$(arg ns)" output='screen'/>-->
     <!--<node pkg="snu_doosan" type="snu_gripper.py" name="snu_gripper" ns="$(arg ns)" output='screen'/>-->
