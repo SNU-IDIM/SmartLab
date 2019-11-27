@@ -22,15 +22,15 @@ AR_MARKER_FRAME_PREFIX_ = 'ar_marker_'
 AR_TARGET_FRAME_PREFIX_ = 'ar_target_'
 
 
-OFFSET_FROM_TARGET = 250.0 * MM2M # 175.0 [mm]
+OFFSET_FROM_TARGET = 175.0 * MM2M # 250.0 [mm]
 
 class snu_object_tracker():
     def __init__(self):
         rospy.init_node('snu_obejct_tracker', anonymous=True)
         
         rospy.set_param("snu_object_tracker/reference_frame", 'base_0')
-        rospy.set_param("snu_object_tracker/object_frame", 'object_27') # ar_marker_1
-        rospy.set_param("snu_object_tracker/target_frame", 'target_27') # ar_target_1
+        rospy.set_param("snu_object_tracker/object_frame", 'ar_marker_1') # object_27
+        rospy.set_param("snu_object_tracker/target_frame", 'ar_target_1') # target_27
         rospy.set_param("snu_object_tracker/offset_from_target", OFFSET_FROM_TARGET)
 
         self.listener = tf.TransformListener()
@@ -64,11 +64,20 @@ class snu_object_tracker():
         self.cmd_pose.orientation.x = rot[0]
         self.cmd_pose.orientation.y = rot[1]
         self.cmd_pose.orientation.z = rot[2]
-        self.cmd_pose.orientation.w = rot[3]  
+        self.cmd_pose.orientation.w = rot[3]
+    
+
+    '''
+        Update ROS Parameters
+    '''    
+    def update_ros_param(self):
+        self.object_frame_name  = rospy.get_param("snu_object_tracker/object_frame")
+        self.target_frame_name  = rospy.get_param("snu_object_tracker/target_frame")
+        self.offset_from_target = rospy.get_param("snu_object_tracker/offset_from_target")
 
 
     '''
-        AR_Marker -> Subscribe -> Target Pose 계산 -> TF Broadcast
+        AR_Marker -> Subscribe -> Target Pose 계산 -> TF Broadcast (새로운 Frame: TARGET_FRAME)
     '''
     def ar_sub_cb(self, msg):
         n_tags = len(msg.markers)
@@ -99,11 +108,9 @@ class snu_object_tracker():
         else:
             return -1
 
+
     def object_sub_cb(self, msg):
-        self.object_frame_name    = rospy.get_param("snu_object_tracker/object_frame")
-        self.target_frame_name    = rospy.get_param("snu_object_tracker/target_frame")
-        self.offset_from_target   = rospy.get_param("snu_object_tracker/offset_from_target")
-        
+        self.update_ros_param()
         self.static_transformStamped.header.stamp    = rospy.Time.now()
         self.static_transformStamped.header.frame_id = self.object_frame_name
         self.static_transformStamped.child_frame_id  = self.target_frame_name
@@ -158,4 +165,3 @@ if __name__ == "__main__":
         pass
 
     print 'good bye!'
-
