@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="m1013" >
+
+  <xacro:arg name="color"   default="white"/>
+  <xacro:arg name="gripper" default="none"/>
+
+
+  <xacro:property name="cr" value="$(arg color)"/>
+  <xacro:property name="gr" value="$(arg gripper)"/>
+  
+  <xacro:if value="${cr == 'white'}">
+     <xacro:include filename="$(find dsr_description)/xacro/macro.m1013.white.xacro" />
+  </xacro:if>
+  <xacro:if value="${cr == 'blue'}">
+     <xacro:include filename="$(find dsr_description)/xacro/macro.m1013.blue.xacro" />
+  </xacro:if>
+  <xacro:m1013 namespace="$(arg namespace)"/>
+
+  <xacro:if value="${gr == 'robotiq_2f'}">
+     <xacro:include filename="$(find dsr_description)/xacro/robotiq_2f.urdf.xacro" />
+  </xacro:if>
+
+    <!-- Camera -->
+  <xacro:property name="camera_link" value="0.02" /> <!-- Size of square 'camera' box -->
+  <joint name="camera_joint" type="fixed">
+    <axis xyz="0 1 0" />
+    <origin xyz="0.1085 0.0 -0.015" rpy="0 -1.572 3.1416"/>  <!-- 0.0585 0.0 0.053 -->
+    <parent link="link6"/>
+    <child link="camera_link"/>
+  </joint>
+
+  <link name="camera_link">
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+	<box size="${camera_link} ${camera_link} ${camera_link}"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+	<box size="${camera_link} ${camera_link} ${camera_link}"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+
+    <inertial>
+      <mass value="1e-5" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
+    </inertial>
+  </link>
+
+  <!-- World fixed joint-->
+  <!--<link name="R_001/base_link" />
+  <joint name="dsr_base" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="R_001/base_link"/>
+    <child link="base_0"/>
+  </joint>-->
+
+</robot>
+
