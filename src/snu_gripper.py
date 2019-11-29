@@ -27,27 +27,66 @@ class dsrDigitalControl:
         rospy.on_shutdown(self.shutdown)
         
         rospy.Subscriber('ur_pnp', String, self.pnp_cb, queue_size=1)
-        self.srv_gripper_send_data = rospy.ServiceProxy(ROBOT_ID + ROBOT_MODEL + '/io/set_tool_digital_output', SetToolDigitalOutput)
+        self.srv_tool_send_data = rospy.ServiceProxy(ROBOT_ID + ROBOT_MODEL + '/io/set_tool_digital_output', SetToolDigitalOutput)
+        self.srv_ctrl_send_data = rospy.ServiceProxy(ROBOT_ID + ROBOT_MODEL + '/io/set_digital_output'     , SetCtrlBoxDigitalOutput)
 
         self.pub_stop = rospy.Publisher(ROBOT_ID +ROBOT_MODEL+'/stop', RobotStop, queue_size=10)
-        self.init_flange()
 
-    def init_flange(self):
-        self.srv_gripper_send_data(1, 0)
-        self.srv_gripper_send_data(2, 0)
-        self.srv_gripper_send_data(3, 0)
-        self.srv_gripper_send_data(4, 0)
-        self.srv_gripper_send_data(5, 0)
-        self.srv_gripper_send_data(6, 0)
+        self.init_tool_digital_output()
+        #self.init_ctrl_digital_output()
+    '''
+      DSR Tool(Flange) Digital Control  ###
+    '''
+    def init_tool_digital_output(self):
+        self.srv_tool_send_data(1, 0)
+        self.srv_tool_send_data(2, 0)
+        self.srv_tool_send_data(3, 0)
+        self.srv_tool_send_data(4, 0)
+        self.srv_tool_send_data(5, 0)
+        self.srv_tool_send_data(6, 0)
 
-    def close(self):
-        self.srv_gripper_send_data(3, 1)
-        self.init_flange()
+    def gripper_close(self):
+        self.srv_tool_send_data(3, 1)
+        self.init_tool_digital_output()
 
 
-    def open(self):
-        self.srv_gripper_send_data(2, 1)
-        self.init_flange()
+    def gripper_open(self):
+        self.srv_tool_send_data(2, 1)
+        self.init_tool_digital_output()
+
+    '''
+      DSR CtrlBox Digital Control
+    '''
+    def init_ctrl_digital_output(self):
+        self.srv_ctrl_send_data( 1, 0)
+        self.srv_ctrl_send_data( 2, 0)
+        self.srv_ctrl_send_data( 3, 0)
+        self.srv_ctrl_send_data( 4, 0)
+        self.srv_ctrl_send_data( 5, 0)
+        self.srv_ctrl_send_data( 6, 0)
+        self.srv_ctrl_send_data( 7, 0)
+        self.srv_ctrl_send_data( 8, 0)
+        self.srv_ctrl_send_data( 9, 0)
+        self.srv_ctrl_send_data(10, 0)
+        self.srv_ctrl_send_data(11, 0)
+        self.srv_ctrl_send_data(12, 0)
+        self.srv_ctrl_send_data(13, 0)
+        self.srv_ctrl_send_data(14, 0)
+        self.srv_ctrl_send_data(15, 0)
+        self.srv_ctrl_send_data(16, 0)
+    
+    def toolchanger_detach(self):
+        self.srv_ctrl_send_data(2, 1)
+
+    def toolchanger_attach(self):
+        self.srv_ctrl_send_data(2, 0)
+
+    def compressor_on(self):
+        self.srv_ctrl_send_data(1, 1)
+
+    def compressor_off(self):
+        self.srv_ctrl_send_data(1, 0)
+
 
     def shutdown(self):
         print "shutdown time!"
@@ -60,18 +99,37 @@ class dsrDigitalControl:
     def pnp_cb(self, msg):
         if msg.data == "close":
             print "Gripper: close"
-            self.close()
+            self.gripper_close()
             rospy.sleep(1)
         
         if msg.data == "open":
             print "Gripper: open"
-            self.open()
+            self.gripper_open()
             rospy.sleep(1)
 
+        if msg.data == "toolchanger detach":
+            print "Tool Changer: Detach"
+            self.toolchanger_detach()
+            rospy.sleep(1)
+
+        if msg.data == "toolchanger attach":
+            print "Tool Changer: Attach"
+            self.toolchanger_attach()
+            rospy.sleep(1)
+
+        if msg.data == "compressor on":
+            print "Compressor: ON"
+            self.compressor_on()
+            rospy.sleep(1)
+
+        if msg.data == "compressor off":
+            print "Compressor: OFF"
+            self.compressor_off()
+            rospy.sleep(1)
 
 if __name__ == "__main__":
 
-    gripper = dsrDigitalControl()   
+    snu_dsr_io_ctrl = dsrDigitalControl()   
     
 
     while not rospy.is_shutdown():

@@ -13,7 +13,7 @@
 
 
     <!--<node pkg="snu_doosan" type="doosan_joy_controller.py" name="joy_controller" ns="$(arg ns)" output='screen'/>-->
-    <node pkg="snu_doosan" type="snu_gripper.py" name="snu_gripper" ns="$(arg ns)" output='screen'/>
+    <node pkg="snu_doosan" type="doosan_joy_controller.py" name="snu_joy" ns="$(arg ns)" output='screen'/>
     
 
 

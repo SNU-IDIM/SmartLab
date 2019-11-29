@@ -19,7 +19,7 @@ m_joyAnalogFlag = False
 m_TxyCompareFlag = False
 m_RxyCompareFlag = False
 m_joyButtonFlag = False
-m_joyJogFlag = False
+m_joyJogFlag = 0
 m_joyJogVel = False
 DR_init.__dsr__id = NS_+'/'+ROBOT_ID_
 DR_init.__dsr__model = ROBOT_MODEL_
@@ -105,9 +105,9 @@ def joy_cb(msg):
 
 
     if msg.buttons[BOTTON_START] == 1:
-        r.movej(targetPos, 50, 50)
+        r.movej(targetPos, 30, 50)
     elif msg.buttons[BOTTON_BACK] == 1:
-        r.movej(hommingPos, 50, 50)
+        r.movej(hommingPos, 30, 50)
 
     if msg.buttons[BOTTON_UPPER_LEFT] == 1:
         pub_pnp.publish('open')
