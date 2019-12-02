@@ -15,12 +15,17 @@ NS_           = "R_001"
 ROBOT_ID_     = "dsr"
 ROBOT_MODEL_  = ""
 import DR_init
+CountThreshold = 10
 m_joyAnalogFlag = False
 m_TxyCompareFlag = False
 m_RxyCompareFlag = False
 m_joyButtonFlag = False
 m_joyJogFlag = 0
 m_joyJogVel = False
+compressor_flag = 0
+compressor_count = 0
+toolchanger_flag = 0
+toolchanger_count = 0
 DR_init.__dsr__id = NS_+'/'+ROBOT_ID_
 DR_init.__dsr__model = ROBOT_MODEL_
 from DSR_ROBOT import *
@@ -99,6 +104,10 @@ def joy_cb(msg):
     global m_joyJogVel
     global ROBOT_SPEED_LINEAR
     global ROBOT_SPEED_ANGULAR
+    global compressor_flag
+    global compressor_count
+    global toolchanger_flag
+    global toolchanger_count
 
     targetPos = [0, 0, -90, 0, -90, 0]
     hommingPos = [0, 0, 0, 0, 0, 0]
@@ -113,6 +122,28 @@ def joy_cb(msg):
         pub_pnp.publish('open')
     if msg.buttons[BOTTON_UPPER_RIGHT] == 1:
         pub_pnp.publish('close')
+
+    if msg.buttons[BOTTON_X] == 1:
+        compressor_count += 1
+        if compressor_count > CountThreshold and compressor_flag == 0:
+            pub_pnp.publish('compressor on')
+            compressor_count = 0
+            compressor_flag = 1
+        elif compressor_count > CountThreshold and compressor_flag == 1:
+            pub_pnp.publish('compressor off')
+            compressor_count = 0
+            compressor_flag = 0
+
+    if msg.buttons[BOTTON_Y] == 1:
+        compressor_count += 1
+        if compressor_count > CountThreshold and compressor_flag == 0:
+            pub_pnp.publish('toolchanger detach')
+            compressor_count = 0
+            compressor_flag = 1
+        elif compressor_count > CountThreshold and compressor_flag == 1:
+            pub_pnp.publish('toolchanger attach')
+            compressor_count = 0
+            compressor_flag = 0   
 
     if msg.buttons[BOTTON_B] == 1:
         ROBOT_SPEED_LINEAR  += 10
