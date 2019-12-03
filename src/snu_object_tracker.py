@@ -20,9 +20,14 @@ M2MM  = 1000.0
 
 AR_MARKER_FRAME_PREFIX_ = 'ar_marker_'
 AR_TARGET_FRAME_PREFIX_ = 'ar_target_'
+CAMERA_FRAME_PREFIX_    = 'camera_link'
 
-
-OFFSET_FROM_TARGET = 175.0 * MM2M # 250.0 [mm]
+OFFSET_FROM_TARGET_X  = -30    * MM2M # 보정 [mm]
+OFFSET_FROM_TARGET_Y  = -175.0 * MM2M # 250.0 [mm]
+OFFSET_FROM_TARGET_Z  = 75.0  * MM2M # [mm]
+OFFSET_FROM_TARGET_RX = 180.0
+OFFSET_FROM_TARGET_RY = -90.0
+OFFSET_FROM_TARGET_RZ = 90.0
 
 class snu_object_tracker():
     def __init__(self):
@@ -31,17 +36,27 @@ class snu_object_tracker():
         rospy.set_param("snu_object_tracker/reference_frame", 'base_0')
         rospy.set_param("snu_object_tracker/object_frame", 'ar_marker_1') # object_27
         rospy.set_param("snu_object_tracker/target_frame", 'ar_target_1') # target_27
-        rospy.set_param("snu_object_tracker/offset_from_target", OFFSET_FROM_TARGET)
+        rospy.set_param("snu_object_tracker/offset_from_target/x", OFFSET_FROM_TARGET_X)
+        rospy.set_param("snu_object_tracker/offset_from_target/y", OFFSET_FROM_TARGET_Y)
+        rospy.set_param("snu_object_tracker/offset_from_target/z", OFFSET_FROM_TARGET_Z)
+        rospy.set_param("snu_object_tracker/offset_from_target/rx", OFFSET_FROM_TARGET_RX)
+        rospy.set_param("snu_object_tracker/offset_from_target/ry", OFFSET_FROM_TARGET_RY)
+        rospy.set_param("snu_object_tracker/offset_from_target/rz", OFFSET_FROM_TARGET_RZ)
 
         self.listener = tf.TransformListener()
         self.broadcaster = tf2_ros.StaticTransformBroadcaster()
         self.static_transformStamped = TransformStamped()
 
         ### Class Variables ###
-        self.reference_frame_name = rospy.get_param("snu_object_tracker/reference_frame")
-        self.object_frame_name    = rospy.get_param("snu_object_tracker/object_frame")
-        self.target_frame_name    = rospy.get_param("snu_object_tracker/target_frame")
-        self.offset_from_target   = rospy.get_param("snu_object_tracker/offset_from_target")
+        self.reference_frame_name  = rospy.get_param("snu_object_tracker/reference_frame")
+        self.object_frame_name     = rospy.get_param("snu_object_tracker/object_frame")
+        self.target_frame_name     = rospy.get_param("snu_object_tracker/target_frame")
+        self.offset_from_target_x  = rospy.get_param("snu_object_tracker/offset_from_target/x")
+        self.offset_from_target_y  = rospy.get_param("snu_object_tracker/offset_from_target/y")
+        self.offset_from_target_z  = rospy.get_param("snu_object_tracker/offset_from_target/z")
+        self.offset_from_target_rx = rospy.get_param("snu_object_tracker/offset_from_target/rx")
+        self.offset_from_target_ry = rospy.get_param("snu_object_tracker/offset_from_target/ry")
+        self.offset_from_target_rz = rospy.get_param("snu_object_tracker/offset_from_target/rz")
         self.tags = AlvarMarkers()
         self.cmd_pose = Pose()
 
@@ -71,36 +86,51 @@ class snu_object_tracker():
         Update ROS Parameters
     '''    
     def update_ros_param(self):
-        self.object_frame_name  = rospy.get_param("snu_object_tracker/object_frame")
-        self.target_frame_name  = rospy.get_param("snu_object_tracker/target_frame")
-        self.offset_from_target = rospy.get_param("snu_object_tracker/offset_from_target")
-
+        self.object_frame_name     = rospy.get_param("snu_object_tracker/object_frame")
+        self.target_frame_name     = rospy.get_param("snu_object_tracker/target_frame")
+        self.offset_from_target_x  = rospy.get_param("snu_object_tracker/offset_from_target/x")
+        self.offset_from_target_y  = rospy.get_param("snu_object_tracker/offset_from_target/y")
+        self.offset_from_target_z  = rospy.get_param("snu_object_tracker/offset_from_target/z")
+        self.offset_from_target_rx = DEG2RAD * rospy.get_param("snu_object_tracker/offset_from_target/rx")
+        self.offset_from_target_ry = DEG2RAD * rospy.get_param("snu_object_tracker/offset_from_target/ry")
+        self.offset_from_target_rz = DEG2RAD * rospy.get_param("snu_object_tracker/offset_from_target/rz")
+        
 
     '''
         AR_Marker -> Subscribe -> Target Pose 계산 -> TF Broadcast (새로운 Frame: TARGET_FRAME)
     '''
     def ar_sub_cb(self, msg):
+        self.update_ros_param()
+
         n_tags = len(msg.markers)
         print "Number of detected tags: %d"%n_tags
-
+        
         if n_tags is not 0:
             idx = 0
             for x in msg.markers:
-                self.static_transformStamped.header.stamp    = rospy.Time.now()
+                # self.static_transformStamped.header.stamp    = msg.header.stamp
+                # self.static_transformStamped.header.frame_id = CAMERA_FRAME_PREFIX_
+                # self.static_transformStamped.child_frame_id  = AR_MARKER_FRAME_PREFIX_ + str(msg.markers[idx].id)
+                # self.static_transformStamped.transform.translation.x = msg.markers[idx].pose.pose.position.x
+                # self.static_transformStamped.transform.translation.y = msg.markers[idx].pose.pose.position.y
+                # self.static_transformStamped.transform.translation.z = msg.markers[idx].pose.pose.position.z
+                # self.static_transformStamped.transform.rotation.x = msg.markers[idx].pose.pose.orientation.x
+                # self.static_transformStamped.transform.rotation.y = msg.markers[idx].pose.pose.orientation.y
+                # self.static_transformStamped.transform.rotation.z = msg.markers[idx].pose.pose.orientation.z
+                # self.static_transformStamped.transform.rotation.w = msg.markers[idx].pose.pose.orientation.w
+                # self.broadcaster.sendTransform(self.static_transformStamped)
+
+                self.static_transformStamped.header.stamp    = msg.header.stamp
                 self.static_transformStamped.header.frame_id = AR_MARKER_FRAME_PREFIX_ + str(msg.markers[idx].id)
                 self.static_transformStamped.child_frame_id  = AR_TARGET_FRAME_PREFIX_ + str(msg.markers[idx].id)
-            
-                self.static_transformStamped.transform.translation.x = 0.0
-                self.static_transformStamped.transform.translation.y = 0.0
-                self.static_transformStamped.transform.translation.z = OFFSET_FROM_TARGET
-            
-                quat = tf.transformations.quaternion_from_euler(math.pi, 0.0, math.pi/2.0)
+                self.static_transformStamped.transform.translation.x = 0.0 + self.offset_from_target_x
+                self.static_transformStamped.transform.translation.y = 0.0 + self.offset_from_target_y
+                self.static_transformStamped.transform.translation.z = 0.0 + self.offset_from_target_z
+                quat = tf.transformations.quaternion_from_euler(self.offset_from_target_rx, self.offset_from_target_ry, self.offset_from_target_rz)
                 self.static_transformStamped.transform.rotation.x = quat[0]
                 self.static_transformStamped.transform.rotation.y = quat[1]
                 self.static_transformStamped.transform.rotation.z = quat[2]
                 self.static_transformStamped.transform.rotation.w = quat[3]
-                #print "%s"%self.static_transformStamped
-
                 self.broadcaster.sendTransform(self.static_transformStamped)
 
                 idx += 1
