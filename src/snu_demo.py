@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import rospy, sys, numpy as np
+import rospy, sys, os, numpy as np
 import moveit_commander
 import timeit
 from math import pi
@@ -18,6 +18,16 @@ from dsr_msgs.msg import RobotState
 from ar_track_alvar_msgs.msg import AlvarMarkers
 from tf.transformations import *
 
+sys.dont_write_bytecode = True
+HOME_DIR = os.getenv('HOME')
+sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__),"%s/catkin_ws/src/doosan-robot/common/imp"%HOME_DIR)) )
+NS_           = "R_001"
+ROBOT_ID_     = "dsr"
+ROBOT_MODEL_  = ""
+import DR_init
+DR_init.__dsr__id = NS_+'/'+ROBOT_ID_
+DR_init.__dsr__model = ROBOT_MODEL_
+from DSR_ROBOT import *
 
 TASK_POINTING  = 'pointing'
 TASK_ARM_PICK  = '3.0'
@@ -28,7 +38,10 @@ PICK_3DP = '3dp'
 DISTANCE_AWAY_FROM_TARGET = 0.2
 
 EPSILON = 0.0000001
-DEG2RAD = 3.141592 / 180.0
+DEG2RAD = math.pi / 180.0
+RAD2DEG = 180.0 / math.pi
+M2MM = 1000.0
+MM2M = 1.0/1000.0
 
 ROLL = 180.0 * DEG2RAD
 PITCH = 0.0 * DEG2RAD
@@ -42,7 +55,8 @@ Q4 = [0.0*DEG2RAD,    0.0*DEG2RAD,    -90.0*DEG2RAD,    0.0*DEG2RAD,    -90.0*DE
 Q5 = [-5.993828130492754e-05, 0.3384384062003861, -1.574394656901861, 9.300767452392647e-05, -1.9054921594259837, 0.00014209506981415032]
 Q_SEARCH_RIGHT = [-1.587211119647868, 0.04192579550122713, -2.42067574545383, 0.02488730488522477, 0.060036456046744055, 5.683802467473106e-05]
 Q_SEARCH_LEFT  = [1.587211119647868, 0.04192579550122713, -2.42067574545383, 0.02488730488522477, 0.060036456046744055, 5.683802467473106e-05]
-Q_SEARCH_FRONT = [-1.446786054922736e-05, 0.027945706128801793, -2.218057389714517, 0.0003746142439329825, -0.26345715564347066, -2.841901233736553e-05]
+Q_SEARCH_FRONT = [0.006254249687429258, 0.0706465647310261, -1.8816342308005074, -0.009305934771632234, -0.518931153024292, 0.012760136888951999]
+
 #Q_SEARCH_RIGHT = [-0.021912608043065707, 0.3745233068645807, -2.515318099008636, -0.0016689710660107685, -0.9671584417422292, 0.00014467861565142695]
 
 
@@ -80,6 +94,7 @@ class MoveGroupPythonInteface(object):
     self.start_pose = Pose()
     self.target_pose = Pose()
     self.artag = AlvarMarkers()
+    self.target_pose_dsr = [-600.0, 0.0, 600.0, -180.0, 0.0, 180.0]
     
     self.dsr_status = rospy.Publisher('ur_status', URStatus, queue_size=1)
     self.pnp_pub = rospy.Publisher('ur_pnp', String, queue_size=1)
@@ -142,6 +157,8 @@ class MoveGroupPythonInteface(object):
     self.target_pose.orientation.y = msg.orientation.y
     self.target_pose.orientation.z = msg.orientation.z
     self.target_pose.orientation.w = msg.orientation.w
+    
+    self.Pose_to_DSR()
     ##q1 = []
     ##q1.append(self.target_pose.orientation.x)
     ##q1.append(self.target_pose.orientation.y)
@@ -161,7 +178,18 @@ class MoveGroupPythonInteface(object):
     ##self.target_pose.orientation.z = q3[2]
     ##self.target_pose.orientation.w = q3[3]
   
-  
+  def Pose_to_DSR(self):
+
+    pos = [self.target_pose.position.x *M2MM, self.target_pose.position.y *M2MM, self.target_pose.position.z *M2MM]
+    q = (self.target_pose.orientation.x, self.target_pose.orientation.y, self.target_pose.orientation.z, self.target_pose.orientation.w)
+    euler = euler_from_quaternion(q)
+    rot =  [euler[0] * RAD2DEG, euler[1] * RAD2DEG, euler[2] * RAD2DEG]
+
+    self.target_pose_dsr = [pos[0], pos[1], pos[2], rot[2], rot[1], rot[0]]
+    print(self.target_pose_dsr)
+    print(self.target_pose_dsr)
+    print(self.target_pose_dsr)
+
   def wait_for_complete_motion(self):
     rospy.sleep(1)
     while self.dsr_flag == 2:
@@ -240,9 +268,6 @@ class MoveGroupPythonInteface(object):
       waypoints = []
       self.start_pose = self.group.get_current_pose(self.end_effector_link).pose
       waypoints.append(deepcopy(self.start_pose))
-      self.target_pose.position.z += 0.05
-      waypoints.append(deepcopy(self.target_pose))
-      self.target_pose.position.z -= 0.05
       waypoints.append(deepcopy(self.target_pose))
       self.group.set_start_state_to_current_state()
       plan, fraction = self.group.compute_cartesian_path(waypoints, 0.01, 0.0, True)
@@ -255,6 +280,10 @@ class MoveGroupPythonInteface(object):
 
       self.moveit_joint_cmd(Q5)
       self.wait_for_complete_motion()
+
+      #movel(self.target_pose_dsr, vel=30, acc=60, ref=DR_BASE)
+
+
 
     if(self.start_flag == TASK_ARM_PICK):
       self.moveit_joint_cmd(Q_SEARCH_RIGHT)
