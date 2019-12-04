@@ -24,7 +24,7 @@ CAMERA_FRAME_PREFIX_    = 'camera_link'
 
 OFFSET_FROM_TARGET_X  = -30    * MM2M # 보정 [mm]
 OFFSET_FROM_TARGET_Y  = -175.0 * MM2M # 250.0 [mm]
-OFFSET_FROM_TARGET_Z  = 75.0  * MM2M # [mm]
+OFFSET_FROM_TARGET_Z  = 55.0  * MM2M # [mm]
 OFFSET_FROM_TARGET_RX = 180.0
 OFFSET_FROM_TARGET_RY = -90.0
 OFFSET_FROM_TARGET_RZ = 90.0
@@ -34,8 +34,8 @@ class snu_object_tracker():
         rospy.init_node('snu_obejct_tracker', anonymous=True)
         
         rospy.set_param("snu_object_tracker/reference_frame", 'base_0')
-        rospy.set_param("snu_object_tracker/object_frame", 'ar_marker_1') # object_27
-        rospy.set_param("snu_object_tracker/target_frame", 'ar_target_1') # target_27
+        rospy.set_param("snu_object_tracker/object_frame", 'ar_marker_0') # object_27
+        rospy.set_param("snu_object_tracker/target_frame", 'ar_target_0') # target_27
         rospy.set_param("snu_object_tracker/offset_from_target/x", OFFSET_FROM_TARGET_X)
         rospy.set_param("snu_object_tracker/offset_from_target/y", OFFSET_FROM_TARGET_Y)
         rospy.set_param("snu_object_tracker/offset_from_target/z", OFFSET_FROM_TARGET_Z)

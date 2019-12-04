@@ -225,16 +225,19 @@ class MoveGroupPythonInteface(object):
   def pnp_cb(self,msg):
     print(msg.data)
     self.start_flag = msg.data
-
+    ### Init Pose ###
     if(self.start_flag=="0.0"):
       self.moveit_joint_cmd(Q0)
 
+    ### Left Swing ###
     if(self.start_flag=="1.0"):
       self.moveit_joint_cmd(Q1)
 
+    ### Right Swing ###
     if(self.start_flag=="-1.0"):
       self.moveit_joint_cmd(Q2)
 
+    ### Pointing the Object (Target pose) ###
     if(self.start_flag==TASK_POINTING):
       self.moveit_joint_cmd(Q_SEARCH_FRONT)
       self.wait_for_complete_motion()
@@ -255,6 +258,7 @@ class MoveGroupPythonInteface(object):
       self.moveit_joint_cmd(Q5)
       self.wait_for_complete_motion()
 
+    ### Picking the 3D Printer Workpiece ###
     if(self.start_flag == PICK_3DP):
       self.moveit_joint_cmd(Q_SEARCH_FRONT)
       self.wait_for_complete_motion()
@@ -268,6 +272,9 @@ class MoveGroupPythonInteface(object):
       waypoints = []
       self.start_pose = self.group.get_current_pose(self.end_effector_link).pose
       waypoints.append(deepcopy(self.start_pose))
+      self.target_pose.position.x += 0.2
+      waypoints.append(deepcopy(self.target_pose))
+      self.target_pose.position.x -= 0.2
       waypoints.append(deepcopy(self.target_pose))
       self.group.set_start_state_to_current_state()
       plan, fraction = self.group.compute_cartesian_path(waypoints, 0.01, 0.0, True)
@@ -277,6 +284,19 @@ class MoveGroupPythonInteface(object):
 
       self.pnp_pub.publish('close')
       self.wait_for_complete_motion()
+      
+      waypoints = []
+      self.start_pose = self.group.get_current_pose(self.end_effector_link).pose
+      waypoints.append(deepcopy(self.start_pose))
+      self.start_pose.position.z += 0.05
+      waypoints.append(deepcopy(self.start_pose))
+      self.start_pose.position.x += 0.25
+      waypoints.append(deepcopy(self.start_pose))
+      self.group.set_start_state_to_current_state()
+      plan, fraction = self.group.compute_cartesian_path(waypoints, 0.01, 0.0, True)
+      if 1-fraction < 0.2:
+         self.group.execute(plan)
+      self.wait_for_complete_motion()
 
       self.moveit_joint_cmd(Q5)
       self.wait_for_complete_motion()
@@ -284,7 +304,7 @@ class MoveGroupPythonInteface(object):
       #movel(self.target_pose_dsr, vel=30, acc=60, ref=DR_BASE)
 
 
-
+    ### Picking the object in the right side ###
     if(self.start_flag == TASK_ARM_PICK):
       self.moveit_joint_cmd(Q_SEARCH_RIGHT)
       self.wait_for_complete_motion()
@@ -314,7 +334,7 @@ class MoveGroupPythonInteface(object):
       self.moveit_joint_cmd(Q5)
       self.wait_for_complete_motion()
 
-
+    ### Placing the object to the target in the right side ###
     if(self.start_flag == TASK_ARM_PLACE):
       self.moveit_joint_cmd(Q_SEARCH_RIGHT)
       self.wait_for_complete_motion()
