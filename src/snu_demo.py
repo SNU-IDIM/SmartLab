@@ -223,6 +223,7 @@ class MoveGroupPythonInteface(object):
     self.group.execute(plan)
 
   def pnp_cb(self,msg):
+    set_robot_mode(ROBOT_MODE_AUTONOMOUS)
     print(msg.data)
     self.start_flag = msg.data
     ### Init Pose ###
@@ -374,6 +375,7 @@ class MoveGroupPythonInteface(object):
       
       self.moveit_joint_cmd(Q5)
       self.wait_for_complete_motion()
+    set_robot_mode(ROBOT_MODE_AUTONOMOUS)
     
   
 

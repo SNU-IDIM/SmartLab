@@ -114,9 +114,13 @@ def joy_cb(msg):
 
 
     if msg.buttons[BOTTON_START] == 1:
+        set_robot_mode(ROBOT_MODE_AUTONOMOUS)
         r.movej(targetPos, 30, 50)
+        set_robot_mode(ROBOT_MODE_MANUAL)
     elif msg.buttons[BOTTON_BACK] == 1:
+        set_robot_mode(ROBOT_MODE_AUTONOMOUS)
         r.movej(hommingPos, 30, 50)
+        set_robot_mode(ROBOT_MODE_MANUAL)
 
     if msg.buttons[BOTTON_UPPER_LEFT] == 1:
         pub_pnp.publish('open')
