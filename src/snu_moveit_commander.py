@@ -81,7 +81,7 @@ class MoveGroupPythonInteface(object):
 
     ## First initialize `moveit_commander`_ and a `rospy`_ node:
     moveit_commander.roscpp_initialize(sys.argv)
-    rospy.init_node('snu_dsr_controller', anonymous=True)
+    rospy.init_node('snu_moveit_commander', anonymous=True)
 
     group_name = "arm"
     #reference_frame = "/base_link"

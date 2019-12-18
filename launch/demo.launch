@@ -3,20 +3,17 @@
     <arg name="ns" value="R_001"/>
     <arg name="prefix_ns" value="R_001/dsr"/>
 
-
 <!-- 
 ##############################################################################################################
     SNU-ASMR 데모1 실행: Cube(ar_marker_1 on top) Pick and Place (Single AR Marker)
         - launch 1. snu_doosan/launch/realsense_setup.launch.xml
         - launch 2. snu_doosan/launch/ar_tracker_single.launch.xml
-        - node 1.   snu_doosan/snu_dsr_controller.py
-        - node 2.   snu_doosan/snu_object_tracker.py // (*) offset unit -> [m], [deg]
+        - node 1.   snu_doosan/snu_object_tracker.py // (*) offset unit -> [m], [deg]
 ##############################################################################################################
 -->
     <include file="$(find snu_doosan)/launch/realsense_setup.launch.xml" ns="$(arg ns)"/>
     <include file="$(find snu_doosan)/launch/ar_tracker_single.launch.xml" ns="$(arg ns)"/>
 
-    <node pkg="snu_doosan" type="snu_dsr_controller.py" name="snu_dsr_demo" ns="$(arg ns)" output='screen'/>
     <node pkg="snu_doosan" type="snu_object_tracker.py" name="snu_object_tracker" ns="$(arg ns)" output='screen'>
         <param name="reference_frame"       value="base_0"/>
         <param name="object_frame"          value="ar_marker_1"/>
@@ -36,14 +33,12 @@
     SNU-ASMR 데모2 실행: Grasping an Object on the 3DP Printing-bed (Bundle AR Markers)
         - launch 1. snu_doosan/launch/realsense_setup.launch.xml
         - launch 2. snu_doosan/launch/ar_tracker_bundle.launch.xml
-        - node 1.   snu_doosan/snu_dsr_controller.py
-        - node 2.   snu_doosan/snu_object_tracker.py // (*) offset unit -> [m], [deg]
+        - node 1.   snu_doosan/snu_object_tracker.py // (*) offset unit -> [m], [deg]
 ##############################################################################################################  
 -->
     <!--<include file="$(find snu_doosan)/launch/realsense_setup.launch.xml" ns="$(arg ns)"/>
     <include file="$(find snu_doosan)/launch/ar_tracker_bundles.launch.xml" ns="$(arg ns)"/>
 
-    <node pkg="snu_doosan" type="snu_dsr_controller.py" name="snu_dsr_demo" ns="$(arg ns)" output='screen'/>
     <node pkg="snu_doosan" type="snu_object_tracker.py" name="snu_object_tracker" ns="$(arg ns)" output='screen'>
         <param name="reference_frame"       value="base_0"/>
         <param name="object_frame"          value="ar_marker_0"/>
@@ -83,13 +78,13 @@
 
     <!--<include file="$(find snu_doosan)/launch/ar_tracker_alvar.launch.xml" ns="$(arg ns)"/>-->
     
-    <!--<node pkg="snu_doosan" type="snu_dsr_controller.py" name="snu_dsr_controller" ns="$(arg ns)" output='screen'/>-->
+    <!--<node pkg="snu_doosan" type="snu_moveit_commander.py" name="snu_moveit_commander" ns="$(arg ns)" output='screen'/>-->
 
     <!--<include file="$(find snu_doosan)/launch/dsr_moveit.launch" ns="$(arg ns)"/>
     <include file="$(find rospy_websocker_client)/launch/Publisher.launch" ns="$(arg ns)"/>
     <include file="$(find rospy_websocker_client)/launch/Subscriber.launch" ns="$(arg ns)"/>
-    <node pkg="snu_doosan" type="snu_dsr_controller.py" name="snu_dsr_controller" ns="$(arg ns)"/>
-    <node pkg="snu_doosan" type="snu_dsr_gripper.py" name="snu_dsr_gripper" ns="$(arg ns)"/>
+    <node pkg="snu_doosan" type="snu_moveit_commander.py" name="snu_moveit_commander" ns="$(arg ns)"/>
+    <node pkg="snu_doosan" type="snu_dsr_digital_io_controller.py" name="snu_dsr_digital_io_controller" ns="$(arg ns)"/>
     <node pkg="snu_doosan" type="snu_dsr_joy.py" name="snu_dsr_joy" ns="$(arg ns)"/>-->
 
 
