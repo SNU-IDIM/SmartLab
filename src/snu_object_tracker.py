@@ -22,41 +22,32 @@ AR_MARKER_FRAME_PREFIX_ = 'ar_marker_'
 AR_TARGET_FRAME_PREFIX_ = 'ar_target_'
 CAMERA_FRAME_PREFIX_    = 'camera_link'
 
-OFFSET_FROM_TARGET_X  = -30    * MM2M # 보정 [mm]
-OFFSET_FROM_TARGET_Y  = -175.0 * MM2M # 250.0 [mm]
-OFFSET_FROM_TARGET_Z  = 55.0  * MM2M # [mm]
+OFFSET_FROM_TARGET_X  = 0.0    * MM2M # 보정 [mm]
+OFFSET_FROM_TARGET_Y  = 0.0 * MM2M # 250.0 [mm]
+OFFSET_FROM_TARGET_Z  = 175.0 * MM2M # [mm]
 OFFSET_FROM_TARGET_RX = 180.0
-OFFSET_FROM_TARGET_RY = -90.0
+OFFSET_FROM_TARGET_RY = 0.0
 OFFSET_FROM_TARGET_RZ = 90.0
+
 
 class snu_object_tracker():
     def __init__(self):
         rospy.init_node('snu_obejct_tracker', anonymous=True)
         
-        rospy.set_param("snu_object_tracker/reference_frame", 'base_0')
-        rospy.set_param("snu_object_tracker/object_frame", 'ar_marker_0') # object_27
-        rospy.set_param("snu_object_tracker/target_frame", 'ar_target_0') # target_27
-        rospy.set_param("snu_object_tracker/offset_from_target/x", OFFSET_FROM_TARGET_X)
-        rospy.set_param("snu_object_tracker/offset_from_target/y", OFFSET_FROM_TARGET_Y)
-        rospy.set_param("snu_object_tracker/offset_from_target/z", OFFSET_FROM_TARGET_Z)
-        rospy.set_param("snu_object_tracker/offset_from_target/rx", OFFSET_FROM_TARGET_RX)
-        rospy.set_param("snu_object_tracker/offset_from_target/ry", OFFSET_FROM_TARGET_RY)
-        rospy.set_param("snu_object_tracker/offset_from_target/rz", OFFSET_FROM_TARGET_RZ)
-
         self.listener = tf.TransformListener()
         self.broadcaster = tf2_ros.StaticTransformBroadcaster()
         self.static_transformStamped = TransformStamped()
 
         ### Class Variables ###
-        self.reference_frame_name  = rospy.get_param("snu_object_tracker/reference_frame")
-        self.object_frame_name     = rospy.get_param("snu_object_tracker/object_frame")
-        self.target_frame_name     = rospy.get_param("snu_object_tracker/target_frame")
-        self.offset_from_target_x  = rospy.get_param("snu_object_tracker/offset_from_target/x")
-        self.offset_from_target_y  = rospy.get_param("snu_object_tracker/offset_from_target/y")
-        self.offset_from_target_z  = rospy.get_param("snu_object_tracker/offset_from_target/z")
-        self.offset_from_target_rx = rospy.get_param("snu_object_tracker/offset_from_target/rx")
-        self.offset_from_target_ry = rospy.get_param("snu_object_tracker/offset_from_target/ry")
-        self.offset_from_target_rz = rospy.get_param("snu_object_tracker/offset_from_target/rz")
+        self.reference_frame_name  = rospy.get_param("snu_object_tracker/reference_frame",      'base_0')
+        self.object_frame_name     = rospy.get_param("snu_object_tracker/object_frame",         'ar_marker_0')
+        self.target_frame_name     = rospy.get_param("snu_object_tracker/target_frame",         'ar_target_0')
+        self.offset_from_target_x  = rospy.get_param("snu_object_tracker/offset_from_target/x",  OFFSET_FROM_TARGET_X)
+        self.offset_from_target_y  = rospy.get_param("snu_object_tracker/offset_from_target/y",  OFFSET_FROM_TARGET_Y)
+        self.offset_from_target_z  = rospy.get_param("snu_object_tracker/offset_from_target/z",  OFFSET_FROM_TARGET_Z)
+        self.offset_from_target_rx = rospy.get_param("snu_object_tracker/offset_from_target/rx", OFFSET_FROM_TARGET_RX)
+        self.offset_from_target_ry = rospy.get_param("snu_object_tracker/offset_from_target/ry", OFFSET_FROM_TARGET_RY)
+        self.offset_from_target_rz = rospy.get_param("snu_object_tracker/offset_from_target/rz", OFFSET_FROM_TARGET_RZ)
         self.tags = AlvarMarkers()
         self.cmd_pose = Pose()
 
@@ -176,7 +167,7 @@ class snu_object_tracker():
                 print(self.cmd_pose)
 
             except (tf.Exception):
-                print "[ERROR]: The Object(TF) is not Detected !!!"
+                print "[ERROR]: The Target(TF) is not Detected !!!"
                 pass
             return 1
         else:

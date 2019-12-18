@@ -16,7 +16,7 @@
 
     <!-- trajectory controller, joint_state 실행  -->
     <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
-          output="screen" ns="$(arg ns)" args="dsr_joint_trajectory_controller dsr_joint_publisher">
+          output="screen" ns="$(arg ns)" args="dsr_joint_trajectory_controller dsr_joint_publisher"> <!-- dsr_joint_position_controller -->
     </node>
 
     <!-- moveit은 멀티 arm이 안되므로 model은 참조용으로 사용 -->
