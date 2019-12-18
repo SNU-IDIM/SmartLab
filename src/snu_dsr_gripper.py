@@ -23,7 +23,7 @@ from DSR_ROBOT import *
 
 class dsrDigitalControl:
     def __init__(self):
-        rospy.init_node('snu_gripper', anonymous=True)
+        rospy.init_node('snu_dsr_gripper', anonymous=True)
         rospy.on_shutdown(self.shutdown)
         
         rospy.Subscriber('ur_pnp', String, self.pnp_cb, queue_size=1)

@@ -32,7 +32,7 @@ test = JointState()
 
 class SNUDSR:
     def __init__(self):
-        rospy.init_node('dsr_simple_test_py')
+        rospy.init_node('unity_dsr_simple_test_py')
         rospy.on_shutdown(self.shutdown)
         self.target_joint_states = Float64MultiArray()
         

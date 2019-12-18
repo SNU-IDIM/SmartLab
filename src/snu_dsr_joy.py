@@ -251,7 +251,7 @@ def joy_cb(msg):
 
 
 if __name__ == "__main__":
-    rospy.init_node('dsr_joystick_control')
+    rospy.init_node('snu_dsr_joy')
     rospy.on_shutdown(shutdown)
 
     #t1 = threading.Thread(target=thread_subscriber)
