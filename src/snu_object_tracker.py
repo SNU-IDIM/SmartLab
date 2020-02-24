@@ -64,8 +64,8 @@ class snu_object_tracker():
         변환: (trans, rot) -> geometry_msgs/Pose
     '''
     def update_cmd_pose(self, trans, rot):
-        self.cmd_pose.position.x    = trans[0] - 0.020 # 보정 @(arm -> 측면)
-        self.cmd_pose.position.y    = trans[1]# - 0.020 # 보정 @(arm -> 정면)
+        self.cmd_pose.position.x    = trans[0] # 보정 @(arm -> 측면)
+        self.cmd_pose.position.y    = trans[1] # 보정 @(arm -> 정면)
         self.cmd_pose.position.z    = trans[2]
         self.cmd_pose.orientation.x = rot[0]
         self.cmd_pose.orientation.y = rot[1]
