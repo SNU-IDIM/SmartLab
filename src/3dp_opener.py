@@ -21,7 +21,13 @@ from ar_track_alvar_msgs.msg import AlvarMarkers
 import tf
 from tf.transformations import *
 import cv2 as cv2
+import copy
 
+from std_msgs.msg import String
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge, CvBridgeError
+import pyrealsense2 as rs
+from distutils.version import LooseVersion
 
 sys.dont_write_bytecode = True
 HOME_DIR = os.getenv('HOME')
@@ -58,11 +64,9 @@ def MM2M(milimeter):
     return (1.0/1000.0)*milimeter
 
 
-# Q0 = [0.0,    0.0,    -90.0,    0.0,    -90.0,    0.0]
+#Q0 = [0.0,    0.0,    -90.0,    0.0,    -90.0,    0.0]
 Q0 = [8.031315803527832, 27.553855895996094, -110.20037841796875, 1.7169572114944458, -96.97026062011719, 10.950394630432129]
-Q_SEARCH_RIGHT = [-1.587211119647868, 0.04192579550122713, -2.42067574545383, 0.02488730488522477, 0.060036456046744055, 5.683802467473106e-05]
-Q_SEARCH_LEFT  = [1.587211119647868, 0.04192579550122713, -2.42067574545383, 0.02488730488522477, 0.060036456046744055, 5.683802467473106e-05]
-Q_SEARCH_FRONT = [0.006254249687429258, 0.0706465647310261, -1.8816342308005074, -0.009305934771632234, -0.518931153024292, 0.012760136888951999]
+#Q0 = [-35.86109161376953, -12.6979341506958, -123.48367309570312, -118.48633575439453, -64.00657653808594, 142.61135864257812]
 
 #Q_SEARCH_RIGHT = [-0.021912608043065707, 0.3745233068645807, -2.515318099008636, -0.0016689710660107685, -0.9671584417422292, 0.00014467861565142695]
 
@@ -102,6 +106,61 @@ class DRLInterface():
         self.listener = tf.TransformListener()
         rospy.Subscriber('/R_001/ur_pnp', String, self.pnp_cb, queue_size=1) #trigger
         self.pnp_pub = rospy.Publisher('/R_001/ur_pnp', String, queue_size=1)
+#########################
+        self.bridge = CvBridge()
+        self.image_sub = rospy.Subscriber("/R_001/camera/color/image_raw",Image,self.vision_cb)
+
+    def vision_cb(self,data):
+        try:
+            self.cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+            # print('cv_image_type',self.cv_image)
+        except CvBridgeError as e:
+            print(e)
+        # cv2.imshow('image', self.cv_image)
+        # cv2.waitKey(1)
+    
+    def threshold(self):
+        blue_thres_up = 90
+        blue_thres_down = 70
+
+        green_thres_up = 100
+        green_thres_down = 70
+
+        red_thres_up = 255
+        red_thres_down = 235
+
+        bgr_thres_up = [blue_thres_up, green_thres_up, red_thres_up]
+        bgr_thres_down = [blue_thres_down, green_thres_down, red_thres_down]
+        self.color_im_c = copy.deepcopy(self.cv_image)
+        cv2.imshow('image copy', self.color_im_c)
+        pixel_x = []
+        pixel_y = []
+        pixel_val = []
+        for x in range(0,np.size(self.color_im_c,0)): ##size is 480
+                for y in range(0,np.size(self.color_im_c,1)): ##size is 640
+                    if(self.color_im_c[x, y, 0] > bgr_thres_down[0] and self.color_im_c[x,y, 0] < bgr_thres_up[0] and
+                        self.color_im_c[x,y,1] > bgr_thres_down[1] and self.color_im_c[x,y, 1] < bgr_thres_up[1] and
+                        self.color_im_c[x,y,2] > bgr_thres_down[2] and self.color_im_c[x,y, 2] < bgr_thres_up[2] ):
+                        temp = [x,y]
+                        pixel_x.append(x)
+                        pixel_y.append(y)
+                        pixel_val.append(temp)
+        try:
+            x_min = min(pixel_y)
+            x_max = max(pixel_y)
+            y_min = min(pixel_x)
+            y_max = max(pixel_x)
+            print('xmin is',x_min)
+            self.xcenter = (x_min +x_max)/2
+            self.ycenter = (y_min +y_max)/2
+            
+            cv2.line(self.color_im_c, (x_min,y_min), (x_min,y_max), (0, 255, 0), 3)
+            cv2.line(self.color_im_c, (x_min,y_min), (x_max,y_min), (0, 255, 0), 3)
+            cv2.line(self.color_im_c, (x_min,y_max), (x_max,y_max), (0, 255, 0), 3)
+            cv2.line(self.color_im_c, (x_max,y_min), (x_max,y_max), (0, 255, 0), 3)
+
+        except IndexError as e:
+            print('Index Error')
 
     def update_cmd_pose(self, trans, rot):
         self.target_pose.position.x    = M2MM(trans[0])# + self.offset_x) # 보정 @(arm -> 측면)
@@ -160,28 +219,55 @@ class DRLInterface():
     def movel_z(self, distance): # distance [m]
         movel(posx(0, 0, M2MM(distance), 0, 0, 0), vel=[50,10], acc=[50,10], ref=DR_TOOL, mod=DR_MV_MOD_REL)
 
-
     def pnp_cb(self, msg):
         self.start_flag = msg.data
         
         if(self.start_flag=="approach"):
+            Q0 = [-35.86109161376953, -12.6979341506958, -123.48367309570312, -118.48633575439453, -64.00657653808594, 142.61135864257812]
             movej(Q0, 50, 50) # Search pose
             #self.pnp_pub.publish("open")
-
-            self.UpdateParam(0.0, -0.12, 0.2)
+            self.UpdateParam(0.0, -0.12, 0.25)
             self.search_target()
             movel(self.drl_pose, vel=[100,50], acc=[100,50]) # 1st approach
             self.search_target()
             movel(self.drl_pose, vel=[100,50], acc=[100,50]) # 2nd approach
-
-        if(self.start_flag=="engage"):
-            self.UpdateParam(0.0, 0.0, 0.2)
             self.search_target()
-            movel(self.drl_pose, vel=[100,30], acc=[100,30]) # alignment: tool - target
+            movel(self.drl_pose, vel=[100,50], acc=[100,50]) # 2nd approach
+            self.movel_z(-0.05)
+            movel([0,0,-50,0,0,0],vel=[100,50], acc=[100,50],mod =1)
+            
+            self.threshold()
+            cv2.namedWindow('ROI', cv2.WINDOW_NORMAL)
+            cv2.imshow('ROI', self.color_im_c)
+            cv2.waitKey(1)
+            self.camcenter = [320,240]
+            self.mmperpix = 1/3.4 #[mm]
+            
+            posvect = [self.xcenter - self.camcenter[0], self.ycenter - self.camcenter[1]]
+            cam_posvect = [-posvect[1],posvect[0]]
+            self.approach1 = posx(cam_posvect[0]*self.mmperpix, cam_posvect[1]*self.mmperpix,0,0,0,0)
 
-            self.movel_z(0.030)
-            #self.pnp_pub.publish("close")
-            self.movel_z(-0.030)
+            movel(self.approach1,vel=[10,10], acc = [10,10], ref =1, mod = 1 )
+            self.threshold()
+            cv2.namedWindow('after first approach', cv2.WINDOW_NORMAL)
+            cv2.imshow('after first approach', self.color_im_c)
+            cv2.waitKey(0)
+            
+
+            
+            
+            
+            # self.UpdateParam(-0.05, -0.12, 0.35)
+            # self.search_target()
+            # movel(self.drl_pose, vel=[100,50], acc=[100,50])
+        # if(self.start_flag=="engage"):
+            # self.UpdateParam(0.05, 0.0, -0.10)
+            # self.search_target()
+            # movel(self.drl_pose, vel=[100,30], acc=[100,30]) # alignment: tool - target
+
+            # self.movel_z(0.030)
+            # #self.pnp_pub.publish("close")
+            # self.movel_z(-0.030)
 
 
 if __name__=='__main__':
