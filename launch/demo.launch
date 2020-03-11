@@ -21,6 +21,7 @@
         <param name="reference_frame"       value="base_0"/>
         <param name="object_frame"          value="ar_marker_1"/>
         <param name="target_frame"          value="ar_target_1"/>
+        <!--<param name="end_effector_frame"    value = "link6"/>-->
         <param name="offset_from_target/x"  value="0.0"/>
         <param name="offset_from_target/y"  value="0.0"/>
         <param name="offset_from_target/z"  value="0.20"/>

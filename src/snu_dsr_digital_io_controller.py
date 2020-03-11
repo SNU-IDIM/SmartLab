@@ -31,12 +31,11 @@ class dsrDigitalControl:
         self.srv_ctrl_send_data = rospy.ServiceProxy(ROBOT_ID + ROBOT_MODEL + '/io/set_digital_output'     , SetCtrlBoxDigitalOutput)
 
         self.pub_stop = rospy.Publisher(ROBOT_ID +ROBOT_MODEL+'/stop', RobotStop, queue_size=10)
-
         self.init_tool_digital_output()
-        #self.init_ctrl_digital_output()
-    '''
-      DSR Tool(Flange) Digital Control  ###
-    '''
+        self.init_ctrl_digital_output()
+        self.srv_analog_read = rospy.ServiceProxy(ROBOT_ID + ROBOT_MODEL + '/io/get_analog_input'     , GetCtrlBoxAnalogInput)
+
+
     def init_tool_digital_output(self):
         self.srv_tool_send_data(1, 0)
         self.srv_tool_send_data(2, 0)
@@ -46,14 +45,23 @@ class dsrDigitalControl:
         self.srv_tool_send_data(6, 0)
 
     def gripper_close(self):
-        self.srv_tool_send_data(3, 1)
-        self.init_tool_digital_output()
-
+        #reset digital io
+        self.srv_ctrl_send_data(13,0)
+        self.srv_ctrl_send_data(14,0)
+        
+        #send closing command
+        self.srv_ctrl_send_data(13,1)
+        self.srv_ctrl_send_data(13,0)
 
     def gripper_open(self):
-        self.srv_tool_send_data(2, 1)
-        self.init_tool_digital_output()
-
+        self.srv_ctrl_send_data(13,0)
+        self.srv_ctrl_send_data(14,0)
+        
+        #send closing command
+        self.srv_ctrl_send_data(14,1)
+        self.srv_ctrl_send_data(14,0)
+    def gripper_signal_read(self):
+        gripper_signal = self.srv_analog_read(1)
     '''
       DSR CtrlBox Digital Control
     '''
