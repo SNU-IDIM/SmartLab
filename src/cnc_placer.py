@@ -291,199 +291,107 @@ class DRLInterface():
 
 
     def pnp_cb(self, msg):
-        self.start_flag = msg.data
-        # self.threshold()
-        # cv2.namedWindow('after first approach', cv2.WINDOW_NORMAL)
-        # cv2.imshow('after first approach', self.color_im_c)
-        if(self.start_flag=="approach"):
-            Q0 = [-35.86109161376953, -12.6979341506958, -123.48367309570312, -118.48633575439453, -64.00657653808594, 142.61135864257812]
+        # self.start_flag = msg.data
+        
+        
+        ############Random Starting position 
+        Q0 = [-14.99778938293457, -23.47661781311035, -125.91959381103516, -104.70079040527344, -83.42718505859375, 150.46311950683594]
+
+        Q1 = [2.0106711387634277, -40.851829528808594, -88.14339447021484, -87.28312683105469, 83.33985137939453, 140.44129943847656]
+        movej(Q0, 50, 50) # Search pose
+        # movel(posx(0,0,0,90,0,0),vel=[30,30], acc=[30,30],ref = 1,mod =1)
+        
+        #############################Rotating with the plate in same orientation
+
+        
+        temp0 = posx(0,0,0,90,0,0)
+        temp1 = posx(0.0, 0.0, 0.0, 0.0, -90.0, 0.0)
+        
+        temp_path = [temp0, temp1, temp1]
+
+        
+
+        movesx(temp_path,vel=[30,30], acc=[30,30],ref = 0,mod = 1)
+        # movel(posx(0.0, 0.0, 0.0, 0.0, -90.0, 0.0),vel=[30,30], acc=[30,30],ref = 0,mod =1)
+
+        # movel(posx(0.0, 0.0, 0.0, 0.0, -90.0, 0.0),vel=[30,30], acc=[30,30],ref = 0,mod =1)
+        
+        self.search_target('ar_marker_0')
+        self.UpdateParam(0, 0, 0)
+
+        if not self.edrl_pose[0] ==0:
+##First Approach
+            drop_start = posx(0,0,0,0,0,0)
+            drop_start[0] = self.edrl_pose[0] 
+            drop_start[1] = self.edrl_pose[1]
+            drop_start[2] = self.edrl_pose[2] - 350
             
-            Q0 = [-14.99778938293457, -23.47661781311035, -125.91959381103516, -104.70079040527344, -83.42718505859375, 150.46311950683594]
+            movel(drop_start,vel=[30,30], acc=[30,30],ref = 1,mod =1)
+
+            print('First approach done')
+
+
+##Second Approach
+            self.search_target('ar_marker_0')
+            drop_way = posx(0,0,0,0,0,0)
+            drop_way[0] = self.edrl_pose[0] 
+            drop_way[1] = self.edrl_pose[1]
+            drop_way[2] = self.edrl_pose[2] - 350
+            movel(drop_way,vel=[170,130], acc=[70,30],ref = 1,mod =1)
+            print('Second approach done')
+
+###Going up motion
+            drop_way1 = posx(0,0,0,0,0,0)
+            drop_way1[1] = -170
+            movel(drop_way1,vel=[170,150], acc=[70,30],ref = 1,mod =1)
+##Going in motion
+            drop_way2 = posx(0,0,0,0,0,0)
+            drop_way2[2] = 270
+            movel(drop_way2,vel=[170,150], acc=[70,30],ref = 1,mod =1)
+
+###Open finger
+
+            self.pnp_pub.publish("open")
             
-            movej(Q0, 50, 50) # Search pose
-            #self.pnp_pub.publish("open")
-            self.UpdateParam(0.0, -0.12, 0.25)
-            # rospy.sleep(3)
-
-            self.search_target()
-            if not self.drl_pose[0] ==0:
-                movel(self.drl_pose, vel=[100,50], acc=[100,50]) # 1st approach
-                # rospy.sleep(3)
-                self.search_target()
-                movel(self.drl_pose, vel=[100,50], acc=[100,50]) # 2nd approach
-                # rospy.sleep(3)
-                self.search_target()
-                # self.window_drawing()
-                movel(self.drl_pose, vel=[100,50], acc=[100,50]) # 2nd approach
-                # rospy.sleep(3)
-                self.search_target()
-                # self.movel_z(-0.05)
-
-                #from here move in endeffector coordinates so that ar tag orientation is used in making circular motion
-                #moving
-                # movel([50 ,200,0,45,0,0],vel=[100,50], acc=[100,50],ref = 1)
-                # movel([0 ,0,100,0,0,45],vel=[100,50], acc=[100,50],ref = 1, mod =1)
-                self.ee2grip_z =170  #mm in ar_tag_coord
-                
-                #self.openstart = copy.deepcopy(self.edrl_pose)
-                #self.openway = copy.deepcopy(self.edrl_pose)
-                # self.openstart[0] = self.edrl_pose[0] + 50
-                # self.openstart[1] = self.edrl_pose[1] + 200
-                # self.openstart[2]= self.edrl_pose[2] - self.ee2grip_z
-                # self.openway[0] = self.edrl_pose[0] + 50
-                # self.openway[1] = self.edrl_pose[1] + 200
-                               
-                self.openway   = posx(0,0,0,0,0,0)
-                self.openstart = posx(0,0,0,0,0,0)
-                self.openend = posx(0,0,0,0,0,0)
-                
-                
-                self.openway[0] = 50
-                self.openway[1] = 150
-
-                
-                # self.openstart[0] = self.edrl_pose[0]  
-                # self.openstart[1] = self.edrl_pose[1] 
-                # self.openstart[2]= self.edrl_pose[2] -self.ee2grip_z
-                self.openstart[2]= 80
-                
-                
-                self.openend[1] = -300
-                self.openend[2] = -300
-
-                self.movelist = [self.openway, self.openstart,self.openend]
-                # self.movelist.append(self.openway)
-                # self.movelist.append(self.openstart)
-                print('the move list is', self.movelist)
-                movesx(self.movelist,vel=[100,50], acc=[100,50],ref = 1,mod =1)
-
-
-
-
-
-                movel(posx(-100,-100,250,0,-30,0), vel=[100,50], acc=[100,50],ref = 1, mod = 1) # 2nd approach
-                self.search_target('ar_marker_1')
-                print('pose from link 6 to ar tag after first searching', self.edrl_pose)                
-                
-                pick_start = posx(0,0,0,0,-10,0)
-                pick_start[0] = self.edrl_pose[0] 
-                pick_start[1] = self.edrl_pose[1]
-
-                movel(pick_start,vel=[30,30], acc=[30,30],ref = 1,mod =1)
-                self.search_target('ar_marker_1')
-
-                pick_start = posx(0,0,0,0,-20,0)
-                pick_start[0] = self.edrl_pose[0]
-                pick_start[1] = self.edrl_pose[1]
-
-
-
-
-                movel(pick_start,vel=[30,30], acc=[30,30],ref = 1,mod =1)
-                self.search_target('ar_marker_1')
-
-
-                movel(posx(-50,0,0,0,0,0),vel=[30,30], acc=[30,30],ref = 1,mod =1)
-                pick_start = posx(0,0,0,0,60,0)
-                pick_start[0] = self.edrl_pose[0]
-                pick_start[1] = self.edrl_pose[1]
-
-
-
- 
-                movel(pick_start,vel=[30,30], acc=[30,30],ref = 1,mod =1)
-                movel(posx(-178,20,0,0,0,0),vel=[30,30], acc=[30,30],ref = 1,mod =1)
-
-                #dragging
-                movel(posx(-6,0,-50,0,0,0),vel=[30,30], acc=[30,30],ref = 1,mod =1)
-                
-                #lift up
-                movel(posx(30,0,0,0,0,0),vel=[30,30], acc=[30,30],ref = 1,mod =1)
-                #rotate
-                movel(posx(0,0,0,90,0,0),vel=[30,30], acc=[30,30],ref = 1,mod =1)
-                
-                
-                ############################Rotation made
-                #move out
-                movel(posx(0,0,-70,0,0,0),vel=[30,30], acc=[30,30],ref = 1,mod =1)
-
-                #move down
-                movel(posx(0,55.5,0,0,0,0),vel=[30,30], acc=[30,30],ref = 1,mod =1)
-                #going in
-                movel(posx(0,0,70,0,0,0),vel=[30,30], acc=[30,30],ref = 1,mod =1)
-                self.pnp_pub.publish("close")
-
-                rospy.sleep(1)
-                #going out
-                movel(posx(0,0,-100,0,0,0),vel=[30,30], acc=[30,30],ref = 1,mod =1)
-                
-                #going up
-                movel(posx(0,-100,0,0,0,0),vel=[30,30], acc=[30,30],ref = 1,mod =1)
-
-                #moving towards plate
-
-                movel(posx(0,0,-700,0,0,0),vel=[100,30], acc=[30,30],ref = 1,mod =1)
-                movel(posx(250,0,0,0,0,0),vel=[100,30], acc=[30,30],ref = 1,mod =1)
-                
-
-                
-
-
-                
-
-                
-                
-                
-
-
-
-                
-                
-
-
-
-
-
-
-
-            #     print('pose from link 6 to ar tag Second searching', self.edrl_pose)                
-                
-
-                
-
-
 
 
 
             
-            # self.camcenter = [320,240]
-            # self.mmperpix = 1/3.4 #[mm]
-            
-            # posvect = [self.xcenter - self.camcenter[0], self.ycenter - self.camcenter[1]]
-            # cam_posvect = [-posvect[1],posvect[0]]
-            # self.approach1 = posx(cam_posvect[0]*self.mmperpix, cam_posvect[1]*self.mmperpix,0,0,0,0)
 
-            # movel(self.approach1,vel=[10,10], acc = [10,10], ref =1, mod = 1 )
-            
-            cv2.waitKey(0)
+            # -y 방향 170mm 이동
+            # z +270mm 이동
+# ##Third approach 
+#             self.search_target('ar_marker_0')
+#             drop_way = posx(0,0,0,0,0,0)
+#             drop_way[0] = self.edrl_pose[0] 
+#             drop_way[1] = self.edrl_pose[1]
+#             drop_way[2] = self.edrl_pose[2] - 350
+#             movel(drop_way,vel=[30,30], acc=[30,30],ref = 1,mod =1)
+#             print('Third approach done')
             
 
-            
-            
-            
-            # self.UpdateParam(-0.05, -0.12, 0.35)
-            # self.search_target()
-            # movel(self.drl_pose, vel=[100,50], acc=[100,50])
-        # if(self.start_flag=="engage"):
-            # self.UpdateParam(0.05, 0.0, -0.10)
-            # self.search_target()
-            # movel(self.drl_pose, vel=[100,30], acc=[100,30]) # alignment: tool - target
-
-            # self.movel_z(0.030)
-            # #self.pnp_pub.publish("close")
-            # self.movel_z(-0.030)
+            # self.search_target('ar_marker_0')
+            # drop_way = posx(0,0,0,0,0,0)
+            # drop_way[0] = self.edrl_pose[0] 
+            # drop_way[1] = self.edrl_pose[1]
+            # drop_way[2] = self.edrl_pose[2] - 350
+            # movel(drop_start,vel=[30,30], acc=[30,30],ref = 1,mod =1)
 
 
+
+            
+
+
+
+            # movel(self.edrl_pose, vel=[50,50], acc=[10,50],ref = 1, mod = 1) # 1st approach
+            # # rospy.sleep(3)
+            # self.search_target('ar_marker_0')
+            # movel(self.edrl_pose, vel=[50,50], acc=[50,50],ref = 1, mod = 1) # 2nd approach
+            # # rospy.sleep(3)
+            # self.search_target('ar_marker_0')
+            # movel(self.edrl_pose, vel=[50,50], acc=[50,50],ref = 1, mod = 1) # 2nd approach
+            # # rospy.sleep(3)
+            # self.search_target('ar_marker_0')
 if __name__=='__main__':
     DRLInterface()
     
