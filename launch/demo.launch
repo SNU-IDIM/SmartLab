@@ -15,12 +15,11 @@
         - node 1.   snu_doosan/snu_object_tracker.py // (*) offset unit -> [m], [deg]
 ##############################################################################################################
 -->
-<!--<node name="Sub_client" pkg="rospy_websocker_client" type="ROSClient_Subscriber.py" ns='R_001' output="screen"/>-->
-    <!--<include file="$(find snu_doosan)/launch/realsense_setup.launch.xml" ns="$(arg ns)"/>
-    <include file="$(find snu_doosan)/launch/ar_tracker_single.launch.xml" ns="$(arg ns)"/>-->
+    <include file="$(find snu_doosan)/launch/realsense_setup.launch.xml" ns="$(arg ns)"/>
+    <include file="$(find snu_doosan)/launch/ar_tracker_single.launch.xml" ns="$(arg ns)"/>
     <!--<node pkg="snu_doosan" type="drl_gripping.py" name="drl_gripping" ns="$(arg ns)" output="screen"/>-->
 
-    <!--<node pkg="snu_doosan" type="snu_object_tracker.py" name="snu_object_tracker" ns="$(arg ns)" output='screen'>
+    <node pkg="snu_doosan" type="snu_object_tracker.py" name="snu_object_tracker" ns="$(arg ns)" output='screen'>
         <param name="reference_frame"       value="base_0"/>
         <param name="object_frame"          value="ar_marker_0"/>
         <param name="target_frame"          value="ar_target_0"/>
@@ -32,7 +31,7 @@
         <param name="offset_from_target/ry" value="0.0"/>
         <param name="offset_from_target/rz" value="90.0"/>
     </node>
-    -->
+    
 
 
 

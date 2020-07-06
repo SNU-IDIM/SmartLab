@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-
 import rospy
 import os
 import threading, time
@@ -10,6 +8,7 @@ import sys
 sys.dont_write_bytecode = True
 HOME_DIR = os.getenv('HOME')
 sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__),"%s/catkin_ws/src/doosan-robot/common/imp"%HOME_DIR)) )
+sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__),"%s/catkin_ws/src/SNU_IDIM_ASMR/common/imp"%HOME_DIR)) )
 
 # for single robot 
 ROBOT_ID     = "dsr"
@@ -18,6 +17,9 @@ import DR_init
 DR_init.__dsr__id = ROBOT_ID
 DR_init.__dsr__model = ROBOT_MODEL
 from DSR_ROBOT import *
+
+from IDIM_framework import *
+
 
 class dsrDigitalControl:
     def __init__(self):
@@ -103,32 +105,32 @@ class dsrDigitalControl:
         return 0
 
     def pnp_cb(self, msg):
-        if msg.data == "close":
+        if msg.data == ACTION_IO_GRIPPER_CLOSE:
             print "Gripper: close"
             self.gripper_close()
             rospy.sleep(1)
         
-        if msg.data == "open":
+        if msg.data == ACTION_IO_GRIPPER_OPEN:
             print "Gripper: open"
             self.gripper_open()
             rospy.sleep(1)
 
-        if msg.data == "toolchanger detach":
+        if msg.data == ACTION_IO_TOOLCHANGER_DETACH:
             print "Tool Changer: Detach"
             self.toolchanger_detach()
             rospy.sleep(1)
 
-        if msg.data == "toolchanger attach":
+        if msg.data == ACTION_IO_TOOLCHANGER_ATTACH:
             print "Tool Changer: Attach"
             self.toolchanger_attach()
             rospy.sleep(1)
 
-        if msg.data == "compressor on":
+        if msg.data == ACTION_IO_COMPRESSOR_ON:
             print "Compressor: ON"
             self.compressor_on()
             rospy.sleep(1)
 
-        if msg.data == "compressor off":
+        if msg.data == ACTION_IO_COMPRESSOR_OFF:
             print "Compressor: OFF"
             self.compressor_off()
             rospy.sleep(1)

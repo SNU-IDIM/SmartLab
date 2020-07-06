@@ -1,93 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import rospy, sys, os
-import numpy as np
-import moveit_commander
-import timeit
-from math import pi
-from time import sleep
-from copy import deepcopy
-import math
-
-import moveit_msgs.msg
-from std_msgs.msg import String, Header
-from control_msgs.msg import *
-from trajectory_msgs.msg import *
-from sensor_msgs.msg import JointState, Joy
-from geometry_msgs.msg import Pose, PoseStamped, Twist, Quaternion
-from syscon_msgs.msg import URStatus
-from dsr_msgs.msg import RobotState
-from ar_track_alvar_msgs.msg import AlvarMarkers
-import tf
-from tf.transformations import *
-import cv2 as cv2
-
-
+import os, sys
 sys.dont_write_bytecode = True
 HOME_DIR = os.getenv('HOME')
-sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__),"%s/catkin_ws/src/doosan-robot/common/imp"%HOME_DIR)) )
-NS_           = "R_001"
-ROBOT_ID_     = "dsr"
-ROBOT_MODEL_  = ""
-import DR_init
-DR_init.__dsr__id = NS_+'/'+ROBOT_ID_
-DR_init.__dsr__model = ROBOT_MODEL_
-from DSR_ROBOT import *
+sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__),"%s/catkin_ws/src/SNU_IDIM_ASMR/common/imp"%HOME_DIR)) )
+from IDIM_header import *
+from IDIM_framework import *
 
-
-
-TASK_POINTING  = 'pointing'
-TASK_ARM_PICK  = '3.0'
-TASK_ARM_PLACE = '4.0'
-PICK_3DP = '3dp'
-
-
-
-EPSILON = 0.0000001
-
-def DEG2RAD(degree):
-    return (math.pi/180.0)*degree
-
-def RAD2DEG(radian):
-    return (180.0/math.pi)*radian
-
-def M2MM(meter):
-    return 1000.0*meter
-
-def MM2M(milimeter):
-    return (1.0/1000.0)*milimeter
-
-
-# Q0 = [0.0,    0.0,    -90.0,    0.0,    -90.0,    0.0]
-Q0 = [8.031315803527832, 27.553855895996094, -110.20037841796875, 1.7169572114944458, -96.97026062011719, 10.950394630432129]
-Q_SEARCH_RIGHT = [-1.587211119647868, 0.04192579550122713, -2.42067574545383, 0.02488730488522477, 0.060036456046744055, 5.683802467473106e-05]
-Q_SEARCH_LEFT  = [1.587211119647868, 0.04192579550122713, -2.42067574545383, 0.02488730488522477, 0.060036456046744055, 5.683802467473106e-05]
-Q_SEARCH_FRONT = [0.006254249687429258, 0.0706465647310261, -1.8816342308005074, -0.009305934771632234, -0.518931153024292, 0.012760136888951999]
-
-#Q_SEARCH_RIGHT = [-0.021912608043065707, 0.3745233068645807, -2.515318099008636, -0.0016689710660107685, -0.9671584417422292, 0.00014467861565142695]
-
-def all_close(goal, actual, tolerance):
-  all_equal = True
-  if type(goal) is list:
-    for index in range(len(goal)):
-      if abs(actual[index] - goal[index]) > tolerance:
-        return False
-
-  elif type(goal) is geometry_msgs.msg.PoseStamped:
-    return all_close(goal.pose, actual.pose, tolerance)
-
-  elif type(goal) is geometry_msgs.msg.Pose:
-    return all_close(pose_to_list(goal), pose_to_list(actual), tolerance)
-
-  return True
+ROS_NODE_NAME = "snu_drl_commander"
+SUB_TOPIC_1 = "ur_pnp"
+PUB_TOPIC_1 = "ur_pnp"
 
 
 class DRLInterface():
     def __init__(self):
         self.target_pose = Pose()
-        self.drl_pose = Q0
+        self.drl_pose = Q_TOP_PLATE
         self.eulerZYZ = np.zeros(3)
-        self.start_flag = '0.0'
+        self.cmd_protocol = ACTION_HOME
 
         self.offset_x = 0.0
         self.offset_y = -0.12
@@ -95,14 +25,18 @@ class DRLInterface():
 
         set_robot_mode(ROBOT_MODE_AUTONOMOUS)
         rospy.sleep(1)
-        movej(Q0, 50, 50)
+        movej(Q_TOP_PLATE, 50, 50)
 
-        rospy.init_node('snu_moveit_commander', anonymous=True)
-
+        rospy.init_node(ROS_NODE_NAME, anonymous=True)
         self.listener = tf.TransformListener()
-        rospy.Subscriber('/R_001/ur_pnp', String, self.pnp_cb, queue_size=1) #trigger
-        self.pnp_pub = rospy.Publisher('/R_001/ur_pnp', String, queue_size=1)
+        rospy.Subscriber(SUB_TOPIC_1, String, self.pnp_cb, queue_size=1)
+        self.pnp_pub = rospy.Publisher(PUB_TOPIC_1, String, queue_size=1)
 
+    '''
+        update_cmd_pose: update 'target_pose' to feed 'movel' function for Doosan-robot
+            @ input 1: geometry_msgs/Vector3 trans
+            @ input 2: geometry_msgs/Quaternion rot
+    '''
     def update_cmd_pose(self, trans, rot):
         self.target_pose.position.x    = M2MM(trans[0])# + self.offset_x) # 보정 @(arm -> 측면)
         self.target_pose.position.y    = M2MM(trans[1])# + self.offset_y) # 보정 @(arm -> 정면)
@@ -113,31 +47,33 @@ class DRLInterface():
         self.target_pose.orientation.w = rot[3]
         print(self.target_pose)
 
-
+    '''
+        updateEulZYZ: Calculate ZYZ rotation to feed 'movel' function for Doosan-robot
+    '''
     def updateEulZYZ(self):
         q_w = self.target_pose.orientation.w
         q_x = self.target_pose.orientation.x
         q_y = self.target_pose.orientation.y
         q_z = self.target_pose.orientation.z
-
         t1 = math.atan2(q_x, q_y)
         t2 = math.atan2(q_z, q_w)
-
         z1 = t2 - t1 
         y1 = 2*math.acos(math.sqrt(q_w*q_w + q_z*q_z))
         z2 = t2 + t1  
-
         self.eulerZYZ = [RAD2DEG(z1), RAD2DEG(y1), RAD2DEG(z2)]
         print('The Euler angles are calculated:', self.eulerZYZ)
 
-
-    def search_target(self):
-        print "CMDDDDDDDDDDDDDDDDD"
-        target_frame_name = 'ar_target_2'
+    '''
+        search_ar_target: lookupTransform to get AR_Target (calculated from AR_Marker)
+            @ input 1: int ar_tag_number (ex - 0, 1, 2, 3, ...)
+    '''
+    def search_ar_target(self, ar_tag_number):
+        target_frame_name = 'ar_target_' + str(ar_tag_number)
         reference_frame_name = 'base_0'
-        
+        print "Searching AR tag ..."
+        print("Target frame: "    + target_frame_name)
+        print("Reference frame: " + reference_frame_name)
         listener = tf.TransformListener()
-
         try:
             print "Trying to search the target: %s ..."%target_frame_name
             self.listener.waitForTransform(reference_frame_name, target_frame_name, rospy.Time(), rospy.Duration(1.0))
@@ -146,43 +82,104 @@ class DRLInterface():
             self.updateEulZYZ()
             self.drl_pose = deepcopy(posx(self.target_pose.position.x, self.target_pose.position.y, self.target_pose.position.z ,self.eulerZYZ[0], self.eulerZYZ[1], self.eulerZYZ[2]))
             print('Target DRL Pose: ' , self.drl_pose)
-
         except (Exception):
             print "[ERROR]: The Target(TF) is not Detected !!!"
             pass
 
+    '''
+        UpdateParam: Updating parameters for target pose w.r.t. AR_Marker
+            @ input 1: double dx [m]
+            @ input 2: double dy [m]
+            @ input 3: double dz [m]
+    '''
     def UpdateParam(self, dx, dy, dz):
         rospy.set_param('/R_001/snu_object_tracker/offset_from_target/x', dx)
         rospy.set_param('/R_001/snu_object_tracker/offset_from_target/y', dy)
         rospy.set_param('/R_001/snu_object_tracker/offset_from_target/z', dz)
         rospy.sleep(2)
     
-    def movel_z(self, distance): # distance [m]
-        movel(posx(0, 0, M2MM(distance), 0, 0, 0), vel=[50,10], acc=[50,10], ref=DR_TOOL, mod=DR_MV_MOD_REL)
+
+    '''
+        Doosan-robot Relative Move (translation in x, y, z [mm])
+            @ input 1: double distance [mm]
+    '''
+    def movel_x(self, distance): # distance [mm]
+        movel(posx(distance, 0, 0, 0, 0, 0), vel=[50,10], acc=[50,10], ref=DR_TOOL, mod=DR_MV_MOD_REL)
+    def movel_y(self, distance): # distance [mm]
+        movel(posx(0, distance, 0, 0, 0, 0), vel=[50,10], acc=[50,10], ref=DR_TOOL, mod=DR_MV_MOD_REL)
+    def movel_z(self, distance): # distance [mm]
+        movel(posx(0, 0, distance, 0, 0, 0), vel=[50,10], acc=[50,10], ref=DR_TOOL, mod=DR_MV_MOD_REL)
 
 
-    def pnp_cb(self, msg):
-        self.start_flag = msg.data
+    '''
+        "~/ur_pnp" Topic Protocol (for Doosan-robot control)
         
-        if(self.start_flag=="approach"):
-            movej(Q0, 50, 50) # Search pose
-            #self.pnp_pub.publish("open")
+        Naming rules:
+            @ 정의된 숫자 순서에 맞는 위치에 정의 (오름차순)
+            @ ACTION_[이름 정의(대문자)] : 0.0  ~ 10000.0
+                *    0.0 ~  100.0: Basic Move
+                *  101.0 ~  200.0: Doosan-robot I/O Controller
+                * 1000.0 ~ 4000.0: Relative Move (Translation)
+                    - X -> 1000.0 (0 mm) ~ 1999.0 (999 mm)
+                    - Y -> 2000.0 (0 mm) ~ 2999.0 (999 mm)
+                    - Z -> 3000.0 (0 mm) ~ 3999.0 (999 mm)
+            @ TASK_[이름 정의(대문자)]   : 10001.0  ~ 20000.0
+    '''
+    def pnp_cb(self, msg):
+        self.cmd_protocol = msg.data
+        print(msg.data)
 
-            self.UpdateParam(0.0, -0.12, 0.2)
-            self.search_target()
+        # ACTION (0.0): Home position
+        if(self.cmd_protocol   == ACTION_HOME):         
+            movej(Q_HOME, 50, 50)
+        # ACTION (1.0): Back position
+        elif(self.cmd_protocol == ACTION_BACK):
+            movej(Q_BACK, 50, 50)
+        # ACTION (2.0): Left position
+        elif(self.cmd_protocol == ACTION_LEFT):
+            movej(Q_LEFT, 50, 50)
+        # ACTION (3.0): Right position
+        elif(self.cmd_protocol == ACTION_RIGHT):
+            movej(Q_RIGHT, 50, 50)
+        # ACTION (4.0): Approach
+        elif(self.cmd_protocol == ACTION_APPROACH):
+            movej(Q_TOP_PLATE, 50, 50) # Search pose
+            self.UpdateParam(0.0, -0.12, 0.20)
+            self.search_ar_target(1)
             movel(self.drl_pose, vel=[100,50], acc=[100,50]) # 1st approach
-            self.search_target()
+            self.search_ar_target(1)
             movel(self.drl_pose, vel=[100,50], acc=[100,50]) # 2nd approach
-
-        if(self.start_flag=="engage"):
+            self.search_ar_target(1)
+            movel(self.drl_pose, vel=[100,50], acc=[100,50]) # 3rd approach
+        # ACTION (5.0): Approach  
+        elif(self.cmd_protocol == ACTION_ALIGN):
             self.UpdateParam(0.0, 0.0, 0.2)
-            self.search_target()
-            movel(self.drl_pose, vel=[100,30], acc=[100,30]) # alignment: tool - target
-
-            self.movel_z(0.030)
-            #self.pnp_pub.publish("close")
-            self.movel_z(-0.030)
-
+            self.search_ar_target(1)
+            movel(self.drl_pose, vel=[100,30], acc=[100,30])
+        # ACTION (6.0): Pick
+        elif(self.cmd_protocol == ACTION_PICK):
+            self.pnp_pub.publish(ACTION_IO_GRIPPER_OPEN)
+            self.movel_z(30)
+            self.pnp_pub.publish(ACTION_IO_GRIPPER_CLOSE)
+            self.movel_z(-30)
+        # ACTION (7.0): Place
+        elif(self.cmd_protocol == ACTION_PLACE):
+            self.pnp_pub.publish(ACTION_IO_GRIPPER_CLOSE)
+            self.movel_z(30)
+            self.pnp_pub.publish(ACTION_IO_GRIPPER_OPEN)
+            self.movel_z(-30)
+        # ACTION (1000.0 ~ 1999.0): Trans X (relative move)
+        elif(abs(int(float(self.cmd_protocol))) >= int(float(ACTION_TRANS_X)) and abs(int(float(self.cmd_protocol))) < int(float(ACTION_TRANS_Y)) ):
+            sign = int(float(self.cmd_protocol)) / abs(int(float(self.cmd_protocol)))
+            self.movel_x(sign * (abs(int(float(self.cmd_protocol))) - int(float(ACTION_TRANS_X))))
+        # ACTION (2000.0 ~ 2999.0): Trans Y (relative move)
+        elif(abs(int(float(self.cmd_protocol))) >= int(float(ACTION_TRANS_Y)) and abs(int(float(self.cmd_protocol))) < int(float(ACTION_TRANS_Z)) ):
+            sign = int(float(self.cmd_protocol)) / abs(int(float(self.cmd_protocol)))
+            self.movel_y(sign * (abs(int(float(self.cmd_protocol))) - int(float(ACTION_TRANS_Y))))
+        # ACTION (3000.0 ~ 4000.0): Trans Z (relative move)
+        elif(abs(int(float(self.cmd_protocol))) >= int(float(ACTION_TRANS_Z)) and abs(int(float(self.cmd_protocol))) < int(float(ACTION_TRANS)) ):
+            sign = int(float(self.cmd_protocol)) / abs(int(float(self.cmd_protocol)))
+            self.movel_z(sign * (abs(int(float(self.cmd_protocol))) - int(float(ACTION_TRANS_Z))))
 
 if __name__=='__main__':
     DRLInterface()
