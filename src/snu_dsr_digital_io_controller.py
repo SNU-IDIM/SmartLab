@@ -19,8 +19,6 @@ DR_init.__dsr__id = ROBOT_ID
 DR_init.__dsr__model = ROBOT_MODEL
 from DSR_ROBOT import *
 
-
-
 class dsrDigitalControl:
     def __init__(self):
         rospy.init_node('snu_dsr_digital_io_controller', anonymous=True)
@@ -48,18 +46,18 @@ class dsrDigitalControl:
         #reset digital io
         self.srv_ctrl_send_data(13,0)
         self.srv_ctrl_send_data(14,0)
+        rospy.sleep(1)
         
         #send closing command
         self.srv_ctrl_send_data(13,1)
-        self.srv_ctrl_send_data(13,0)
 
     def gripper_open(self):
         self.srv_ctrl_send_data(13,0)
         self.srv_ctrl_send_data(14,0)
-        
+        rospy.sleep(1)
         #send closing command
         self.srv_ctrl_send_data(14,1)
-        self.srv_ctrl_send_data(14,0)
+
     def gripper_signal_read(self):
         gripper_signal = self.srv_analog_read(1)
     '''

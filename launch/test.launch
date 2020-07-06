@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="ns" value="R_001"/>
+    <arg name="prefix_ns" value="R_001/dsr"/>
+
+    <node pkg="dsr_example" type="robodktest.py" name="sdfgsdf" ns="$(arg ns)" output='screen'/>
+</launch>

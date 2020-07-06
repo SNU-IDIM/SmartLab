@@ -3,7 +3,9 @@
     <arg name="ns" value="R_001"/>
     <arg name="prefix_ns" value="R_001/dsr"/>
 
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find snu_doosan)/rviz/snu_doosan.rviz"/>
+    <!--<node name="rviz" pkg="rviz" type="rviz" args="-d $(find snu_doosan)/rviz/snu_doosan.rviz"/>-->
+
+
 
 <!-- 
 ##############################################################################################################
@@ -13,15 +15,16 @@
         - node 1.   snu_doosan/snu_object_tracker.py // (*) offset unit -> [m], [deg]
 ##############################################################################################################
 -->
-    <include file="$(find snu_doosan)/launch/realsense_setup.launch.xml" ns="$(arg ns)"/>
-    <include file="$(find snu_doosan)/launch/ar_tracker_single.launch.xml" ns="$(arg ns)"/>
+<!--<node name="Sub_client" pkg="rospy_websocker_client" type="ROSClient_Subscriber.py" ns='R_001' output="screen"/>-->
+    <!--<include file="$(find snu_doosan)/launch/realsense_setup.launch.xml" ns="$(arg ns)"/>
+    <include file="$(find snu_doosan)/launch/ar_tracker_single.launch.xml" ns="$(arg ns)"/>-->
     <!--<node pkg="snu_doosan" type="drl_gripping.py" name="drl_gripping" ns="$(arg ns)" output="screen"/>-->
 
-    <node pkg="snu_doosan" type="snu_object_tracker.py" name="snu_object_tracker" ns="$(arg ns)" output='screen'>
+    <!--<node pkg="snu_doosan" type="snu_object_tracker.py" name="snu_object_tracker" ns="$(arg ns)" output='screen'>
         <param name="reference_frame"       value="base_0"/>
-        <param name="object_frame"          value="ar_marker_1"/>
-        <param name="target_frame"          value="ar_target_1"/>
-        <!--<param name="end_effector_frame"    value = "link6"/>-->
+        <param name="object_frame"          value="ar_marker_0"/>
+        <param name="target_frame"          value="ar_target_0"/>
+        <param name="end_effector_frame"    value="link6"/>
         <param name="offset_from_target/x"  value="0.0"/>
         <param name="offset_from_target/y"  value="0.0"/>
         <param name="offset_from_target/z"  value="0.20"/>
@@ -29,6 +32,7 @@
         <param name="offset_from_target/ry" value="0.0"/>
         <param name="offset_from_target/rz" value="90.0"/>
     </node>
+    -->
 
 
 
@@ -73,14 +77,14 @@
 ##############################################################################################################  
 -->
     <!--<node name="Pub_client" pkg="rospy_websocker_client" type="ROSClient_Publisher.py" ns='R_001' output="screen"/>-->
-    <!--<node name="Sub_client" pkg="rospy_websocker_client" type="ROSClient_Subscriber.py" ns='R_001' output="screen"/>-->
+    <!--<node name="Sub_client" pkg="rospy_websocker_client" type="ROSClient_Subscriber.py" ns='R_001'     output="screen"/>-->
 
     <!--<node pkg="snu_doosan" type="snu_dsr_joy.py" name="joy_controller" ns="$(arg ns)" output='screen'/>-->
     
-    <!--<include file="$(find snu_doosan)/launch/realsense_setup.launch.xml" ns="$(arg ns)"/>
-    <include file="$(find rtabmap_ros)/launch/rgbd_mapping.launch" ns="$(arg prefix_ns)"/>-->
+    <!--<include file="$(find snu_doosan)/launch/realsense_setup.launch.xml" ns="$(arg ns)"/>-->
+    <!--<include file="$(find rtabmap_ros)/launch/rgbd_mapping.launch" ns="$(arg prefix_ns)"/>-->
 
-    <!--<include file="$(find snu_doosan)/launch/ar_tracker_alvar.launch.xml" ns="$(arg ns)"/>-->
+    <!--<include file="$(find snu_doosan)/launch/ar_tracker_single.launch.xml" ns="$(arg ns)"/>-->
     
     <!--<node pkg="snu_doosan" type="snu_moveit_commander.py" name="snu_moveit_commander" ns="$(arg ns)" output='screen'/>-->
 
