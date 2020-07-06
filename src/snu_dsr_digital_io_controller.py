@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import rospy
-import os
-import threading, time
-import sys
+import sys, os, threading, time
 
 sys.dont_write_bytecode = True
 HOME_DIR = os.getenv('HOME')

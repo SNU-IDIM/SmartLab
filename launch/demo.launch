@@ -5,19 +5,19 @@
 
     <!--<node name="rviz" pkg="rviz" type="rviz" args="-d $(find snu_doosan)/rviz/snu_doosan.rviz"/>-->
 
-
-
 <!-- 
 ##############################################################################################################
     SNU-ASMR 데모1 실행: Cube(ar_marker_1 on top) Pick and Place (Single AR Marker)
         - launch 1. snu_doosan/launch/realsense_setup.launch.xml
         - launch 2. snu_doosan/launch/ar_tracker_single.launch.xml
-        - node 1.   snu_doosan/snu_object_tracker.py // (*) offset unit -> [m], [deg]
+        - node 1.   snu_doosan/snu_drl_interface.py
+        - node 2.   snu_doosan/snu_object_tracker.py // (*) offset unit -> [m], [deg]
 ##############################################################################################################
 -->
     <include file="$(find snu_doosan)/launch/realsense_setup.launch.xml" ns="$(arg ns)"/>
     <include file="$(find snu_doosan)/launch/ar_tracker_single.launch.xml" ns="$(arg ns)"/>
-    <!--<node pkg="snu_doosan" type="drl_gripping.py" name="drl_gripping" ns="$(arg ns)" output="screen"/>-->
+
+    <node pkg="snu_doosan" type="snu_drl_interface.py" name="test" ns="$(arg ns)" output='screen'/>
 
     <node pkg="snu_doosan" type="snu_object_tracker.py" name="snu_object_tracker" ns="$(arg ns)" output='screen'>
         <param name="reference_frame"       value="base_0"/>
@@ -32,7 +32,7 @@
         <param name="offset_from_target/rz" value="90.0"/>
     </node>
     
-
+    <!--<node pkg="snu_doosan" type="drl_gripping.py" name="drl_gripping" ns="$(arg ns)" output="screen"/>-->
 
 
 <!-- 
