@@ -50,12 +50,20 @@ class DRLInterface():
         self.robaccj = 30
         self.robvelx = 50
         self.robaccx = 50
-
+        
+        
+        ##opencv drawing related
+        self.imagewindowflag =0
+        self.bridge = CvBridge()
+        
+        
+        
         rospy.init_node(ros_node_name, anonymous=True)
         self.listener = tf.TransformListener()
         rospy.Subscriber("ur_pnp", String, self.pnp_cb, queue_size=1)
         rospy.Subscriber("dsr/state", RobotState, self.dsr_state_cb, queue_size=1)
         rospy.Subscriber("dsr/joint_states", JointState, self.current_status_cb, queue_size=1)
+        self.image_sub = rospy.Subscriber("/R_001/camera/color/image_raw",Image,self.vision_cb)
         self.pnp_pub    = rospy.Publisher("ur_pnp", String, queue_size=1)
         self.status_pub = rospy.Publisher("ur_status", URStatus, queue_size=1)
 
@@ -68,7 +76,20 @@ class DRLInterface():
         self.robot_status = "done"
         self.status_pub.publish(URStatus(status=self.robot_status, arm_status = self.joints_state))
 
-
+    def vision_cb(self,data):
+        try:
+            self.cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+            self.draw_image = copy.deepcopy(self.cv_image) ##move this when you draw something in the image and change imagewindowflag
+        except CvBridgeError as e:
+            print(e)
+        if self.imagewindowflag ==0:
+            cv2.namedWindow('robot endeffector image', cv2.WINDOW_NORMAL)
+            cv2.imshow('robot endeffector image', self.cv_image)
+            cv2.waitKey(1)
+        elif self.imagewindowflag ==1:
+            cv2.namedWindow('robot endeffector image', cv2.WINDOW_NORMAL)
+            cv2.imshow('robot endeffector image', self.draw_image)
+            cv2.waitKey(1)
     #'''
     #    update_cmd_pose: update 'target_pose' to feed 'movel' function for Doosan-robot
     #        @ input 1: geometry_msgs/Vector3 trans
@@ -153,6 +174,7 @@ class DRLInterface():
     #'''
     def dsr_state_cb(self, data):
         self.dsr_flag = data.robot_state
+        self.current_posx = data.current_posx
 
 
     #'''
@@ -162,6 +184,8 @@ class DRLInterface():
         self.joints_state = data
 
 
+
+    
     #'''
     #    "~/ur_pnp" Topic Protocol (for Doosan-robot control)
     #    
@@ -176,6 +200,7 @@ class DRLInterface():
     #                - Z -> 3000 (0 mm) ~ 3999 (999 mm)
     #        @ TASK_[이름 정의(대문자)]   : 10001  ~ 20000
     #'''
+
     def pnp_cb(self, msg):
         set_robot_mode(ROBOT_MODE_AUTONOMOUS)
         self.robot_status = "running"
@@ -235,6 +260,7 @@ class DRLInterface():
             self.movel_z(sign * (abs(self.cmd_protocol) - ACTION_TRANS_Z))
         # Task [10001]: Pick a tensile test specimen
         elif(self.cmd_protocol == TASK_SPECIMEN_PICK):
+            movej(Q_TOP_PLATE, 50, 50)
             self.open_gripper()
             # approach= [-425.50738525390625, -115.4998779296875, 100.5030517578125, 90, 90, 180]
             # movel(approach)
@@ -252,6 +278,9 @@ class DRLInterface():
             movel(first_sp)
 
             self.close_gripper()
+            # set_digital_output(13,0)
+            # set_digital_output(14,0)
+            # set_digital_output(13,1)
             
             liftup= [-425.50738525390625, -15.4998779296875, 110.5030517578125, 90, 90, 180]
             movel(liftup)
@@ -260,23 +289,24 @@ class DRLInterface():
             movel(backup)
             
 
-            homeway1 = [-425.50738525390625, -115.4998779296875, 400.5030517578125, 90, 90, 180]
-            homeway1 = posx(-425.50738525390625, -115.4998779296875, 400.5030517578125, 90, 90, 180)
+            # homeway1 = posx(-425.50738525390625, -115.4998779296875, 400.5030517578125, 90, 90, 180)
             
-            movel(homeway1)
+            # movel(homeway1)
+            movej(Q_TOP_PLATE, 50, 50)
 
-            homeway2 = [-425.50738525390625, -115.4998779296875, 400.5030517578125, 90, -90,0]
-            movel(homeway2)
+            # homeway2 = [-425.50738525390625, -115.4998779296875, 400.5030517578125, 90, -90,0]
+            # movel(homeway2)
 
             # movelist = [first_sp, liftup, backup, homeway1, homeway2]
             # movesx(movelist,vel=[100,50], acc=[100,50])
         # Task [10002]: Search AR_Marker attached to the upper gripper of Instron
         elif(self.cmd_protocol == TASK_INSTRON_SEARCH):
-
+            movej(Q_TOP_PLATE, 50, 50)
+            
             set_velj(self.robvelj)
             set_accj(self.robaccj)
-            set_velx(self.robvelx,self.robvelx)  # set global task speed: 30(mm/sec), 20(deg/sec)
-            set_accx(self.robaccx,self.robaccx)
+            set_velx(self.robvelx+50,self.robvelx)  # set global task speed: 30(mm/sec), 20(deg/sec)
+            set_accx(self.robaccx+50,self.robaccx)
 
             # homeway3 = [-425.50738525390625, -115.4998779296875, 400.5030517578125, 90, 45,0]
             # movel(homeway3)
@@ -292,17 +322,35 @@ class DRLInterface():
                 #TF: ar_target  -- robot base
                 # ar target which is a TF made from ar_marker it is facing the marker tf(z axis is towards each other)
                 #consist of three move which is  conducting scan, move and feedback
-                movel(self.drl_pose, vel=[30,50], acc=[100,50]) # 1st approach
+                movel(self.drl_pose, vel=[130,50], acc=[100,50]) # 1st approach
                 self.search_ar_target('4')
-                movel(self.drl_pose, vel=[30,50], acc=[100,50]) # 2nd approach
+                movel(self.drl_pose, vel=[130,50], acc=[100,50]) # 2nd approach
                 self.search_ar_target('4')
-                movel(self.drl_pose, vel=[30,50], acc=[100,50])
+                movel(self.drl_pose, vel=[130,50], acc=[100,50])
                 self.search_ar_target('4')
+            else:
+                print("ar target not found repeat")
+
+            
+            movel([170,70,0,0,0,-90], mod = 1, ref = 1)
+            movel([0,0,97,0,0,0], mod = 1, ref = 1)
+        
+        elif(self.cmd_protocol == TASK_INSTRON_MOVEOUT):
+            movel([0,0,-200,0,0,0], mod = 1, ref = 1)
+            
+            viewpoint = [self.current_posx[0],self.current_posx[1],self.current_posx[2],self.current_posx[3],self.current_posx[4]-20,self.current_posx[5]]
+            movel(viewpoint)
+            
+            #stream
+        
                 
         self.robot_status = "done"
         set_robot_mode(ROBOT_MODE_MANUAL)
         self.status_pub.publish(URStatus(status=self.robot_status, arm_status = self.joints_state))
         
+    
+
+    ####Gripper functions##
     def init_gripper(self):
         set_digital_output(13,0)
         set_digital_output(14,0)
@@ -317,8 +365,6 @@ class DRLInterface():
         self.init_gripper()
         set_digital_output(13,0)
         set_digital_output(14,1)
-
-
         
 
 if __name__=='__main__':

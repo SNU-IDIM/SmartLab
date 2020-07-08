@@ -14,6 +14,7 @@ import pyrealsense2 as rs
 from copy import deepcopy
 from math import pi
 from time import sleep
+import copy
 ##################################################################################################################################################
 
 
@@ -35,6 +36,7 @@ from sensor_msgs.msg import JointState, Joy, Image
 from geometry_msgs.msg import Pose, PoseStamped, Twist, Quaternion
 from ar_track_alvar_msgs.msg import AlvarMarkers
 from cv_bridge import CvBridge, CvBridgeError
+from sensor_msgs.msg import Image
 ##################################################################################################################################################
 
 

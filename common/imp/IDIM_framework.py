@@ -70,8 +70,9 @@ ACTION_TRANS   = 4000
 ## TASK [10001 ~ 10100] - Simple Task
 TASK_SPECIMEN_PICK  = 10001
 TASK_INSTRON_SEARCH = 10002
-TASK_3DP_PICK       = 10003
-TASK_3DP_PLACE      = 10003
+TASK_INSTRON_MOVEOUT =10003
+TASK_3DP_PICK       = 10004
+TASK_3DP_PLACE      = 10005
 ##################################################################################################################################################
 
 
