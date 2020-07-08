@@ -34,7 +34,7 @@ def all_close(goal, actual, tolerance):
 
 
 class DRLInterface():
-    def __init__(self):
+    def __init__(self, ros_node_name="snu_drl_commander"):
         self.dsr_flag = None
         self.joints_state = None
         self.robot_status = "waiting"
@@ -46,21 +46,25 @@ class DRLInterface():
         self.offset_x = 0.0
         self.offset_y = -0.12
         self.offset_z = 0.2
+        self.robvelj = 30
+        self.robaccj = 30
+        self.robvelx = 50
+        self.robaccx = 50
 
-        rospy.init_node(ROS_NODE_NAME, anonymous=True)
+        rospy.init_node(ros_node_name, anonymous=True)
         self.listener = tf.TransformListener()
-        rospy.Subscriber(SUB_TOPIC_1, String, self.pnp_cb, queue_size=1)
-        rospy.Subscriber(SUB_TOPIC_2, RobotState, self.dsr_state_cb, queue_size=1)
-        rospy.Subscriber(SUB_TOPIC_3 ,JointState, self.current_status_cb, queue_size=1)
-        self.pnp_pub    = rospy.Publisher(PUB_TOPIC_1, String, queue_size=1)
-        self.status_pub = rospy.Publisher(PUB_TOPIC_2, URStatus, queue_size=1)
+        rospy.Subscriber("ur_pnp", String, self.pnp_cb, queue_size=1)
+        rospy.Subscriber("dsr/state", RobotState, self.dsr_state_cb, queue_size=1)
+        rospy.Subscriber("dsr/joint_states", JointState, self.current_status_cb, queue_size=1)
+        self.pnp_pub    = rospy.Publisher("ur_pnp", String, queue_size=1)
+        self.status_pub = rospy.Publisher("ur_status", URStatus, queue_size=1)
 
         
         set_robot_mode(ROBOT_MODE_AUTONOMOUS)
         rospy.sleep(1)
         self.robot_status = "working"
         self.status_pub.publish(URStatus(status=self.robot_status, arm_status = self.joints_state))
-        movej(Q_TOP_PLATE, 50, 50)
+        # movej(Q_TOP_PLATE, 50, 50)
         self.robot_status = "done"
         self.status_pub.publish(URStatus(status=self.robot_status, arm_status = self.joints_state))
 
@@ -163,83 +167,162 @@ class DRLInterface():
     #    
     #    Naming rules:
     #        @ 정의된 숫자 순서에 맞는 위치에 정의 (오름차순)
-    #        @ ACTION_[이름 정의(대문자)] : 0.0  ~ 10000.0
-    #            *    0.0 ~  100.0: Basic Move
-    #            *  101.0 ~  200.0: Doosan-robot I/O Controller
-    #            * 1000.0 ~ 4000.0: Relative Move (Translation)
-    #                - X -> 1000.0 (0 mm) ~ 1999.0 (999 mm)
-    #                - Y -> 2000.0 (0 mm) ~ 2999.0 (999 mm)
-    #                - Z -> 3000.0 (0 mm) ~ 3999.0 (999 mm)
-    #        @ TASK_[이름 정의(대문자)]   : 10001.0  ~ 20000.0
+    #        @ ACTION_[이름 정의(대문자)] : 0  ~ 10000
+    #            *    0 ~  100: Basic Move
+    #            *  101 ~  200: Doosan-robot I/O Controller
+    #            * 1000 ~ 4000: Relative Move (Translation)
+    #                - X -> 1000 (0 mm) ~ 1999 (999 mm)
+    #                - Y -> 2000 (0 mm) ~ 2999 (999 mm)
+    #                - Z -> 3000 (0 mm) ~ 3999 (999 mm)
+    #        @ TASK_[이름 정의(대문자)]   : 10001  ~ 20000
     #'''
     def pnp_cb(self, msg):
+        set_robot_mode(ROBOT_MODE_AUTONOMOUS)
         self.robot_status = "running"
-        self.cmd_protocol = msg.data
-        print(msg.data)
+        self.cmd_protocol = int(float(msg.data))
+        print(self.cmd_protocol)
 
-        # ACTION (0.0): Home position
+        # ACTION [0]: Home position
         if(self.cmd_protocol   == ACTION_HOME):         
             movej(Q_HOME, 50, 50)
-        # ACTION (1.0): Back position
+        # ACTION [1]: Back position
         elif(self.cmd_protocol == ACTION_BACK):
             movej(Q_BACK, 50, 50)
-        # ACTION (2.0): Left position
+        # ACTION [2]: Left position
         elif(self.cmd_protocol == ACTION_LEFT):
             movej(Q_LEFT, 50, 50)
-        # ACTION (3.0): Right position
+        # ACTION [3]: Right position
         elif(self.cmd_protocol == ACTION_RIGHT):
             movej(Q_RIGHT, 50, 50)
-        # ACTION (4.0): Approach
+        # ACTION [4]: Approach
         elif(self.cmd_protocol == ACTION_APPROACH):
             movej(Q_TOP_PLATE, 50, 50) # Search pose
             self.UpdateParam(0.0, -0.12, 0.20)
-            self.search_ar_target(1)
+            self.search_ar_target(4)
             movel(self.drl_pose, vel=[100,50], acc=[100,50]) # 1st approach
-            self.search_ar_target(1)
+            self.search_ar_target(4)
             movel(self.drl_pose, vel=[100,50], acc=[100,50]) # 2nd approach
-            self.search_ar_target(1)
+            self.search_ar_target(4)
             movel(self.drl_pose, vel=[100,50], acc=[100,50]) # 3rd approach
-        # ACTION (5.0): Approach  
+        # ACTION [5]: Approach  
         elif(self.cmd_protocol == ACTION_ALIGN):
             self.UpdateParam(0.0, 0.0, 0.2)
             self.search_ar_target(1)
             movel(self.drl_pose, vel=[100,30], acc=[100,30])
-        # ACTION (6.0): Pick
+        # ACTION [6]: Pick
         elif(self.cmd_protocol == ACTION_PICK):
             self.pnp_pub.publish(ACTION_IO_GRIPPER_OPEN)
             self.movel_z(30)
             self.pnp_pub.publish(ACTION_IO_GRIPPER_CLOSE)
             self.movel_z(-30)
-        # ACTION (7.0): Place
+        # ACTION [7]: Place
         elif(self.cmd_protocol == ACTION_PLACE):
             self.pnp_pub.publish(ACTION_IO_GRIPPER_CLOSE)
             self.movel_z(30)
             self.pnp_pub.publish(ACTION_IO_GRIPPER_OPEN)
             self.movel_z(-30)
-        # ACTION (1000.0 ~ 1999.0): Trans X (relative move)
-        elif(abs(int(float(self.cmd_protocol))) >= int(float(ACTION_TRANS_X)) and abs(int(float(self.cmd_protocol))) < int(float(ACTION_TRANS_Y)) ):
-            sign = int(float(self.cmd_protocol)) / abs(int(float(self.cmd_protocol)))
-            self.movel_x(sign * (abs(int(float(self.cmd_protocol))) - int(float(ACTION_TRANS_X))))
-        # ACTION (2000.0 ~ 2999.0): Trans Y (relative move)
-        elif(abs(int(float(self.cmd_protocol))) >= int(float(ACTION_TRANS_Y)) and abs(int(float(self.cmd_protocol))) < int(float(ACTION_TRANS_Z)) ):
-            sign = int(float(self.cmd_protocol)) / abs(int(float(self.cmd_protocol)))
-            self.movel_y(sign * (abs(int(float(self.cmd_protocol))) - int(float(ACTION_TRANS_Y))))
-        # ACTION (3000.0 ~ 4000.0): Trans Z (relative move)
-        elif(abs(int(float(self.cmd_protocol))) >= int(float(ACTION_TRANS_Z)) and abs(int(float(self.cmd_protocol))) < int(float(ACTION_TRANS)) ):
-            sign = int(float(self.cmd_protocol)) / abs(int(float(self.cmd_protocol)))
-            self.movel_z(sign * (abs(int(float(self.cmd_protocol))) - int(float(ACTION_TRANS_Z))))
+        # ACTION [1000 ~ 1999]: Trans X (relative move)
+        elif(abs(self.cmd_protocol) >= ACTION_TRANS_X and abs(self.cmd_protocol) < ACTION_TRANS_Y):
+            sign = self.cmd_protocol / abs(self.cmd_protocol)
+            self.movel_x(sign * (abs(self.cmd_protocol) - ACTION_TRANS_X))
+        # ACTION [2000 ~ 2999]: Trans Y (relative move)
+        elif(abs(self.cmd_protocol) >= ACTION_TRANS_Y and abs(self.cmd_protocol) < ACTION_TRANS_Z):
+            sign = self.cmd_protocol / abs(self.cmd_protocol)
+            self.movel_y(sign * (abs(self.cmd_protocol) - ACTION_TRANS_Y))
+        # ACTION [3000 ~ 4000]: Trans Z (relative move)
+        elif(abs(self.cmd_protocol) >= ACTION_TRANS_Z and abs(self.cmd_protocol) < ACTION_TRANS):
+            sign = self.cmd_protocol / abs(self.cmd_protocol)
+            self.movel_z(sign * (abs(self.cmd_protocol) - ACTION_TRANS_Z))
+        # Task [10001]: Pick a tensile test specimen
+        elif(self.cmd_protocol == TASK_SPECIMEN_PICK):
+            self.open_gripper()
+            # approach= [-425.50738525390625, -115.4998779296875, 100.5030517578125, 90, 90, 180]
+            # movel(approach)
+            set_velj(50)
+            set_accj(50)
+            set_velx(100,50)  # set global task speed: 30(mm/sec), 20(deg/sec)
+            set_accx(100,150)
 
+            approachj = [33.12971115112305, -36.94938278198242, -131.39822387695312, -57.41393280029297, -96.33760070800781, 170.20169067382812]
+            movej(approachj)
+            # approach= [-425.50738525390625, -115.4998779296875, 100.5030517578125, 90, 90, 180]
+            # movel(approach)
+
+            first_sp= [-425.50738525390625, -15.4998779296875, 100.5030517578125, 90, 90, 180]
+            movel(first_sp)
+
+            self.close_gripper()
+            
+            liftup= [-425.50738525390625, -15.4998779296875, 110.5030517578125, 90, 90, 180]
+            movel(liftup)
+
+            backup= [-425.50738525390625, -115.4998779296875, 110.5030517578125, 90, 90, 180]
+            movel(backup)
+            
+
+            homeway1 = [-425.50738525390625, -115.4998779296875, 400.5030517578125, 90, 90, 180]
+            homeway1 = posx(-425.50738525390625, -115.4998779296875, 400.5030517578125, 90, 90, 180)
+            
+            movel(homeway1)
+
+            homeway2 = [-425.50738525390625, -115.4998779296875, 400.5030517578125, 90, -90,0]
+            movel(homeway2)
+
+            # movelist = [first_sp, liftup, backup, homeway1, homeway2]
+            # movesx(movelist,vel=[100,50], acc=[100,50])
+        # Task [10002]: Search AR_Marker attached to the upper gripper of Instron
+        elif(self.cmd_protocol == TASK_INSTRON_SEARCH):
+
+            set_velj(self.robvelj)
+            set_accj(self.robaccj)
+            set_velx(self.robvelx,self.robvelx)  # set global task speed: 30(mm/sec), 20(deg/sec)
+            set_accx(self.robaccx,self.robaccx)
+
+            # homeway3 = [-425.50738525390625, -115.4998779296875, 400.5030517578125, 90, 45,0]
+            # movel(homeway3)
+
+            see_point1j = [81.08692169189453, -0.4761710464954376, -143.7606658935547, -9.412845611572266, 57.22504806518555, 100.97422790527344]
+            movej(see_point1j,self.robvelj,self.robaccj)
+            self.UpdateParam(0.0, -0.12, 0.25)
+            rospy.sleep(1)
+            self.search_ar_target('4')
+            if not self.drl_pose[0] ==0:
+                ########searching for the ar tag#2 which is placed on 3dp door####
+                #Searching is consisted of three steps
+                #TF: ar_target  -- robot base
+                # ar target which is a TF made from ar_marker it is facing the marker tf(z axis is towards each other)
+                #consist of three move which is  conducting scan, move and feedback
+                movel(self.drl_pose, vel=[30,50], acc=[100,50]) # 1st approach
+                self.search_ar_target('4')
+                movel(self.drl_pose, vel=[30,50], acc=[100,50]) # 2nd approach
+                self.search_ar_target('4')
+                movel(self.drl_pose, vel=[30,50], acc=[100,50])
+                self.search_ar_target('4')
+                
         self.robot_status = "done"
+        set_robot_mode(ROBOT_MODE_MANUAL)
         self.status_pub.publish(URStatus(status=self.robot_status, arm_status = self.joints_state))
-    
-    def test(self):
-        self.pnp_pub.publish(ACTION_IO_GRIPPER_OPEN)
-        # self.pnp_pub.publish(ACTION_IO_GRIPPER_CLOSE)
+        
+    def init_gripper(self):
+        set_digital_output(13,0)
+        set_digital_output(14,0)
+        rospy.sleep(0.5)
+
+    def close_gripper(self):
+        self.init_gripper()
+        set_digital_output(13,1)
+        set_digital_output(14,0)
+
+    def open_gripper(self):
+        self.init_gripper()
+        set_digital_output(13,0)
+        set_digital_output(14,1)
+
+
         
 
 if __name__=='__main__':
-    idim = DRLInterface()
-    idim.test()
+    idim = DRLInterface("snu_drl_commander")
     
     while not rospy.is_shutdown():
         if(idim.dsr_flag == 2):
