@@ -17,7 +17,7 @@
     <include file="$(find snu_doosan)/launch/realsense_setup.launch.xml" ns="$(arg ns)"/>
     <include file="$(find snu_doosan)/launch/ar_tracker_single.launch.xml" ns="$(arg ns)"/>
 
-    <node pkg="snu_doosan" type="snu_drl_interface.py" name="test" ns="$(arg ns)" output='screen'/>
+    <!--<node pkg="snu_doosan" type="snu_drl_interface.py" name="test" ns="$(arg ns)" output='screen'/>-->
 
     <node pkg="snu_doosan" type="snu_object_tracker.py" name="snu_object_tracker" ns="$(arg ns)" output='screen'>
         <param name="reference_frame"       value="base_0"/>
