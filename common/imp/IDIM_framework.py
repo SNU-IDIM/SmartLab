@@ -99,3 +99,32 @@ Q_SEARCH_FRONT = [0.006254249687429258, 0.0706465647310261, -1.8816342308005074,
 ## Task Space Coordinates (P)
 P_TOP_PLATE = [-240.5, 34.5, 665.5, 0.0, 180.0, 0.0] # Same configuration with "Q_TOP_PLATE"
 ##################################################################################################################################################
+
+
+##################################################################################################################################################
+'''
+    Parameters for Joystick Controller
+'''
+JOY_MAX_SPEED_LINEAR  = 100.0
+JOY_MAX_SPEED_ANGULAR = 100.0
+
+JOY_BOTTON_A           = 0
+JOY_BOTTON_B           = 1
+JOY_BOTTON_X           = 2
+JOY_BOTTON_Y           = 3
+JOY_BOTTON_UPPER_LEFT  = 4
+JOY_BOTTON_UPPER_RIGHT = 5
+JOY_BOTTON_BACK        = 6
+JOY_BOTTON_START       = 7
+JOY_BOTTON_CENTER      = 8
+JOY_BOTTON_JOY_LEFT    = 9
+JOY_BOTTON_JOY_RIGHT   = 10
+
+JOY_AXIS_LEFT_H        = 0
+JOY_AXIS_LEFT_V        = 1
+JOY_AXIS_UPPER_LEFT    = 2
+JOY_AXIS_RIGHT_H       = 3
+JOY_AXIS_RIGHT_V       = 4
+JOY_AXIS_UPPER_RIGHT   = 5
+JOY_AXIS_DIR_H         = 6
+JOY_AXIS_DIR_V         = 7

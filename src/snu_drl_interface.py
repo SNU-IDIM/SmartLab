@@ -7,15 +7,6 @@ sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__),"%s/catk
 from IDIM_header import *
 from IDIM_framework import *
 
-ROS_NODE_NAME = "snu_drl_commander"
-
-SUB_TOPIC_1 = "ur_pnp"
-SUB_TOPIC_2 = "dsr/state"
-SUB_TOPIC_3 = "dsr/joint_states"
-
-PUB_TOPIC_1 = "ur_pnp"
-PUB_TOPIC_2 = "ur_status"
-
 
 def all_close(goal, actual, tolerance):
   all_equal = True
@@ -23,13 +14,11 @@ def all_close(goal, actual, tolerance):
     for index in range(len(goal)):
       if abs(actual[index] - goal[index]) > tolerance:
         return False
-
   elif type(goal) is geometry_msgs.msg.PoseStamped:
     return all_close(goal.pose, actual.pose, tolerance)
 
   elif type(goal) is geometry_msgs.msg.Pose:
     return all_close(pose_to_list(goal), pose_to_list(actual), tolerance)
-
   return True
 
 
@@ -73,9 +62,9 @@ class DRLInterface():
         self.status_pub.publish(URStatus(status=self.robot_status, arm_status = self.joints_state))
 
 
-    #'''
-    #    vision_cb: OpenCV image visualization
-    #'''
+    '''
+        vision_cb: OpenCV image visualization
+    '''
     def vision_cb(self, data):
         try:
             self.cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
@@ -92,11 +81,11 @@ class DRLInterface():
             cv2.waitKey(1)
 
 
-    #'''
-    #    update_cmd_pose: update 'target_pose' to feed 'movel' function for Doosan-robot
-    #        @ input 1: geometry_msgs/Vector3 trans
-    #        @ input 2: geometry_msgs/Quaternion rot
-    #'''
+    '''
+        update_cmd_pose: update 'target_pose' to feed 'movel' function for Doosan-robot
+            @ input 1: geometry_msgs/Vector3 trans
+            @ input 2: geometry_msgs/Quaternion rot
+    '''
     def update_cmd_pose(self, trans, rot):
         self.target_pose.position.x    = M2MM(trans[0])# + self.offset_x) # 보정 @(arm -> 측면)
         self.target_pose.position.y    = M2MM(trans[1])# + self.offset_y) # 보정 @(arm -> 정면)
@@ -108,9 +97,9 @@ class DRLInterface():
         print(self.target_pose)
 
 
-    #'''
-    #    updateEulZYZ: Calculate ZYZ rotation to feed 'movel' function for Doosan-robot
-    #'''
+    '''
+        updateEulZYZ: Calculate ZYZ rotation to feed 'movel' function for Doosan-robot
+    '''
     def updateEulZYZ(self):
         q_w = self.target_pose.orientation.w
         q_x = self.target_pose.orientation.x
@@ -125,10 +114,10 @@ class DRLInterface():
         print('The Euler angles are calculated:', self.eulerZYZ)
 
 
-    #'''
-    #    search_ar_target: lookupTransform to get AR_Target (calculated from AR_Marker)
-    #        @ input 1: int ar_tag_number (ex - 0, 1, 2, 3, ...)
-    #'''
+    '''
+        search_ar_target: lookupTransform to get AR_Target (calculated from AR_Marker)
+            @ input 1: int ar_tag_number (ex - 0, 1, 2, 3, ...)
+    '''
     def search_ar_target(self, ar_tag_number):
         target_frame_name = 'ar_target_' + str(ar_tag_number)
         reference_frame_name = 'base_0'
@@ -149,12 +138,12 @@ class DRLInterface():
             pass
 
 
-    #'''
-    #    UpdateParam: Updating parameters for target pose w.r.t. AR_Marker
-    #        @ input 1: double dx [m]
-    #        @ input 2: double dy [m]
-    #        @ input 3: double dz [m]
-    #'''
+    '''
+        UpdateParam: Updating parameters for target pose w.r.t. AR_Marker
+            @ input 1: double dx [m]
+            @ input 2: double dy [m]
+            @ input 3: double dz [m]
+    '''
     def UpdateParam(self, dx, dy, dz):
         rospy.set_param('/R_001/snu_object_tracker/offset_from_target/x', dx)
         rospy.set_param('/R_001/snu_object_tracker/offset_from_target/y', dy)
@@ -162,10 +151,10 @@ class DRLInterface():
         rospy.sleep(2)
     
 
-    #'''
-    #    Doosan-robot Relative Move (translation in x, y, z [mm])
-    #        @ input 1: double distance [mm]
-    #'''
+    '''
+        Doosan-robot Relative Move (translation in x, y, z [mm])
+            @ input 1: double distance [mm]
+    '''
     def movel_x(self, distance): # distance [mm]
         movel(posx(distance, 0, 0, 0, 0, 0), vel=[50,10], acc=[50,10], ref=DR_TOOL, mod=DR_MV_MOD_REL)
     def movel_y(self, distance): # distance [mm]
@@ -174,71 +163,59 @@ class DRLInterface():
         movel(posx(0, 0, distance, 0, 0, 0), vel=[50,10], acc=[50,10], ref=DR_TOOL, mod=DR_MV_MOD_REL)
 
 
-    #'''
-    #    DSR I/O Functions
-    #        1. Gripper open/close
-    #        2. Compressor on/off
-    #        3. Tool Changer attach/detach
-    #'''
+    '''
+        DSR I/O Functions
+            1. Gripper open/close
+            2. Compressor on/off
+            3. Tool Changer attach/detach
+    '''
     def IO_init(self):
         for i in range(1, 16+1):
             set_digital_output(i, 0)
         rospy.sleep(0.5)
-
     def gripper_close(self):
-        self.IO_init()
-        set_digital_output(13,1)
-
+        self.IO_init();  set_digital_output(13,1)
     def gripper_open(self):
-        self.IO_init()
-        set_digital_output(14,1)
-
+        self.IO_init();  set_digital_output(14,1)
     def compressor_on(self):
-        self.IO_init()
-        set_digital_output(1,1)
-
+        self.IO_init();  set_digital_output(1,1)
     def compressor_off(self):
-        self.IO_init()
-        set_digital_output(1,0)
-    
+        self.IO_init();  set_digital_output(1,0)
     def toolchanger_attach(self):
-        self.IO_init()
-        set_digital_output(2,0)
-
+        self.IO_init();  set_digital_output(2,0)
     def toolchanger_detach(self):
-        self.IO_init()
-        set_digital_output(2,1)
+        self.IO_init();  set_digital_output(2,1)
 
 
-    #'''
-    #    dsr_state_cb: "~/dsr/state" topic callback function (update dsr_flag)
-    #'''
+    '''
+        dsr_state_cb: "~/dsr/state" topic callback function (update dsr_flag)
+    '''
     def dsr_state_cb(self, data):
         self.dsr_flag = data.robot_state
         self.current_posx = data.current_posx
 
 
-    #'''
-    #    current_status_cb: update "~/ur_status" from "~/dsr/joint_state"
-    #'''
+    '''
+        current_status_cb: update "~/ur_status" from "~/dsr/joint_state"
+    '''
     def current_status_cb(self, data):
         self.joints_state = data
 
     
-    #'''
-    #    "~/ur_pnp" Topic Protocol (for Doosan-robot control)
-    #    
-    #    Naming rules:
-    #        @ 정의된 숫자 순서에 맞는 위치에 정의 (오름차순)
-    #        @ ACTION_[이름 정의(대문자)] : 0  ~ 10000
-    #            *    0 ~  100: Basic Move
-    #            *  101 ~  200: Doosan-robot I/O Controller
-    #            * 1000 ~ 4000: Relative Move (Translation)
-    #                - X -> 1000 (0 mm) ~ 1999 (999 mm)
-    #                - Y -> 2000 (0 mm) ~ 2999 (999 mm)
-    #                - Z -> 3000 (0 mm) ~ 3999 (999 mm)
-    #        @ TASK_[이름 정의(대문자)]   : 10001  ~ 20000
-    #'''
+    '''
+        "~/ur_pnp" Topic Protocol (for Doosan-robot control)
+        
+        Naming rules:
+            @ 정의된 숫자 순서에 맞는 위치에 정의 (오름차순)
+            @ ACTION_[이름 정의(대문자)] : 0  ~ 10000
+                *    0 ~  100: Basic Move
+                *  101 ~  200: Doosan-robot I/O Controller
+                * 1000 ~ 4000: Relative Move (Translation)
+                    - X -> 1000 (0 mm) ~ 1999 (999 mm)
+                    - Y -> 2000 (0 mm) ~ 2999 (999 mm)
+                    - Z -> 3000 (0 mm) ~ 3999 (999 mm)
+            @ TASK_[이름 정의(대문자)]   : 10001  ~ 20000
+    '''
     def pnp_cb(self, msg):
         set_robot_mode(ROBOT_MODE_AUTONOMOUS)
         self.robot_status = "running"
@@ -340,7 +317,7 @@ class DRLInterface():
             self.UpdateParam(0.0, -0.12, 0.25)
             rospy.sleep(1)
             self.search_ar_target('4')
-            if not self.drl_pose[0] ==0:
+            if not self.drl_pose[0] == 0:
                 ########searching for the ar tag#2 which is placed on 3dp door####
                 #Searching is consisted of three steps
                 #TF: ar_target  -- robot base
