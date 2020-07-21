@@ -25,6 +25,59 @@ def MM2M(milimeter):
 
 ##################################################################################################################################################
 '''
+    Variables for State Machine (AMR + DSR)
+        @ Action Modes (SYSCON 정의 action modes)
+        @ DSR Status ("waiting" / "running" / "done")
+'''
+## Action Modes (SYSCON 정의 Action Mode -> 수정 불가)
+SYSCON_WAYPOINT  = 0x01
+SYSCON_URMOVEIT  = 0x02
+SYSCON_URPNP     = 0x03
+SYSCON_URMISSION = 0x05
+
+## DSR Status ("waiting" / "running" / "done")
+# DSR_STATUS_WAIT
+
+##################################################################################################################################################
+
+
+
+##################################################################################################################################################
+'''
+    AMR Target Pose Lists
+
+    Naming rules:
+        @ DIR_AMR_[방향]: IDIM testbed 기준
+        @ P_AMR_[이름(장비 ...)]  : Target Pose [ X[m], Y[m], Theta[rad] ]
+'''
+DIR_AMR_UP    =  0.0             # 앞쪽 문 방향
+DIR_AMR_DOWN  =  math.pi         # 뒷쪽 문 방향
+DIR_AMR_LEFT  = -math.pi / 2.0   # Instron 방향 (왼쪽)
+DIR_AMR_RIGHT =  math.pi / 2.0   # CNC 방향 (오른쪽)
+
+P_AMR_ZERO      = [ 0.000,   0.000,  DIR_AMR_UP]
+P_AMR_HOME      = [ 1.465,  -1.654,  DIR_AMR_LEFT]
+P_AMR_DOOR      = [ 7.402,  -0.140,  DIR_AMR_RIGHT]
+P_AMR_TABLE_1   = [ 7.071,  -2.000,  DIR_AMR_UP]
+P_AMR_TABLE_2   = [ 5.346,  -2.000,  DIR_AMR_UP]
+P_AMR_DYNAMO    = [ 4.410,  -2.300,  DIR_AMR_UP]
+P_AMR_INSTRON   = [ 2.457,  -2.488,  DIR_AMR_UP]
+P_AMR_LOCKER    = [ 3.163,  -0.073,  DIR_AMR_LEFT]
+P_AMR_SEWING    = [ 2.061,  -0.078,  DIR_AMR_UP]
+P_AMR_CNC       = [ 0.888,  -0.238,  DIR_AMR_UP]
+P_AMR_TABLE_3   = [-1.401,  -0.060,  DIR_AMR_DOWN]
+P_AMR_JUSTEK    = [-2.917,  -0.590,  DIR_AMR_DOWN]
+P_AMR_LASER     = [-4.510,  -0.801,  DIR_AMR_DOWN]
+P_AMR_DAEGON    = [-5.571,  -0.777,  DIR_AMR_LEFT]
+P_AMR_INJECTION = [-3.575,  -2.460,  DIR_AMR_UP]
+P_AMR_PROFILER  = [-1.684,  -2.565,  DIR_AMR_UP]
+P_AMR_SINDOH3DP = [-0.134,  -2.565,  DIR_AMR_UP]
+##################################################################################################################################################
+
+
+
+##################################################################################################################################################
+'''
     "~/ur_pnp" Topic Protocol (for Doosan-robot control)
     
     Naming rules:
@@ -68,11 +121,11 @@ ACTION_TRANS_Z = 3000
 ACTION_TRANS   = 4000
 
 ## TASK [10001 ~ 10100] - Simple Task
-TASK_SPECIMEN_PICK  = 10001
-TASK_INSTRON_SEARCH = 10002
-TASK_INSTRON_MOVEOUT =10003
-TASK_3DP_PICK       = 10004
-TASK_3DP_PLACE      = 10005
+TASK_SPECIMEN_PICK   = 10001
+TASK_INSTRON_SEARCH  = 10002
+TASK_INSTRON_MOVEOUT = 10003
+TASK_3DP_PICK        = 10004
+TASK_3DP_PLACE       = 10005
 ##################################################################################################################################################
 
 
@@ -87,11 +140,11 @@ TASK_3DP_PLACE      = 10005
         @ 되도록이면 숫자 대신 naming 붙일 것 (ex - Q0 (x) // Q_HOME (o))
 '''
 ## Joint Space Coordinates (Q)
-Q_HOME      = [0.0, 0.0, -90.0, 0.0, -90.0, 0.0]
-Q_BACK      = [180.0, 0.0, -90.0, 0.0, -90.0, 0.0]
-Q_LEFT      = [90.0, 0.0, -90.0, 0.0, -90.0, 0.0]
-Q_RIGHT     = [-90.0, 0.0, -90.0, 0.0, -90.0, 0.0]
-Q_TOP_PLATE = [0.0, 30.0, -110.0, 0.0, -100.0, 0.0]
+Q_HOME         = [0.0, 0.0, -90.0, 0.0, -90.0, 0.0]
+Q_BACK         = [180.0, 0.0, -90.0, 0.0, -90.0, 0.0]
+Q_LEFT         = [90.0, 0.0, -90.0, 0.0, -90.0, 0.0]
+Q_RIGHT        = [-90.0, 0.0, -90.0, 0.0, -90.0, 0.0]
+Q_TOP_PLATE    = [0.0, 30.0, -110.0, 0.0, -100.0, 0.0]
 Q_SEARCH_RIGHT = [-1.587211119647868, 0.04192579550122713, -2.42067574545383, 0.02488730488522477, 0.060036456046744055, 5.683802467473106e-05]
 Q_SEARCH_LEFT  = [1.587211119647868, 0.04192579550122713, -2.42067574545383, 0.02488730488522477, 0.060036456046744055, 5.683802467473106e-05]
 Q_SEARCH_FRONT = [0.006254249687429258, 0.0706465647310261, -1.8816342308005074, -0.009305934771632234, -0.518931153024292, 0.012760136888951999]
