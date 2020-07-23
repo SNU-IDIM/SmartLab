@@ -2,7 +2,7 @@
 <launch>
     <arg name="ns" value="R_001"/>
     <arg name="prefix_ns" value="R_001/dsr"/>
-    <node pkg="snu_doosan" type="snu_dsr_joy.py" name="joy_controller" ns="$(arg ns)" output='screen'/>
-    <!--<node pkg="snu_doosan" type="snu_drl_interface.py" name="test" ns="$(arg ns)" output='screen'/>-->
+    <!--<node pkg="snu_doosan" type="snu_dsr_joy.py" name="joy_controller" ns="$(arg ns)" output='screen'/>-->
+    <node pkg="snu_doosan" type="snu_drl_interface.py" name="test" ns="$(arg ns)" output='screen'/>
     <!--<node pkg="snu_doosan" type="snu_dsr_digital_io_controller.py" name="snu_dsr_digital_io_controller" ns="$(arg ns)" output='screen'/>-->
 </launch>

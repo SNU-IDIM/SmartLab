@@ -71,8 +71,9 @@ ACTION_TRANS   = 4000
 TASK_SPECIMEN_PICK  = 10001
 TASK_INSTRON_SEARCH = 10002
 TASK_INSTRON_MOVEOUT =10003
-TASK_3DP_PICK       = 10004
-TASK_3DP_PLACE      = 10005
+# TASK_3DP_PICK       = 10004
+# TASK_3DP_PLACE      = 10005
+TASK_SEPARATE = 10004
 ##################################################################################################################################################
 
 

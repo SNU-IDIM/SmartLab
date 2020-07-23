@@ -155,12 +155,14 @@ class DRLInterface():
         Doosan-robot Relative Move (translation in x, y, z [mm])
             @ input 1: double distance [mm]
     '''
-    def movel_x(self, distance): # distance [mm]
-        movel(posx(distance, 0, 0, 0, 0, 0), vel=[50,10], acc=[50,10], ref=DR_TOOL, mod=DR_MV_MOD_REL)
-    def movel_y(self, distance): # distance [mm]
-        movel(posx(0, distance, 0, 0, 0, 0), vel=[50,10], acc=[50,10], ref=DR_TOOL, mod=DR_MV_MOD_REL)
-    def movel_z(self, distance): # distance [mm]
-        movel(posx(0, 0, distance, 0, 0, 0), vel=[50,10], acc=[50,10], ref=DR_TOOL, mod=DR_MV_MOD_REL)
+    def movel_x(self, distance, velx=[50,10], accx=[50,10]): # distance [mm]
+        movel(posx(distance, 0, 0, 0, 0, 0), vel=velx, acc=accx, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+    def movel_y(self, distance, velx=[50,10], accx=[50,10]): # distance [mm]
+        movel(posx(0, distance, 0, 0, 0, 0), vel=velx, acc=accx, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+    def movel_z(self, distance, velx=[50,10], accx=[50,10]): # distance [mm]
+        movel(posx(0, 0, distance, 0, 0, 0), vel=velx, acc=accx, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+    def move_xyz(self, x, y, z, velx=[50,10], accx=[50,10]): # distance [mm]
+        movel(posx(x, y, z, 0, 0, 0), vel=velx, acc=accx, ref=DR_TOOL, mod=DR_MV_MOD_REL)
 
 
     '''
@@ -190,9 +192,12 @@ class DRLInterface():
     '''
         dsr_state_cb: "~/dsr/state" topic callback function (update dsr_flag)
     '''
-    def dsr_state_cb(self, data):
-        self.dsr_flag = data.robot_state
-        self.current_posx = data.current_posx
+    def dsr_state_cb(self, msg):
+        self.dsr_flag = msg.robot_state
+        self.current_posx = msg.current_posx
+        self.toolforce = msg.actual_ett
+        # print(self.toolforce)
+        # print(self.current_posx)
 
 
     '''
@@ -342,10 +347,49 @@ class DRLInterface():
             movel([0,0,-200,0,0,0], mod = 1, ref = 1)
             viewpoint = [self.current_posx[0],self.current_posx[1],self.current_posx[2],self.current_posx[3],self.current_posx[4]-20,self.current_posx[5]]
             movel(viewpoint)
+        
+        elif(self.cmd_protocol == TASK_SEPARATE):
+            print(release_compliance_ctrl())
+            print(task_compliance_ctrl([100, 100, 10, 1000, 1000, 1000]), 10)
             
-        set_robot_mode(ROBOT_MODE_MANUAL)
+            set_velj(50)
+            set_accj(50)
+            set_velx(50,100)
+            set_accx(50,100)
+            
+            # init_posj = [-6.106618404388428, -3.9530131816864014, -111.23585510253906, -3.684967041015625, -69.19756317138672, -1.9469901323318481]
+            init_posj = [-79.31462860107422, -26.04599952697754, -79.19917297363281, -4.1053619384765625, -73.67802429199219, 12.329407691955566]
+            movej(init_posj,50,50)
+
+            # init_posx = [-531.9276123046875, 98.91694641113281, 400.67755126953125-65, 0, 180, 0]
+            init_posx = [-108.84053039550781, 807.7434692382812, 441.853759765625, 0, 180, 0]
+
+            movel(init_posx)
+            self.movel_z(50)
+            # print(task_compliance_ctrl([100, 100, 10, 1000, 1000, 1000]))
+            
+            # movel(moving_down,[50,50],[50,50])
+
+            ##contact point 정의 필요 movel할 것
+
+            while(True):
+                if self.toolforce[2] == 0.0:  #set force in N
+                    contact_posx = self.current_posx
+                    break
+            
+            print(contact_posx)
+            self.move_xyz(0, 50, 10, velx=[10,10])
+            release_compliance_ctrl()
+
+
+        set_robot_mode(ROBOT_MODE_MANUAL)        
         self.robot_status = "done"
         self.status_pub.publish(URStatus(status=self.robot_status, arm_status = self.joints_state))
+        
+
+
+
+
 
 
 
@@ -367,5 +411,5 @@ if __name__=='__main__':
         #    idim.robot_status = "waiting"
         idim.status_pub.publish(URStatus(status=idim.robot_status, arm_status = idim.joints_state))
         rospy.sleep(0.1)
-    set_robot_mode(ROBOT_MODE_MANUAL)
+    # set_robot_mode(ROBOT_MODE_MANUAL)
     
