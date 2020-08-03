@@ -32,13 +32,17 @@ class DRLInterface():
         self.eulerZYZ = np.zeros(3)
         self.cmd_protocol = ACTION_HOME
 
-        self.offset_x = 0.0
-        self.offset_y = -0.12
-        self.offset_z = 0.2
-        self.robvelj = 30
-        self.robaccj = 30
-        self.robvelx = 50
-        self.robaccx = 50
+        self.toolforce          = []
+        self.toolforce_max      = 0.0
+        self.toolforce_max_flag = False
+        
+        self.offset_x           = 0.0
+        self.offset_y           = -0.12
+        self.offset_z           = 0.2
+        self.robvelj            = 30
+        self.robaccj            = 30
+        self.robvelx            = 50
+        self.robaccx            = 50
         
         ##opencv drawing related
         self.imagewindowflag =0
@@ -61,24 +65,54 @@ class DRLInterface():
         self.robot_status = "done"
         self.status_pub.publish(URStatus(status=self.robot_status, arm_status = self.joints_state))
 
+        
+    '''
+        dsr_state_cb: "~/dsr/state" topic callback function (update dsr_flag)
+    '''
+    def dsr_state_cb(self, msg):
+        self.dsr_flag = msg.robot_state
+        self.current_posx = msg.current_posx
+        self.toolforce = msg.actual_ett
+        # print(self.toolforce[0], self.toolforce[1], self.toolforce[2])
+        # print(self.current_posx)
+
+        ## Initialize Maximum tool force
+        if not self.toolforce_max_flag:
+            self.toolforce_max = self.toolforce[2]
+            self.toolforce_max_flag = True
+        
+        ## Capture Maximum tool force
+        if self.toolforce_max < self.toolforce[2]:
+            self.toolforce_max = self.toolforce[2]
+            # print(self.toolforce_max)
+        
+
+    '''
+        current_status_cb: update "~/ur_status" from "~/dsr/joint_state"
+    '''
+    def current_status_cb(self, data):
+        self.joints_state = data
+
 
     '''
         vision_cb: OpenCV image visualization
     '''
     def vision_cb(self, data):
+        # pass
         try:
             self.cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
-            self.draw_image = copy.deepcopy(self.cv_image) # move this when you draw something in the image and change imagewindowflag
+            self.draw_image = copy.deepcopy(self.cv_image)
+            self.specimen_image = copy.deepcopy(self.draw_image) # move this when you draw something in the image and change imagewindowflag
         except CvBridgeError as e:
             print(e)
-        if self.imagewindowflag ==0:
-            cv2.namedWindow('robot endeffector image', cv2.WINDOW_NORMAL)
-            cv2.imshow('robot endeffector image', self.cv_image)
-            cv2.waitKey(1)
-        elif self.imagewindowflag ==1:
-            cv2.namedWindow('robot endeffector image', cv2.WINDOW_NORMAL)
-            cv2.imshow('robot endeffector image', self.draw_image)
-            cv2.waitKey(1)
+        # if self.imagewindowflag ==0:
+        #     cv2.namedWindow('robot endeffector image', cv2.WINDOW_NORMAL)
+        #     cv2.imshow('robot endeffector image', self.cv_image)
+        #     cv2.waitKey(1)
+        # elif self.imagewindowflag ==1:
+        #     cv2.namedWindow('robot endeffector image', cv2.WINDOW_NORMAL)
+        #     cv2.imshow('robot endeffector image', self.draw_image)
+        #     cv2.waitKey(1)
 
 
     '''
@@ -154,15 +188,31 @@ class DRLInterface():
     '''
         Doosan-robot Relative Move (translation in x, y, z [mm])
             @ input 1: double distance [mm]
+            @ input 2: intArray velx = [50, 10] [mm/s, mm/s]
+            @ input 3: intArray accx = [50, 10] [mm/s^2, mm/s^2]
     '''
-    def movel_x(self, distance, velx=[50,10], accx=[50,10]): # distance [mm]
+    def movel_x(self, distance, velx=DSR_DEFAULT_JOG_VELX, accx=DSR_DEFAULT_JOG_ACCX): # distance [mm]
         movel(posx(distance, 0, 0, 0, 0, 0), vel=velx, acc=accx, ref=DR_TOOL, mod=DR_MV_MOD_REL)
-    def movel_y(self, distance, velx=[50,10], accx=[50,10]): # distance [mm]
+    def movel_y(self, distance, velx=DSR_DEFAULT_JOG_VELX, accx=DSR_DEFAULT_JOG_ACCX): # distance [mm]
         movel(posx(0, distance, 0, 0, 0, 0), vel=velx, acc=accx, ref=DR_TOOL, mod=DR_MV_MOD_REL)
-    def movel_z(self, distance, velx=[50,10], accx=[50,10]): # distance [mm]
+    def movel_z(self, distance, velx=DSR_DEFAULT_JOG_VELX, accx=DSR_DEFAULT_JOG_ACCX): # distance [mm]
         movel(posx(0, 0, distance, 0, 0, 0), vel=velx, acc=accx, ref=DR_TOOL, mod=DR_MV_MOD_REL)
-    def move_xyz(self, x, y, z, velx=[50,10], accx=[50,10]): # distance [mm]
+    def move_xyz(self, x, y, z, velx=DSR_DEFAULT_JOG_VELX, accx=DSR_DEFAULT_JOG_ACCX): # distance [mm]
         movel(posx(x, y, z, 0, 0, 0), vel=velx, acc=accx, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+    def movel_xyzjoint(self,x,y,z,jz1,jy,jz2,velx=DSR_DEFAULT_JOG_VELX, accx=DSR_DEFAULT_JOG_ACCX): # distance [mm], angle [degree]
+        movel(posx(x, y, z, jz1, jy, jz2), vel=velx, acc=accx, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+
+
+    '''
+        setVelAcc: Set Doosan-robot Velocity(joint, task), Acceleration(joint, task)
+            @ input 1: int velj
+
+    '''
+    def setVelAcc(self, velj=DSR_DEFAULT_VELJ, accj=DSR_DEFAULT_ACCJ, velx=DSR_DEFAULT_VELX, accx=DSR_DEFAULT_ACCX):
+        set_velj(velj)
+        set_accj(accj)
+        set_velx(velx[0], velx[1])
+        set_accx(accx[0], accx[1])
 
 
     '''
@@ -173,7 +223,11 @@ class DRLInterface():
     '''
     def IO_init(self):
         for i in range(1, 16+1):
-            set_digital_output(i, 0)
+            if i == 6 or i ==5:
+                pass
+            else:
+                set_digital_output(i, 0)
+            
         rospy.sleep(0.5)
     def gripper_close(self):
         self.IO_init();  set_digital_output(13,1)
@@ -189,22 +243,8 @@ class DRLInterface():
         self.IO_init();  set_digital_output(2,1)
 
 
-    '''
-        dsr_state_cb: "~/dsr/state" topic callback function (update dsr_flag)
-    '''
-    def dsr_state_cb(self, msg):
-        self.dsr_flag = msg.robot_state
-        self.current_posx = msg.current_posx
-        self.toolforce = msg.actual_ett
-        # print(self.toolforce)
-        # print(self.current_posx)
 
 
-    '''
-        current_status_cb: update "~/ur_status" from "~/dsr/joint_state"
-    '''
-    def current_status_cb(self, data):
-        self.joints_state = data
 
     
     '''
@@ -348,54 +388,455 @@ class DRLInterface():
             viewpoint = [self.current_posx[0],self.current_posx[1],self.current_posx[2],self.current_posx[3],self.current_posx[4]-20,self.current_posx[5]]
             movel(viewpoint)
         
+        # Task [10004]: Seperate workpiece from the printing bed on the universal jig
         elif(self.cmd_protocol == TASK_SEPARATE):
-            print(release_compliance_ctrl())
-            print(task_compliance_ctrl([100, 100, 10, 1000, 1000, 1000]), 10)
+            release_compliance_ctrl()
+
+            set_velj(50)
+            set_accj(50)
+            set_velx(50,100)
+            set_accx(50,100)
             
+            init_posj = [-6.106618404388428, -3.9530131816864014, -111.23585510253906, -3.684967041015625, -69.19756317138672, -1.9469901323318481]
+            movej(init_posj,50,50)
+            self.movel_z(100)
+
+            k = 100
+            
+            eef_weight = self.toolforce[2]
+            task_compliance_ctrl([100, 100, 10, 1000, 1000, 1000])
+
+            # movel(moving_down,[50,50],[50,50])
+
+            ##contact point 정의 필요 movel할 것
+            while(True):
+                if self.toolforce[2] == 0.0:  #set force in N
+                    contact_posx = posx(self.current_posx[0], self.current_posx[1], self.current_posx[2]+5, 180, 180, 0)
+                    release_compliance_ctrl()
+                    print("Z position: {}".format(contact_posx[2]))
+                    break
+
+            for k in range(10,1000,10):
+                for x in range(10,100,10):
+                    task_compliance_ctrl([100, 100, k, 1000, 1000, 1000])
+                    self.move_xyz(0, 0, x, velx=[10,10])
+                    print("----------------------------------")
+                    print("k: {}".format(k), "x: {}".format(x))
+                    # print("Expected mass -> {} [g]".format(k*x/g))
+                    # print("End-effector mass -> {} [g]".format(-eef_weight/g * 1000))
+                    print("Result mass -> {} g".format((self.toolforce_max - eef_weight)/g * 1000))
+
+                    release_compliance_ctrl()
+                    movel(contact_posx, vel=[20,20], acc=[100,50])
+                    self.toolforce_max = 0.0
+            pass
+        
+        # Task [20001]
+        elif(self.cmd_protocol == TASK_TEST_COMPLIANCE):
+            release_compliance_ctrl()
+
             set_velj(50)
             set_accj(50)
             set_velx(50,100)
             set_accx(50,100)
             
             # init_posj = [-6.106618404388428, -3.9530131816864014, -111.23585510253906, -3.684967041015625, -69.19756317138672, -1.9469901323318481]
-            init_posj = [-79.31462860107422, -26.04599952697754, -79.19917297363281, -4.1053619384765625, -73.67802429199219, 12.329407691955566]
+            init_posj = Q_BACK
             movej(init_posj,50,50)
 
-            # init_posx = [-531.9276123046875, 98.91694641113281, 400.67755126953125-65, 0, 180, 0]
-            init_posx = [-108.84053039550781, 807.7434692382812, 441.853759765625, 0, 180, 0]
-
-            movel(init_posx)
-            self.movel_z(50)
-            # print(task_compliance_ctrl([100, 100, 10, 1000, 1000, 1000]))
+            self.movel_z(280)
+            k = 10
+            x = 10
+            g = 9.81
             
+            
+            eef_weight = self.toolforce[2]
+            task_compliance_ctrl([100, 100, 10, 1000, 1000, 1000])
+
             # movel(moving_down,[50,50],[50,50])
 
             ##contact point 정의 필요 movel할 것
-
             while(True):
                 if self.toolforce[2] == 0.0:  #set force in N
-                    contact_posx = self.current_posx
+                    contact_posx = posx(self.current_posx[0], self.current_posx[1], self.current_posx[2]+5, 180, 180, 0)
+                    release_compliance_ctrl()
+                    print("Z position: {}".format(contact_posx[2]))
                     break
+
+            for k in range(10,1000,10):
+                for x in range(10,100,10):
+                    task_compliance_ctrl([100, 100, k, 1000, 1000, 1000])
+                    self.move_xyz(0, 0, x, velx=[10,10])
+                    print("----------------------------------")
+                    print("k: {}".format(k), "x: {}".format(x))
+                    # print("Expected mass -> {} [g]".format(k*x/g))
+                    # print("End-effector mass -> {} [g]".format(-eef_weight/g * 1000))
+                    print("Result mass -> {} g".format((self.toolforce_max - eef_weight)/g * 1000))
+
+                    release_compliance_ctrl()
+                    movel(contact_posx, vel=[20,20], acc=[100,50])
+                    self.toolforce_max = 0.0
+
+        # Task [10006]: SEARCH AND APPROACH TO ''SINGLE'' SPECIMEN
+        elif(self.cmd_protocol == TASK_SPECIMEN_SEARCH):
+            set_velj(50)
+            set_accj(50)
+            set_velx(50,100)
+            set_accx(50,100)
+            set_digital_output(8,1)
+            set_digital_output(9,1)
             
-            print(contact_posx)
-            self.move_xyz(0, 50, 10, velx=[10,10])
+            # init1 = [-389.43310546875, 216.06378173828125, 310.4500427246094, 0, 180, 0]
+            # movel(init1)
+            # init2 = [-389.43310546875, 266.06378173828125, 310.4500427246094, 0, 180, 0]
+            # movel(init2)
+
+            #low height joint angle
+            # search_init_pos = [-24.57923698425293, -0.10278947651386261, -127.49447631835938, -0.0, -52.4029426574707, -24.57932472229004] 
+
+            #high height joint angle
+            search_init_pos = [-20.134538650512695, 15.13610553741455, -125.55142211914062, -0.0, -69.58480072021484, -20.13439178466797]
+            movej(search_init_pos)
+
+            # cv2.imshow('image',self.specimen_image)
+            # cv2.waitKey(30000)
+
+            while(True):
+                try:
+                    #set Region of Interest
+                    # DEPTH=210
+
+                    rowEnd=607
+                    colEnd=383
+                    rowStart=224
+                    colStart=20
+
+                    cam_offsetx = 116
+                    cam_offsety = 43
+                    
+                    bgr_temp = self.specimen_image
+                    gray_temp=cv2.cvtColor(bgr_temp, cv2.COLOR_BGR2GRAY)
+
+                    gray=gray_temp[colStart:colEnd, rowStart:rowEnd]
+                    bgr=bgr_temp[colStart:colEnd, rowStart:rowEnd]
+                    
+                    #Canny edge detection & Hough lines transform
+                    edges=cv2.Canny(gray,50,200)
+                   
+                    lines=cv2.HoughLines(edges, 1, np.pi/180, 15, None, 0, 0)
+
+                    print(lines)
+                    # cv2.imshow('Hough', lines)
+                    # cv2.waitKey(10) 
+                    
+                    recAccum=[]
+                    ptAccum=[]
+                    for i in range(0, len(lines)):
+                        for j in range(i+1,len(lines)):
+                            if abs(abs(lines[i][0][1]-lines[j][0][1])-np.pi/2)<0.02:
+                                recAccum.append([i,j])
+
+                    if recAccum is not None:
+                        for i in range(0,len(recAccum)):
+                            num1=recAccum[i][0]
+                            rho1 = lines[num1][0][0]
+                            theta1 = lines[num1][0][1]
+                            if rho1 <0:
+                                rho1= abs(rho1)
+                                theta1=theta1+np.pi
+                            a1 = math.cos(theta1)
+                            b1 = math.sin(theta1)
+                            x01 = a1 * rho1
+                            y01 = b1 * rho1
+
+                            num2=recAccum[i][1]
+                            rho2 = lines[num2][0][0]
+                            theta2 = lines[num2][0][1]
+                            if rho2 <0:
+                                rho2= abs(rho2)
+                                theta2=theta2+np.pi
+                            a2 = math.cos(theta2)
+                            b2 = math.sin(theta2)
+                            x02 = a2 * rho2
+                            y02 = b2 * rho2
+
+                            if b2==0:
+                                x=rho2
+                                y=rho1
+                            elif b1==0:
+                                x=rho1
+                                y=rho2
+                            else:
+                                x=(1-(b1/b2)*(rho2/rho1))*rho1/(a1-a2*b1/b2)
+                                y=(1-a1*x/rho1)*rho1/b1
+                            print(x,y)
+                            ptAccum.append([x,y])
+                            cv2.circle(bgr, (int(x),int(y)),5,(0,255,255),2)
+                    
+
+                    ptAccum=np.array(ptAccum)
+                    print(ptAccum)
+                    x_Max=np.argmax(ptAccum[:,0]) # x maximum coordinate index
+                    x_Min=np.argmin(ptAccum[:,0]) # x minimum coordinate index
+                    y_Max=np.argmax(ptAccum[:,1]) # y maximum coordinate index
+                    y_Min=np.argmin(ptAccum[:,1]) # y minimum coordinate index
+
+                    y_Max_Vertice=[ptAccum[y_Max,0], ptAccum[y_Max,1]]
+                    x_Max_Vertice=[ptAccum[x_Max,0], ptAccum[x_Max,1]]
+                    x_Min_Vertice=[ptAccum[x_Min,0], ptAccum[x_Min,1]]
+                    y_Min_Vertice=[ptAccum[y_Min,0], ptAccum[y_Min,1]]
+
+                    orientation1= (x_Max_Vertice[1]-x_Min_Vertice[1])/(x_Max_Vertice[0]-x_Min_Vertice[0])
+                    orientation2= (y_Max_Vertice[1]-y_Min_Vertice[1])/(y_Max_Vertice[0]-y_Min_Vertice[0])
+                    orientation=(orientation1+orientation2)/2
+
+                    theta=math.atan(orientation)
+                    centroid=[(np.max(ptAccum[:,0])+np.min(ptAccum[:,0]))/2, (np.max(ptAccum[:,1])+ np.min(ptAccum[:,1]))/2]
+                
+                    print('centroid',centroid)
+                    print('lt',y_Max_Vertice)
+                    print('lb',x_Min_Vertice)
+                    print('rt',x_Max_Vertice)
+                    print('rb',y_Min_Vertice)
+                    print(theta*180/np.pi)
+                    print(orientation1)
+                    print(orientation2)
+                    cv2.circle(bgr, (int(centroid[0]), int(centroid[1])),2,(0,0,255),4)
+                    cv2.circle(bgr, (int(y_Max_Vertice[0]), int(y_Max_Vertice[1])),1,(0,0,255),2)
+                    cv2.circle(bgr, (int(x_Min_Vertice[0]), int(x_Min_Vertice[1])),1,(0,0,255),2)
+                    cv2.circle(bgr, (int(y_Min_Vertice[0]), int(y_Min_Vertice[1])),1,(0,0,255),2)
+                    cv2.circle(bgr, (int(x_Max_Vertice[0]), int(x_Max_Vertice[1])),1,(0,0,255),2)
+
+                    px2mm_Row=(centroid[0]+rowStart-320)*100/188
+                    px2mm_Col=(centroid[1]+colStart-240)*100/188
+
+                    print(px2mm_Row, px2mm_Col)
+
+
+                    cv2.imshow('image', bgr)
+                    cv2.waitKey(10)
+
+                    if centroid is not None:
+                        print('search complete')
+                        # search_pos = [-389.43310546875-cam_offsetx+px2mm_Col, 216.06378173828125-cam_offsety+px2mm_Row, 310.4500427246094, 0, 180, -90+theta*180/np.pi]
+                        
+                        self.movel_xyzjoint(cam_offsetx-px2mm_Col+10, -cam_offsety+px2mm_Row,0,0,0,-90+theta*180/np.pi, [100, 100], [100, 100])
+                        self.movel_z(200, [100, 100], [100, 100]) #go down
+    
+                        break
+
+                    # self.update_ros_param()
+                    # self.static_transformStamped.header.stamp    = rospy.Time.now()
+                    # # self.static_transformStampeed.header.frame_id = self.object_frame_name
+                    # # self.static_transformStamped.child_frame_id  = self.target_frame_name
+
+                    # self.static_transformStamped.transform.translation.x = px2mm_Row
+                    # self.static_transformStamped.transform.translation.y = px2mm_Col*(-1.0)
+                    # self.static_transformStamped.transform.translation.z = 0.0
+
+                    # quat = tf.transformations.quaternion_from_euler(0.0, 0.0, theta)
+                    # self.static_transformStamped.transform.rotation.x = quat[0]
+                    # self.static_transformStamped.transform.rotation.y = quat[1]
+                    # self.static_transformStamped.transform.rotation.z = quat[2]
+                    # self.static_transformStamped.transform.rotation.w = quat[3]
+                    # #print "%s"%self.static_transformStamped
+                
+                    # self.broadcaster.sendTransform(self.static_transformStamped)
+
+                except:
+                    print('keep searching')
+                    continue
+
+        # Task [10007]: SEARCH AND APPROACH TO ''MULTIPLE'' SPECIMENS
+        elif(self.cmd_protocol == TASK_MULSPECIMEN_SEARCH):
+            set_velj(50)
+            set_accj(50)
+            set_velx(50,100)
+            set_accx(50,100)
+            search_init_pos = [-20.134538650512695, 15.13610553741455, -125.55142211914062, -0.0, -69.58480072021484, -20.13439178466797]
+            movej(search_init_pos)
+            set_digital_output(13,0)
+            set_digital_output(14,1)
+            
+            set_digital_output(5,0)
+            set_digital_output(6,0)
+            
+            rospy.sleep(5)
+            set_digital_output(5,1)
+            set_digital_output(6,1)
+            
+
+            rospy.sleep(3)
+            
+            # the same position with below joint position
+            # init1=[-328.0, 157.0, 435.0, 0, 180, 0]
+            # movel(init1)
+
+            
+
+            #Set Region of Interest
+            rowEnd=600
+            colEnd=400
+            rowStart=220 #224
+            colStart=20
+
+            #Offset from camera to endeffector
+            cam_offsetx = 116
+            cam_offsety = 43
+
+            bgr_temp = self.specimen_image
+            gray_temp=cv2.cvtColor(bgr_temp, cv2.COLOR_BGR2GRAY)
+
+            gray=gray_temp[colStart:colEnd, rowStart:rowEnd]
+            bgr=bgr_temp[colStart:colEnd, rowStart:rowEnd]
+
+            #Canny edge detection & Hough lines transform
+            edges=cv2.Canny(gray,50,200)
+            cv2.imshow('Canny', edges)
+            cv2.waitKey(1000)
+            _, contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+            
+            for ii in range(len(contours)):
+                ptAccum=np.squeeze(contours[ii])
+
+                # FILTER1 : the specimen edge should contain more than 300 points
+                if len(ptAccum) <500: 
+                    print('bad search : point shortage')
+                    continue
+
+                x_Max=np.argmax(ptAccum[:,0]) # x maximum coordinate index
+                x_Min=np.argmin(ptAccum[:,0]) # x minimum coordinate index
+                y_Max=np.argmax(ptAccum[:,1]) # y maximum coordinate index
+                y_Min=np.argmin(ptAccum[:,1]) # y minimum coordinate index
+
+                #find four rectnagular Vertices using maximum coordinate
+                x_Max_Vertice=[ptAccum[x_Max,0], ptAccum[x_Max,1]]
+                x_Min_Vertice=[ptAccum[x_Min,0], ptAccum[x_Min,1]]
+                y_Max_Vertice=[ptAccum[y_Max,0], ptAccum[y_Max,1]]
+                y_Min_Vertice=[ptAccum[y_Min,0], ptAccum[y_Min,1]]
+
+                # FILTER2
+                print(ptAccum[x_Max,0], ptAccum[x_Min,0], ptAccum[y_Max,1], ptAccum[y_Min,1])            
+
+                orientation1= float(x_Max_Vertice[1]-x_Min_Vertice[1])/float(x_Max_Vertice[0]-x_Min_Vertice[0])
+                orientation2= float(y_Max_Vertice[1]-y_Min_Vertice[1])/float(y_Max_Vertice[0]-y_Min_Vertice[0])
+                orientation=(orientation1+orientation2)/2.0
+                theta=math.atan(orientation)
+
+                #centroid : average of all coordinates
+                centroid=[float(sum(ptAccum[:,0])/float(len(ptAccum[:,0]))), float(sum(ptAccum[:,1]))/float(len(ptAccum[:,1]))]
+
+                #plotting for debugging 
+                cv2.circle(bgr, (int(centroid[0]), int(centroid[1])),2,(0,0,255),4)
+                cv2.circle(bgr, (int(y_Max_Vertice[0]), int(y_Max_Vertice[1])),1,(0,255,255),2)
+                cv2.circle(bgr, (int(x_Min_Vertice[0]), int(x_Min_Vertice[1])),1,(0,255,255),2)
+                cv2.circle(bgr, (int(y_Min_Vertice[0]), int(y_Min_Vertice[1])),1,(0,255,255),2)
+                cv2.circle(bgr, (int(x_Max_Vertice[0]), int(x_Max_Vertice[1])),1,(0,255,255),2)
+                cv2.imshow('image', bgr)
+                cv2.waitKey(30)
+
+                #Calibration 100mm / 188pixels
+                px2mm_Row=(centroid[0]+rowStart-320)*100/188
+                px2mm_Col=(centroid[1]+colStart-240)*100/188
+
+                if centroid is not None:
+                    print('search complete')
+                    # search_pos = [-389.43310546875-cam_offsetx+px2mm_Col, 216.06378173828125-cam_offsety+px2mm_Row, 310.4500427246094, 0, 180, -90+theta*180/np.pi]
+                    self.movel_xyzjoint(cam_offsetx-px2mm_Col+10, -cam_offsety+px2mm_Row,0,0,0,theta*180/np.pi, [100, 100], [100, 100])
+                    self.movel_z(204, [100, 100], [100, 100]) #go down
+                    self.gripper_close()
+                    self.movel_z(-204,[100, 100], [100, 100]) #go up
+                    movej(search_init_pos)
+                    self.gripper_open()
+                    # set_digital_output(8,0)
+                    # set_digital_output(9,0)
+                    set_digital_output(5,0)
+                    set_digital_output(6,0)
+
+        elif(self.cmd_protocol == TOOLCHANGE1):
+            release_compliance_ctrl()
+            
+            
+
+            set_velj(50)
+            set_accj(50)
+            set_velx(150,100)
+            set_accx(150,100)
+            # tool2_position_ = [-236.8995361328125, -358.78912353515625, 38.94343566894531, 82.39966583251953, 178.2489013671875, 2.303342580795288]
+            # movel(tool2_position_)
+            home = [-235.78550720214844, -358.7340393066406, 352.00294494628906, 84.49280548095703, 177.22393798828125, 4.466612815856934]
+            movel(home)
+            # approach = [-235.78550720214844, -358.7340393066406, 252.00294494628906, 84.49280548095703, 177.22393798828125, 4.466612815856934]
+            # movel(approach)
+            approach = [-235.98329162597656, -358.2447509765625, 49.16860580444336, 82.3934097290039, 177.25328063964844, 2.3672542572021484]
+            movel(approach)
+
+
+            set_velx(50,100)
+            set_accx(50,100)
+            task_compliance_ctrl([500, 4500, 100, 1000, 1000, 1000])
+
+
+            approach1 = [-236.38015747070312, -358.78912353515625, 39.48764419555664, 84.1766586303711, 177.68301391601562, 4.175314426422119]
+            movel(approach1)
+
+            approach2 = [-236.38015747070312, -358.78912353515625+40, 39.48764419555664, 84.1766586303711, 177.68301391601562, 4.175314426422119]
+            movel(approach2)
+
+            # approach3 = [-236.38015747070312, -358.78912353515625, 39.48764419555664, 84.1766586303711, 177.68301391601562, 4.175314426422119]
+            # movel(approach3)
             release_compliance_ctrl()
 
+            tool2_position = [-236.3540496826172, -336.87152099609375, 38.58928298950195, 168.34994506835938, 179.523681640625, 88.14895629882812]
+            movel(tool2_position)
+
+
+
+
+            # set_stiff
+            # print(release_compliance_ctrl())
+            # print(task_compliance_ctrl([100, 100, 100, 100, 100, 100]))
+            # rospy.sleep(3)
+            set_digital_output(2,1)
+            rospy.sleep(1)
+
+            # release_compliance_ctrl()
+            # task_compliance_ctrl([1000, 1000, 10000, 200, 200, 200])
+            self.movel_z(-100)
+            tool1_position = [-375.4557800292969, -337.03533935546875, 38.78656005859375+100, 121.61463165283203, 179.27223205566406, 41.801002502441406]
+            movel(tool1_position)
+            
+            tool1_position = [-375.4557800292969, -337.03533935546875, 38.78656005859375, 121.61463165283203, 179.27223205566406, 41.801002502441406]
+            movel(tool1_position)
+
+            set_digital_output(2,0)
+
+            move_out1 = [-375.4557800292969, -337.03533935546875-20, 38.78656005859375, 121.61463165283203, 179.27223205566406, 41.801002502441406]
+            movel(move_out1)
+
+            move_out2 = [-375.4557800292969, -337.03533935546875-25, 38.78656005859375+250, 121.61463165283203, 179.27223205566406, 41.801002502441406]
+            movel(move_out2)
+            
+
+            # moveout =[-236.8995361328125, -337.1667175292969, 38.94343566894531+100, 82.39966583251953, 178.2489013671875, 2.303342580795288]
+            # movel(moveout)
+            # release_compliance_ctrl()
+            
+
+
+
+
+
+
+            
+
+            # home[1] = home[1]-80
+            # movel(home)
 
         set_robot_mode(ROBOT_MODE_MANUAL)        
         self.robot_status = "done"
         self.status_pub.publish(URStatus(status=self.robot_status, arm_status = self.joints_state))
-        
-
-
-
-
-
-
-
-
-
-
+    
         
 
 if __name__=='__main__':

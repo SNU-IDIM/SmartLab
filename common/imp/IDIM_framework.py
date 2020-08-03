@@ -21,6 +21,16 @@ def M2MM(meter):
 def MM2M(milimeter):
     return (1.0/1000.0)*milimeter
 ##################################################################################################################################################
+'''
+    Doosan-robot Default Parameters
+'''
+DSR_DEFAULT_JOG_VELX = [50, 10]   # [mm/s]
+DSR_DEFAULT_JOG_ACCX = [50, 10]   # [mm/s^2]
+DSR_DEFAULT_VELX     = [50, 100]  # [mm/s, deg/s]
+DSR_DEFAULT_ACCX     = [50, 100]  # [mm/x^2, deg/s^2]
+DSR_DEFAULT_VELJ     = 50         # [deg/s]
+DSR_DEFAULT_ACCJ     = 50         # [deg/s^2]
+##################################################################################################################################################
 
 
 ##################################################################################################################################################
@@ -68,12 +78,18 @@ ACTION_TRANS_Z = 3000
 ACTION_TRANS   = 4000
 
 ## TASK [10001 ~ 10100] - Simple Task
-TASK_SPECIMEN_PICK  = 10001
-TASK_INSTRON_SEARCH = 10002
-TASK_INSTRON_MOVEOUT =10003
-# TASK_3DP_PICK       = 10004
-# TASK_3DP_PLACE      = 10005
-TASK_SEPARATE = 10004
+TASK_SPECIMEN_PICK   = 10001
+TASK_INSTRON_SEARCH  = 10002
+TASK_INSTRON_MOVEOUT = 10003
+TASK_SEPARATE        = 10004
+TASK_SPECIMEN_SEARCH = 10006
+TASK_MULSPECIMEN_SEARCH = 10007
+
+
+
+TOOLCHANGE1 =10010
+## TASK (Test) [20001 ~ ]
+TASK_TEST_COMPLIANCE = 20001
 ##################################################################################################################################################
 
 
