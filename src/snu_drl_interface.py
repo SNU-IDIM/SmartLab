@@ -227,20 +227,51 @@ class DRLInterface():
                 pass
             else:
                 set_digital_output(i, 0)
-            
         rospy.sleep(0.5)
-    def gripper_close(self):
-        self.IO_init();  set_digital_output(13,1)
-    def gripper_open(self):
-        self.IO_init();  set_digital_output(14,1)
+
     def compressor_on(self):
-        self.IO_init();  set_digital_output(1,1)
+        pin = ACTION_IO_COMPRESSOR
+        if get_digital_output(pin) == 0:
+            set_digital_output(pin,1)
     def compressor_off(self):
-        self.IO_init();  set_digital_output(1,0)
+        pin = ACTION_IO_COMPRESSOR
+        if get_digital_output(pin) == 1:
+            set_digital_output(pin,0)
     def toolchanger_attach(self):
-        self.IO_init();  set_digital_output(2,0)
+        pin = ACTION_IO_TOOLCHANGER
+        if get_digital_output(pin) == 1:
+            set_digital_output(pin,0)
     def toolchanger_detach(self):
-        self.IO_init();  set_digital_output(2,1)
+        pin = ACTION_IO_TOOLCHANGER
+        if get_digital_output(pin) == 0:
+            set_digital_output(pin,1)
+    def jig_x_close(self):
+        pin = ACTION_IO_JIG_X
+        if get_digital_output(pin) == 0:
+            set_digital_output(pin,1)
+    def jig_x_open(self):
+        pin = ACTION_IO_JIG_X
+        if get_digital_output(pin) == 1:
+            set_digital_output(pin,0)
+    def jig_y_close(self):
+        pin = ACTION_IO_JIG_Y
+        if get_digital_output(pin) == 0:
+            set_digital_output(pin,1)
+    def jig_y_open(self):
+        pin = ACTION_IO_JIG_Y
+        if get_digital_output(pin) == 1:
+            set_digital_output(pin,0)
+
+    def gripper_close(self):
+        set_digital_output(14,0)
+        rospy.sleep(0.1)
+        if get_digital_output(13) == 0:
+            set_digital_output(13,1)
+    def gripper_open(self):
+        set_digital_output(13,0)
+        rospy.sleep(0.1)
+        if get_digital_output(14) == 0:
+            set_digital_output(14,1)
 
 
 
@@ -290,30 +321,42 @@ class DRLInterface():
             movel(self.drl_pose, vel=[100,50], acc=[100,50]) # 2nd approach
             self.search_ar_target(4)
             movel(self.drl_pose, vel=[100,50], acc=[100,50]) # 3rd approach
-        # ACTION [5]: Approach  
+        # ACTION [5]: ALIGN
         elif(self.cmd_protocol == ACTION_ALIGN):
             self.UpdateParam(0.0, 0.0, 0.2)
             self.search_ar_target(1)
             movel(self.drl_pose, vel=[100,30], acc=[100,30])
 
-        # ACTION [101]: Gripper Open
+        # ACTION [113]: Gripper Open (임시 -> flange I/O로 변경 필요)
         elif(self.cmd_protocol == ACTION_IO_GRIPPER_OPEN):
             self.gripper_open()
-        # ACTION [102]: Gripper Close
+        # ACTION [114]: Gripper Close (임시 -> flange I/O로 변경 필요)
         elif(self.cmd_protocol == ACTION_IO_GRIPPER_CLOSE):
             self.gripper_close()
-        # ACTION [103]: Compressor On
+        # ACTION [101]: Compressor On
         elif(self.cmd_protocol == ACTION_IO_COMPRESSOR_ON):
             self.compressor_on()
-        # ACTION [104]: Compressor Off
+        # ACTION [-101]: Compressor Off
         elif(self.cmd_protocol == ACTION_IO_COMPRESSOR_OFF):
             self.compressor_off()
-        # ACTION [105]: Tool-changer Attach
-        elif(self.cmd_protocol == ACTION_IO_TOOLCHANGER_ATTACH):
-            self.toolchanger_attach()
-        # ACTION [106]: Tool-changer Detach
+        # ACTION [102]: Tool-changer Detach
         elif(self.cmd_protocol == ACTION_IO_TOOLCHANGER_DETACH):
             self.toolchanger_detach()
+        # ACTION [-102]: Tool-changer Attach
+        elif(self.cmd_protocol == ACTION_IO_TOOLCHANGER_ATTACH):
+            self.toolchanger_attach()
+        # ACTION [105]: Universal Jig X-axis Close
+        elif(self.cmd_protocol == ACTION_IO_JIG_X_CLOSE):
+            self.jig_x_close()
+        # ACTION [-105]: Universal Jig X-axis Open
+        elif(self.cmd_protocol == ACTION_IO_JIG_X_OPEN):
+            self.jig_x_open()
+        # ACTION [106]: Universal Jig Y-axis Close
+        elif(self.cmd_protocol == ACTION_IO_JIG_Y_CLOSE):
+            self.jig_y_close()
+        # ACTION [-106]: Universal Jig Y-axis Open
+        elif(self.cmd_protocol == ACTION_IO_JIG_Y_OPEN):
+            self.jig_y_open()
 
         # ACTION [1000 ~ 1999]: Trans X (relative move)
         elif(abs(self.cmd_protocol) >= ACTION_TRANS_X and abs(self.cmd_protocol) < ACTION_TRANS_Y):
@@ -330,11 +373,10 @@ class DRLInterface():
         
         # Task [10001]: Pick a tensile test specimen
         elif(self.cmd_protocol == TASK_SPECIMEN_PICK):
+            self.gripper_open()
             movej(Q_TOP_PLATE, 50, 50)
 
-            self.gripper_open()
-
-            set_velj(50); set_accj(50); set_velx(100,50); set_accx(100,150)
+            self.setVelAcc(50, 50, [100,50], [100,150])
             approachj = [33.12971115112305, -36.94938278198242, -131.39822387695312, -57.41393280029297, -96.33760070800781, 170.20169067382812]
             movej(approachj)
 
@@ -354,10 +396,10 @@ class DRLInterface():
         # Task [10002]: Search AR_Marker attached to the upper gripper of Instron
         elif(self.cmd_protocol == TASK_INSTRON_SEARCH):
             movej(Q_TOP_PLATE, 50, 50)
-            
-            set_velj(self.robvelj); set_accj(self.robaccj); set_velx(self.robvelx+50,self.robvelx); set_accx(self.robaccx+50,self.robaccx)
+
+            self.setVelAcc(30, 30, [100,50], [100,50])
             see_point1j = [81.08692169189453, -0.4761710464954376, -143.7606658935547, -9.412845611572266, 57.22504806518555, 100.97422790527344]
-            movej(see_point1j,self.robvelj,self.robaccj)
+            movej(see_point1j)
 
             self.UpdateParam(0.0, -0.12, 0.25)
             rospy.sleep(1)
@@ -391,11 +433,7 @@ class DRLInterface():
         # Task [10004]: Seperate workpiece from the printing bed on the universal jig
         elif(self.cmd_protocol == TASK_SEPARATE):
             release_compliance_ctrl()
-
-            set_velj(50)
-            set_accj(50)
-            set_velx(50,100)
-            set_accx(50,100)
+            self.setVelAcc(50, 50, [50,100], [50,100])
             
             init_posj = [-6.106618404388428, -3.9530131816864014, -111.23585510253906, -3.684967041015625, -69.19756317138672, -1.9469901323318481]
             movej(init_posj,50,50)
@@ -434,26 +472,19 @@ class DRLInterface():
         # Task [20001]
         elif(self.cmd_protocol == TASK_TEST_COMPLIANCE):
             release_compliance_ctrl()
+            self.setVelAcc(50, 50, [50,100], [50,100])
 
-            set_velj(50)
-            set_accj(50)
-            set_velx(50,100)
-            set_accx(50,100)
-            
-            # init_posj = [-6.106618404388428, -3.9530131816864014, -111.23585510253906, -3.684967041015625, -69.19756317138672, -1.9469901323318481]
             init_posj = Q_BACK
-            movej(init_posj,50,50)
+            movej(init_posj)
 
             self.movel_z(280)
             k = 10
             x = 10
             g = 9.81
             
-            
             eef_weight = self.toolforce[2]
             task_compliance_ctrl([100, 100, 10, 1000, 1000, 1000])
 
-            # movel(moving_down,[50,50],[50,50])
 
             ##contact point 정의 필요 movel할 것
             while(True):
@@ -479,12 +510,10 @@ class DRLInterface():
 
         # Task [10006]: SEARCH AND APPROACH TO ''SINGLE'' SPECIMEN
         elif(self.cmd_protocol == TASK_SPECIMEN_SEARCH):
-            set_velj(50)
-            set_accj(50)
-            set_velx(50,100)
-            set_accx(50,100)
-            set_digital_output(8,1)
-            set_digital_output(9,1)
+            self.setVelAcc(50, 50, [50,100], [50,100])
+            self.jig_x_close()
+            self.jig_y_close()
+
             
             # init1 = [-389.43310546875, 216.06378173828125, 310.4500427246094, 0, 180, 0]
             # movel(init1)
@@ -649,23 +678,17 @@ class DRLInterface():
 
         # Task [10007]: SEARCH AND APPROACH TO ''MULTIPLE'' SPECIMENS
         elif(self.cmd_protocol == TASK_MULSPECIMEN_SEARCH):
-            set_velj(50)
-            set_accj(50)
-            set_velx(50,100)
-            set_accx(50,100)
+            self.setVelAcc(50, 50, [50,100], [50,100])
             search_init_pos = [-20.134538650512695, 15.13610553741455, -125.55142211914062, -0.0, -69.58480072021484, -20.13439178466797]
             movej(search_init_pos)
-            set_digital_output(13,0)
-            set_digital_output(14,1)
-            
-            set_digital_output(5,0)
-            set_digital_output(6,0)
-            
-            rospy.sleep(5)
-            set_digital_output(5,1)
-            set_digital_output(6,1)
-            
 
+            self.gripper_open()
+            self.jig_x_open()
+            self.jig_y_open()
+            rospy.sleep(5)
+
+            self.jig_x_close()
+            self.jig_y_close()
             rospy.sleep(3)
             
             # the same position with below joint position
@@ -747,15 +770,16 @@ class DRLInterface():
                     self.gripper_close()
                     self.movel_z(-204,[100, 100], [100, 100]) #go up
                     movej(search_init_pos)
+                    
                     self.gripper_open()
-                    # set_digital_output(8,0)
-                    # set_digital_output(9,0)
-                    set_digital_output(5,0)
-                    set_digital_output(6,0)
+                    self.jig_x_open()
+                    self.jig_y_open()
+
+        
 
         elif(self.cmd_protocol == TOOLCHANGE1):
             release_compliance_ctrl()
-            
+            # self.setVelAcc(50, 50, [150,100], [150,100])
             
 
             set_velj(50)
@@ -797,7 +821,8 @@ class DRLInterface():
             # print(release_compliance_ctrl())
             # print(task_compliance_ctrl([100, 100, 100, 100, 100, 100]))
             # rospy.sleep(3)
-            set_digital_output(2,1)
+            self.toolchanger_detach()
+            # set_digital_output(2,1)
             rospy.sleep(1)
 
             # release_compliance_ctrl()
@@ -809,7 +834,8 @@ class DRLInterface():
             tool1_position = [-375.4557800292969, -337.03533935546875, 38.78656005859375, 121.61463165283203, 179.27223205566406, 41.801002502441406]
             movel(tool1_position)
 
-            set_digital_output(2,0)
+            self.toolchanger_attach()
+            # set_digital_output(2,0)
 
             move_out1 = [-375.4557800292969, -337.03533935546875-20, 38.78656005859375, 121.61463165283203, 179.27223205566406, 41.801002502441406]
             movel(move_out1)
