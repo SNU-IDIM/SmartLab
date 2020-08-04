@@ -223,10 +223,7 @@ class DRLInterface():
     '''
     def IO_init(self):
         for i in range(1, 16+1):
-            if i == 6 or i ==5:
-                pass
-            else:
-                set_digital_output(i, 0)
+            set_digital_output(i, 0)
         rospy.sleep(0.5)
 
     def compressor_on(self):
@@ -294,11 +291,13 @@ class DRLInterface():
     '''
     def pnp_cb(self, msg):
         set_robot_mode(ROBOT_MODE_AUTONOMOUS)
+        release_compliance_ctrl()
         self.robot_status = "running"
         self.status_pub.publish(URStatus(status=self.robot_status, arm_status = self.joints_state))
         self.cmd_protocol = int(float(msg.data))
         print(self.cmd_protocol)
 
+        ########################################################################################################################################################
         # ACTION [0]: Home position
         if(self.cmd_protocol   == ACTION_HOME):         
             movej(Q_HOME, 50, 50)
@@ -327,12 +326,6 @@ class DRLInterface():
             self.search_ar_target(1)
             movel(self.drl_pose, vel=[100,30], acc=[100,30])
 
-        # ACTION [113]: Gripper Open (임시 -> flange I/O로 변경 필요)
-        elif(self.cmd_protocol == ACTION_IO_GRIPPER_OPEN):
-            self.gripper_open()
-        # ACTION [114]: Gripper Close (임시 -> flange I/O로 변경 필요)
-        elif(self.cmd_protocol == ACTION_IO_GRIPPER_CLOSE):
-            self.gripper_close()
         # ACTION [101]: Compressor On
         elif(self.cmd_protocol == ACTION_IO_COMPRESSOR_ON):
             self.compressor_on()
@@ -357,6 +350,89 @@ class DRLInterface():
         # ACTION [-106]: Universal Jig Y-axis Open
         elif(self.cmd_protocol == ACTION_IO_JIG_Y_OPEN):
             self.jig_y_open()
+        # ACTION [113]: Gripper Open (임시 -> flange I/O로 변경 필요)
+        elif(self.cmd_protocol == ACTION_IO_GRIPPER_OPEN):
+            self.gripper_open()
+        # ACTION [114]: Gripper Close (임시 -> flange I/O로 변경 필요)
+        elif(self.cmd_protocol == ACTION_IO_GRIPPER_CLOSE):
+            self.gripper_close()
+
+        # ACTION [301]: Tool Changer - Get Tool1 from Toolchanger1
+        elif(self.cmd_protocol == ACTION_TOOLCHANGE_1_ATTACH):
+            self.toolchanger_detach()
+
+            P_TOOLCHANGE_1 = [-375.4557800292969, -337.03533935546875, 38.78656005859375, 121.61463165283203, 179.27223205566406, 41.801002502441406]
+            p_tool1_step1 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step1[2] += 300
+            p_tool1_step2 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step2[2] +=  20
+            p_tool1_step3 = deepcopy(P_TOOLCHANGE_1)
+            p_tool1_step4 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step4[1] += -20
+            p_tool1_step5 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step5[2] += 300
+
+            self.setVelAcc(50, 50, [50,100], [50,100])
+            movel(p_tool1_step1)
+            movel(p_tool1_step2)
+            movel(p_tool1_step3)
+            self.toolchanger_attach();  rospy.sleep(1)
+            movel(p_tool1_step4)
+            movel(p_tool1_step5)
+        # ACTION [-301]: Tool Changer - Place Tool1 to the Toolchanger1
+        elif(self.cmd_protocol == ACTION_TOOLCHANGE_1_DETACH):
+            P_TOOLCHANGE_1 = [-375.4557800292969, -337.03533935546875, 38.78656005859375, 121.61463165283203, 179.27223205566406, 41.801002502441406]
+            p_tool1_step1 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step1[1] += -20;    p_tool1_step1[2] += 300
+            p_tool1_step2 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step2[1] += -20;    p_tool1_step2[2] += 20
+            p_tool1_step3 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step3[1] += -20;    p_tool1_step2[2] += 5
+            p_tool1_step4 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step4[0] += 40
+            p_tool1_step5 = deepcopy(P_TOOLCHANGE_1)
+            p_tool1_step6 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step6[2] += 300
+
+            self.setVelAcc(50, 50, [50,100], [50,100])
+            movel(p_tool1_step1)
+            movel(p_tool1_step2)
+            movel(p_tool1_step3)
+            task_compliance_ctrl([500, 4500, 4000, 1000, 1000, 1000])
+            movel(p_tool1_step4)
+            release_compliance_ctrl()
+            movel(p_tool1_step5);       rospy.sleep(1)
+            self.toolchanger_detach();  rospy.sleep(1)
+            movel(p_tool1_step6)
+        # ACTION [302]: Tool Changer - Get Tool2 from Toolchanger2
+        elif(self.cmd_protocol == ACTION_TOOLCHANGE_2_ATTACH):
+            self.toolchanger_detach()
+
+            P_TOOLCHANGE_2 = [-236.75289916992188, -337.0860900878906, 38.72620391845703, 131.73924255371094, 179.73355102539062, 51.19792175292969]
+            p_tool2_step1 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step1[2] += 300
+            p_tool2_step2 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step2[2] +=  20
+            p_tool2_step3 = deepcopy(P_TOOLCHANGE_2)
+            p_tool2_step4 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step4[1] += -20
+            p_tool2_step5 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step5[2] += 300
+
+            self.setVelAcc(50, 50, [50,100], [50,100])
+            movel(p_tool2_step1)
+            movel(p_tool2_step2)
+            movel(p_tool2_step3)
+            self.toolchanger_attach();  rospy.sleep(1)
+            movel(p_tool2_step4)
+            movel(p_tool2_step5)
+        # ACTION [-302]: Tool Changer - Place Tool2 to the Toolchanger2
+        elif(self.cmd_protocol == ACTION_TOOLCHANGE_2_DETACH):
+            P_TOOLCHANGE_2 = [-236.75289916992188, -337.0860900878906, 38.72620391845703, 131.73924255371094, 179.73355102539062, 51.19792175292969]
+            p_tool2_step1 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step1[1] += -20;    p_tool2_step1[2] += 300
+            p_tool2_step2 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step2[1] += -20;    p_tool2_step2[2] += 20
+            p_tool2_step3 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step3[1] += -20;    p_tool2_step2[2] += 5
+            p_tool2_step4 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step4[0] += 40
+            p_tool2_step5 = deepcopy(P_TOOLCHANGE_2)
+            p_tool2_step6 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step6[2] += 300
+
+            self.setVelAcc(50, 50, [50,100], [50,100])
+            movel(p_tool2_step1)
+            movel(p_tool2_step2)
+            movel(p_tool2_step3)
+            task_compliance_ctrl([500, 4500, 4000, 1000, 1000, 1000])
+            movel(p_tool2_step4)
+            release_compliance_ctrl()
+            movel(p_tool2_step5);       rospy.sleep(1)
+            self.toolchanger_detach();  rospy.sleep(1)
+            movel(p_tool2_step6)
 
         # ACTION [1000 ~ 1999]: Trans X (relative move)
         elif(abs(self.cmd_protocol) >= ACTION_TRANS_X and abs(self.cmd_protocol) < ACTION_TRANS_Y):
@@ -471,7 +547,6 @@ class DRLInterface():
         
         # Task [20001]
         elif(self.cmd_protocol == TASK_TEST_COMPLIANCE):
-            release_compliance_ctrl()
             self.setVelAcc(50, 50, [50,100], [50,100])
 
             init_posj = Q_BACK
@@ -775,91 +850,9 @@ class DRLInterface():
                     self.jig_x_open()
                     self.jig_y_open()
 
-        
-
-        elif(self.cmd_protocol == TOOLCHANGE1):
-            release_compliance_ctrl()
-            # self.setVelAcc(50, 50, [150,100], [150,100])
-            
-
-            set_velj(50)
-            set_accj(50)
-            set_velx(150,100)
-            set_accx(150,100)
-            # tool2_position_ = [-236.8995361328125, -358.78912353515625, 38.94343566894531, 82.39966583251953, 178.2489013671875, 2.303342580795288]
-            # movel(tool2_position_)
-            home = [-235.78550720214844, -358.7340393066406, 352.00294494628906, 84.49280548095703, 177.22393798828125, 4.466612815856934]
-            movel(home)
-            # approach = [-235.78550720214844, -358.7340393066406, 252.00294494628906, 84.49280548095703, 177.22393798828125, 4.466612815856934]
-            # movel(approach)
-            approach = [-235.98329162597656, -358.2447509765625, 49.16860580444336, 82.3934097290039, 177.25328063964844, 2.3672542572021484]
-            movel(approach)
-
-
-            set_velx(50,100)
-            set_accx(50,100)
-            task_compliance_ctrl([500, 4500, 100, 1000, 1000, 1000])
-
-
-            approach1 = [-236.38015747070312, -358.78912353515625, 39.48764419555664, 84.1766586303711, 177.68301391601562, 4.175314426422119]
-            movel(approach1)
-
-            approach2 = [-236.38015747070312, -358.78912353515625+40, 39.48764419555664, 84.1766586303711, 177.68301391601562, 4.175314426422119]
-            movel(approach2)
-
-            # approach3 = [-236.38015747070312, -358.78912353515625, 39.48764419555664, 84.1766586303711, 177.68301391601562, 4.175314426422119]
-            # movel(approach3)
-            release_compliance_ctrl()
-
-            tool2_position = [-236.3540496826172, -336.87152099609375, 38.58928298950195, 168.34994506835938, 179.523681640625, 88.14895629882812]
-            movel(tool2_position)
-
-
-
-
-            # set_stiff
-            # print(release_compliance_ctrl())
-            # print(task_compliance_ctrl([100, 100, 100, 100, 100, 100]))
-            # rospy.sleep(3)
-            self.toolchanger_detach()
-            # set_digital_output(2,1)
-            rospy.sleep(1)
-
-            # release_compliance_ctrl()
-            # task_compliance_ctrl([1000, 1000, 10000, 200, 200, 200])
-            self.movel_z(-100)
-            tool1_position = [-375.4557800292969, -337.03533935546875, 38.78656005859375+100, 121.61463165283203, 179.27223205566406, 41.801002502441406]
-            movel(tool1_position)
-            
-            tool1_position = [-375.4557800292969, -337.03533935546875, 38.78656005859375, 121.61463165283203, 179.27223205566406, 41.801002502441406]
-            movel(tool1_position)
-
-            self.toolchanger_attach()
-            # set_digital_output(2,0)
-
-            move_out1 = [-375.4557800292969, -337.03533935546875-20, 38.78656005859375, 121.61463165283203, 179.27223205566406, 41.801002502441406]
-            movel(move_out1)
-
-            move_out2 = [-375.4557800292969, -337.03533935546875-25, 38.78656005859375+250, 121.61463165283203, 179.27223205566406, 41.801002502441406]
-            movel(move_out2)
-            
-
-            # moveout =[-236.8995361328125, -337.1667175292969, 38.94343566894531+100, 82.39966583251953, 178.2489013671875, 2.303342580795288]
-            # movel(moveout)
-            # release_compliance_ctrl()
-            
-
-
-
-
-
-
-            
-
-            # home[1] = home[1]-80
-            # movel(home)
-
-        set_robot_mode(ROBOT_MODE_MANUAL)        
+        ########################################################################################################################################################
+        set_robot_mode(ROBOT_MODE_MANUAL)
+        release_compliance_ctrl()  
         self.robot_status = "done"
         self.status_pub.publish(URStatus(status=self.robot_status, arm_status = self.joints_state))
     
