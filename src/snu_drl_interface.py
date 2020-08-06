@@ -363,33 +363,38 @@ class DRLInterface():
         elif(self.cmd_protocol == ACTION_TOOLCHANGE_1_ATTACH):
             self.toolchanger_detach()
 
-            P_TOOLCHANGE_1 = [-375.4557800292969, -337.03533935546875, 38.78656005859375, 121.61463165283203, 179.27223205566406, 41.801002502441406]
+            P_TOOLCHANGE_1 = [-365.3647766113281, -366.5069580078125, 67.53353118896484, 94.95864868164062, 178.4238739013672, 16.476932525634766]
             p_tool1_step1 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step1[2] += 300
             p_tool1_step2 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step2[2] +=  20
             p_tool1_step3 = deepcopy(P_TOOLCHANGE_1)
             p_tool1_step4 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step4[1] += -20
             p_tool1_step5 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step5[2] += 300
 
-            self.setVelAcc(50, 50, [50,100], [50,100])
+            self.setVelAcc(100, 100, [400,100], [400,100])
             movel(p_tool1_step1)
             movel(p_tool1_step2)
+
+            self.setVelAcc(50, 50, [50,100], [50,100])
             movel(p_tool1_step3)
             self.toolchanger_attach();  rospy.sleep(1)
             movel(p_tool1_step4)
             movel(p_tool1_step5)
         # ACTION [-301]: Tool Changer - Place Tool1 to the Toolchanger1
         elif(self.cmd_protocol == ACTION_TOOLCHANGE_1_DETACH):
-            P_TOOLCHANGE_1 = [-375.4557800292969, -337.03533935546875, 38.78656005859375, 121.61463165283203, 179.27223205566406, 41.801002502441406]
+            P_TOOLCHANGE_1 = [-365.3647766113281, -366.5069580078125, 67.53353118896484, 94.95864868164062, 178.4238739013672, 16.476932525634766]
             p_tool1_step1 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step1[1] += -20;    p_tool1_step1[2] += 300
             p_tool1_step2 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step2[1] += -20;    p_tool1_step2[2] += 20
             p_tool1_step3 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step3[1] += -20;    p_tool1_step2[2] += 5
             p_tool1_step4 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step4[0] += 40
             p_tool1_step5 = deepcopy(P_TOOLCHANGE_1)
-            p_tool1_step6 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step6[2] += 300
-
-            self.setVelAcc(50, 50, [50,100], [50,100])
+            p_tool1_step6 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step6[2] += 100
+            p_tool1_step7 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step7[2] += 200
+          
+            self.setVelAcc(100, 100, [400,100], [400,100])
             movel(p_tool1_step1)
             movel(p_tool1_step2)
+
+            self.setVelAcc(50, 50, [50,100], [50,100])
             movel(p_tool1_step3)
             task_compliance_ctrl([500, 4500, 4000, 1000, 1000, 1000])
             movel(p_tool1_step4)
@@ -397,37 +402,46 @@ class DRLInterface():
             movel(p_tool1_step5);       rospy.sleep(1)
             self.toolchanger_detach();  rospy.sleep(1)
             movel(p_tool1_step6)
+
+            self.setVelAcc(200, 200, [400,100], [400,100])
+            movel(p_tool1_step7)
+            
         # ACTION [302]: Tool Changer - Get Tool2 from Toolchanger2
         elif(self.cmd_protocol == ACTION_TOOLCHANGE_2_ATTACH):
             self.toolchanger_detach()
 
-            P_TOOLCHANGE_2 = [-236.75289916992188, -337.0860900878906, 38.72620391845703, 131.73924255371094, 179.73355102539062, 51.19792175292969]
+            P_TOOLCHANGE_2 = [-205.39808654785156, -365.46044921875, 67.84722900390625, 117.30207061767578, 178.88893127441406, 38.6947135925293]
             p_tool2_step1 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step1[2] += 300
             p_tool2_step2 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step2[2] +=  20
             p_tool2_step3 = deepcopy(P_TOOLCHANGE_2)
             p_tool2_step4 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step4[1] += -20
             p_tool2_step5 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step5[2] += 300
-
-            self.setVelAcc(50, 50, [50,100], [50,100])
+            self.setVelAcc(100, 100, [400,100], [400,100])
+            
             movel(p_tool2_step1)
             movel(p_tool2_step2)
+            self.setVelAcc(50, 50, [50,100], [50,100])
+
             movel(p_tool2_step3)
             self.toolchanger_attach();  rospy.sleep(1)
             movel(p_tool2_step4)
             movel(p_tool2_step5)
         # ACTION [-302]: Tool Changer - Place Tool2 to the Toolchanger2
         elif(self.cmd_protocol == ACTION_TOOLCHANGE_2_DETACH):
-            P_TOOLCHANGE_2 = [-236.75289916992188, -337.0860900878906, 38.72620391845703, 131.73924255371094, 179.73355102539062, 51.19792175292969]
+            P_TOOLCHANGE_2 = [-205.39808654785156, -365.46044921875, 67.84722900390625, 117.30207061767578, 178.88893127441406, 38.6947135925293]
             p_tool2_step1 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step1[1] += -20;    p_tool2_step1[2] += 300
             p_tool2_step2 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step2[1] += -20;    p_tool2_step2[2] += 20
             p_tool2_step3 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step3[1] += -20;    p_tool2_step2[2] += 5
             p_tool2_step4 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step4[0] += 40
             p_tool2_step5 = deepcopy(P_TOOLCHANGE_2)
-            p_tool2_step6 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step6[2] += 300
+            p_tool2_step6 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step6[2] += 100
+            p_tool2_step7 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step7[2] += 200
 
-            self.setVelAcc(50, 50, [50,100], [50,100])
+            self.setVelAcc(100, 100, [400,100], [400,100])
             movel(p_tool2_step1)
             movel(p_tool2_step2)
+
+            self.setVelAcc(50, 50, [50,100], [50,100])
             movel(p_tool2_step3)
             task_compliance_ctrl([500, 4500, 4000, 1000, 1000, 1000])
             movel(p_tool2_step4)
@@ -435,6 +449,12 @@ class DRLInterface():
             movel(p_tool2_step5);       rospy.sleep(1)
             self.toolchanger_detach();  rospy.sleep(1)
             movel(p_tool2_step6)
+
+            self.setVelAcc(100, 100, [400,100], [400,100])
+            movel(p_tool2_step7)
+            self.setVelAcc(50, 50, [50,100], [50,100])
+            
+            
 
         # ACTION [1000 ~ 1999]: Trans X (relative move)
         elif(abs(self.cmd_protocol) >= ACTION_TRANS_X and abs(self.cmd_protocol) < ACTION_TRANS_Y):
@@ -640,7 +660,7 @@ class DRLInterface():
 
         # Task [10007]: SEARCH AND APPROACH TO ''MULTIPLE'' SPECIMENS
         elif(self.cmd_protocol == TASK_MULSPECIMEN_SEARCH):
-            self.setVelAcc(50, 50, [50,100], [50,100])
+            self.setVelAcc(50, 50, [150,100], [150,100])
 
             search_init_pos = [-17.66001319885254, 11.03127670288086, -128.7543487548828, -0.0, -62.27688980102539, 162.3400115966797]
             movej(search_init_pos)
@@ -678,7 +698,7 @@ class DRLInterface():
 
             #Canny edge detection & Hough lines transform
             edges=cv2.Canny(gray,50,200)
-            cv2.imshow('Canny', edges)
+            # cv2.imshow('Canny', edges)
             cv2.waitKey(1000)
             _, contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
             
@@ -719,7 +739,7 @@ class DRLInterface():
                 cv2.circle(bgr, (int(x_Min_Vertice[0]), int(x_Min_Vertice[1])),1,(0,255,255),2)
                 cv2.circle(bgr, (int(y_Min_Vertice[0]), int(y_Min_Vertice[1])),1,(0,255,255),2)
                 cv2.circle(bgr, (int(x_Max_Vertice[0]), int(x_Max_Vertice[1])),1,(0,255,255),2)
-                cv2.imshow('image', bgr)
+                # cv2.imshow('image', bgr)
                 cv2.waitKey(30)
 
                 #Calibration 150mm / 277.24pixels
@@ -772,7 +792,7 @@ class DRLInterface():
             gray=gray_temp[colStart:colEnd, rowStart:rowEnd]
 
             edges=cv2.Canny(gray,50,200)
-            cv2.imshow('Canny', edges)
+            # cv2.imshow('Canny', edges)
             cv2.waitKey(0)
             _, contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
             # cv2.imshow('Contours',contours)
