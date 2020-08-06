@@ -63,23 +63,34 @@ ACTION_ALIGN        = 5
 ACTION_PICK         = 6
 ACTION_PLACE        = 7
 
-## ACTION [101 ~ 200] - Doosan-robot I/O Controller
+## ACTION [101 ~ 200] - Doosan-robot I/O Controller (DSR Controller)
 ACTION_IO_COMPRESSOR         =  1   ## DSR Digital I/O 1 -> Compressor
 ACTION_IO_COMPRESSOR_ON      =  101
 ACTION_IO_COMPRESSOR_OFF     = -101
 ACTION_IO_TOOLCHANGER        =  2   ## DSR Digital I/O 2 -> Tool Changer
 ACTION_IO_TOOLCHANGER_DETACH =  102
 ACTION_IO_TOOLCHANGER_ATTACH = -102
+ACTION_IO_SUCTIONCUP         =  3   ## DSR Digital I/O 3 -> Suction Cup Gripper (Negative pressure)
+ACTION_IO_SUCTIONCUP_ON      =  103
+ACTION_IO_SUCTIONCUP_OFF     = -103
+# ACTION_IO_TBD               =  4   ## DSR Digital I/O 4 -> Pneumatic Gripper (Positive pressure)
+# ACTION_IO_TBD               =  104
+# ACTION_IO_TBD               = -104
 ACTION_IO_JIG_X              =  5   ## DSR Digital I/O 5 -> Universal Jig X-axis
 ACTION_IO_JIG_X_CLOSE        =  105
 ACTION_IO_JIG_X_OPEN         = -105
 ACTION_IO_JIG_Y              =  6   ## DSR Digital I/O 6 -> Universal Jig Y-axis
 ACTION_IO_JIG_Y_CLOSE        =  106
 ACTION_IO_JIG_Y_OPEN         = -106
+# ACTION_IO_TBD               =  7   ## DSR Digital I/O 7 -> Suction Cup Gripper
+# ACTION_IO_TBD               =  107
+# ACTION_IO_TBD               = -107
 
-ACTION_IO_GRIPPER_CLOSE      =  113 ## Gripper는 임시 -> Flange I/O로 바꿔야 함
-ACTION_IO_GRIPPER_OPEN       =  114 ## Gripper는 임시 -> Flange I/O로 바꿔야 함
+## ACTION [201 ~ 300] - Doosan-robot I/O Controller (DSR Flange)
+ACTION_IO_GRIPPER_CLOSE      = -201
+ACTION_IO_GRIPPER_OPEN       =  201
 
+## ACTION [301 ~ 400] - Fundamental Actions (for Setting the Robot)
 ACTION_TOOLCHANGE_1_DETACH   = -301
 ACTION_TOOLCHANGE_1_ATTACH   =  301
 ACTION_TOOLCHANGE_2_DETACH   = -302
@@ -97,8 +108,9 @@ TASK_SPECIMEN_PICK      = 10001
 TASK_INSTRON_SEARCH     = 10002
 TASK_INSTRON_MOVEOUT    = 10003
 TASK_SEPARATE           = 10004
-TASK_SPECIMEN_SEARCH    = 10006
+JOG_DEVEL               = 10006
 TASK_MULSPECIMEN_SEARCH = 10007
+DEMO_IDIM_BLOCK = 10008
 
 TOOLCHANGE1 =10010
 ## TASK (Test) [20001 ~ ]

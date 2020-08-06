@@ -6,7 +6,7 @@ HOME_DIR = os.getenv('HOME')
 sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__),"%s/catkin_ws/src/SNU_IDIM_ASMR/common/imp"%HOME_DIR)) )
 from IDIM_header import *
 from IDIM_framework import *
-
+from pytesseract import *
 
 def all_close(goal, actual, tolerance):
   all_equal = True
@@ -216,10 +216,11 @@ class DRLInterface():
 
 
     '''
-        DSR I/O Functions
-            1. Gripper open/close
-            2. Compressor on/off
-            3. Tool Changer attach/detach
+        DSR Controller I/O Functions
+            1. Compressor on/off
+            2. Tool Changer attach/detach
+            3. Suction Cup Gripper on/off
+            4. Universal Jig X-axis open/close
     '''
     def IO_init(self):
         for i in range(1, 16+1):
@@ -259,20 +260,21 @@ class DRLInterface():
         if get_digital_output(pin) == 1:
             set_digital_output(pin,0)
 
-    def gripper_close(self):
-        set_digital_output(14,0)
-        rospy.sleep(0.1)
-        if get_digital_output(13) == 0:
-            set_digital_output(13,1)
+
+    '''
+        DSR Flange I/O Functions
+            1. Parallel Gripper open/close
+    '''
     def gripper_open(self):
-        set_digital_output(13,0)
+        set_tool_digital_output(2, 0)
         rospy.sleep(0.1)
-        if get_digital_output(14) == 0:
-            set_digital_output(14,1)
-
-
-
-
+        if get_tool_digital_output(1) == 0:
+            set_tool_digital_output(1, 1)
+    def gripper_close(self):
+        set_tool_digital_output(1, 0)
+        rospy.sleep(0.1)
+        if get_tool_digital_output(2) == 0:
+            set_tool_digital_output(2, 1)
 
     
     '''
@@ -583,176 +585,10 @@ class DRLInterface():
                     movel(contact_posx, vel=[20,20], acc=[100,50])
                     self.toolforce_max = 0.0
 
-        # Task [10006]: SEARCH AND APPROACH TO ''SINGLE'' SPECIMEN
-        elif(self.cmd_protocol == TASK_SPECIMEN_SEARCH):
-            self.setVelAcc(50, 50, [50,100], [50,100])
-            self.jig_x_close()
-            self.jig_y_close()
-
-            
-            # init1 = [-389.43310546875, 216.06378173828125, 310.4500427246094, 0, 180, 0]
-            # movel(init1)
-            # init2 = [-389.43310546875, 266.06378173828125, 310.4500427246094, 0, 180, 0]
-            # movel(init2)
-
-            #low height joint angle
-            # search_init_pos = [-24.57923698425293, -0.10278947651386261, -127.49447631835938, -0.0, -52.4029426574707, -24.57932472229004] 
-
-            #high height joint angle
-            search_init_pos = [-20.134538650512695, 15.13610553741455, -125.55142211914062, -0.0, -69.58480072021484, -20.13439178466797]
-            movej(search_init_pos)
-
-            # cv2.imshow('image',self.specimen_image)
-            # cv2.waitKey(30000)
-
-            while(True):
-                try:
-                    #set Region of Interest
-                    # DEPTH=210
-
-                    rowEnd=607
-                    colEnd=383
-                    rowStart=224
-                    colStart=20
-
-                    cam_offsetx = 116
-                    cam_offsety = 43
-                    
-                    bgr_temp = self.specimen_image
-                    gray_temp=cv2.cvtColor(bgr_temp, cv2.COLOR_BGR2GRAY)
-
-                    gray=gray_temp[colStart:colEnd, rowStart:rowEnd]
-                    bgr=bgr_temp[colStart:colEnd, rowStart:rowEnd]
-                    
-                    #Canny edge detection & Hough lines transform
-                    edges=cv2.Canny(gray,50,200)
-                   
-                    lines=cv2.HoughLines(edges, 1, np.pi/180, 15, None, 0, 0)
-
-                    print(lines)
-                    # cv2.imshow('Hough', lines)
-                    # cv2.waitKey(10) 
-                    
-                    recAccum=[]
-                    ptAccum=[]
-                    for i in range(0, len(lines)):
-                        for j in range(i+1,len(lines)):
-                            if abs(abs(lines[i][0][1]-lines[j][0][1])-np.pi/2)<0.02:
-                                recAccum.append([i,j])
-
-                    if recAccum is not None:
-                        for i in range(0,len(recAccum)):
-                            num1=recAccum[i][0]
-                            rho1 = lines[num1][0][0]
-                            theta1 = lines[num1][0][1]
-                            if rho1 <0:
-                                rho1= abs(rho1)
-                                theta1=theta1+np.pi
-                            a1 = math.cos(theta1)
-                            b1 = math.sin(theta1)
-                            x01 = a1 * rho1
-                            y01 = b1 * rho1
-
-                            num2=recAccum[i][1]
-                            rho2 = lines[num2][0][0]
-                            theta2 = lines[num2][0][1]
-                            if rho2 <0:
-                                rho2= abs(rho2)
-                                theta2=theta2+np.pi
-                            a2 = math.cos(theta2)
-                            b2 = math.sin(theta2)
-                            x02 = a2 * rho2
-                            y02 = b2 * rho2
-
-                            if b2==0:
-                                x=rho2
-                                y=rho1
-                            elif b1==0:
-                                x=rho1
-                                y=rho2
-                            else:
-                                x=(1-(b1/b2)*(rho2/rho1))*rho1/(a1-a2*b1/b2)
-                                y=(1-a1*x/rho1)*rho1/b1
-                            print(x,y)
-                            ptAccum.append([x,y])
-                            cv2.circle(bgr, (int(x),int(y)),5,(0,255,255),2)
-                    
-
-                    ptAccum=np.array(ptAccum)
-                    print(ptAccum)
-                    x_Max=np.argmax(ptAccum[:,0]) # x maximum coordinate index
-                    x_Min=np.argmin(ptAccum[:,0]) # x minimum coordinate index
-                    y_Max=np.argmax(ptAccum[:,1]) # y maximum coordinate index
-                    y_Min=np.argmin(ptAccum[:,1]) # y minimum coordinate index
-
-                    y_Max_Vertice=[ptAccum[y_Max,0], ptAccum[y_Max,1]]
-                    x_Max_Vertice=[ptAccum[x_Max,0], ptAccum[x_Max,1]]
-                    x_Min_Vertice=[ptAccum[x_Min,0], ptAccum[x_Min,1]]
-                    y_Min_Vertice=[ptAccum[y_Min,0], ptAccum[y_Min,1]]
-
-                    orientation1= (x_Max_Vertice[1]-x_Min_Vertice[1])/(x_Max_Vertice[0]-x_Min_Vertice[0])
-                    orientation2= (y_Max_Vertice[1]-y_Min_Vertice[1])/(y_Max_Vertice[0]-y_Min_Vertice[0])
-                    orientation=(orientation1+orientation2)/2
-
-                    theta=math.atan(orientation)
-                    centroid=[(np.max(ptAccum[:,0])+np.min(ptAccum[:,0]))/2, (np.max(ptAccum[:,1])+ np.min(ptAccum[:,1]))/2]
-                
-                    print('centroid',centroid)
-                    print('lt',y_Max_Vertice)
-                    print('lb',x_Min_Vertice)
-                    print('rt',x_Max_Vertice)
-                    print('rb',y_Min_Vertice)
-                    print(theta*180/np.pi)
-                    print(orientation1)
-                    print(orientation2)
-                    cv2.circle(bgr, (int(centroid[0]), int(centroid[1])),2,(0,0,255),4)
-                    cv2.circle(bgr, (int(y_Max_Vertice[0]), int(y_Max_Vertice[1])),1,(0,0,255),2)
-                    cv2.circle(bgr, (int(x_Min_Vertice[0]), int(x_Min_Vertice[1])),1,(0,0,255),2)
-                    cv2.circle(bgr, (int(y_Min_Vertice[0]), int(y_Min_Vertice[1])),1,(0,0,255),2)
-                    cv2.circle(bgr, (int(x_Max_Vertice[0]), int(x_Max_Vertice[1])),1,(0,0,255),2)
-
-                    px2mm_Row=(centroid[0]+rowStart-320)*100/188
-                    px2mm_Col=(centroid[1]+colStart-240)*100/188
-
-                    print(px2mm_Row, px2mm_Col)
+        # Task [10006]: JOG_DEVEL
+        elif(self.cmd_protocol == JOG_DEVEL):
 
 
-                    cv2.imshow('image', bgr)
-                    cv2.waitKey(10)
-
-                    if centroid is not None:
-                        print('search complete')
-                        # search_pos = [-389.43310546875-cam_offsetx+px2mm_Col, 216.06378173828125-cam_offsety+px2mm_Row, 310.4500427246094, 0, 180, -90+theta*180/np.pi]
-                        
-                        self.movel_xyzjoint(cam_offsetx-px2mm_Col+10, -cam_offsety+px2mm_Row,0,0,0,-90+theta*180/np.pi, [100, 100], [100, 100])
-                        self.movel_z(200, [100, 100], [100, 100]) #go down
-    
-                        break
-
-                    # self.update_ros_param()
-                    # self.static_transformStamped.header.stamp    = rospy.Time.now()
-                    # # self.static_transformStampeed.header.frame_id = self.object_frame_name
-                    # # self.static_transformStamped.child_frame_id  = self.target_frame_name
-
-                    # self.static_transformStamped.transform.translation.x = px2mm_Row
-                    # self.static_transformStamped.transform.translation.y = px2mm_Col*(-1.0)
-                    # self.static_transformStamped.transform.translation.z = 0.0
-
-                    # quat = tf.transformations.quaternion_from_euler(0.0, 0.0, theta)
-                    # self.static_transformStamped.transform.rotation.x = quat[0]
-                    # self.static_transformStamped.transform.rotation.y = quat[1]
-                    # self.static_transformStamped.transform.rotation.z = quat[2]
-                    # self.static_transformStamped.transform.rotation.w = quat[3]
-                    # #print "%s"%self.static_transformStamped
-                
-                    # self.broadcaster.sendTransform(self.static_transformStamped)
-
-                except:
-                    print('keep searching')
-                    continue
-
-        # Task [10007]: SEARCH AND APPROACH TO ''MULTIPLE'' SPECIMENS
-        elif(self.cmd_protocol == TASK_MULSPECIMEN_SEARCH):
             self.setVelAcc(50, 50, [50,100], [50,100])
             search_init_pos = [-20.134538650512695, 15.13610553741455, -125.55142211914062, -0.0, -69.58480072021484, -20.13439178466797]
             movej(search_init_pos)
@@ -765,22 +601,74 @@ class DRLInterface():
             self.jig_x_close()
             self.jig_y_close()
             rospy.sleep(3)
+
+            object_count=1
+            while True:
+                try:
+                    target_frame_name = 'object_target_' + str(object_count)
+                    reference_frame_name = 'base_0'
+                    print "Searching specimen ..."
+                    print("Target frame: "    + target_frame_name)
+                    print("Reference frame: " + reference_frame_name)
+                    listener = tf.TransformListener()
+                    print "Trying to search the specimen: %s ..."%target_frame_name
+
+                    self.listener.waitForTransform(reference_frame_name, target_frame_name, rospy.Time(), rospy.Duration(1.0))
+                    (trans,rot) = self.listener.lookupTransform(reference_frame_name, target_frame_name, rospy.Time(0))
+                    self.update_cmd_pose(trans, rot)
+                    self.updateEulZYZ()
+                    self.drl_pose = deepcopy(posx(self.target_pose.position.x, self.target_pose.position.y, self.target_pose.position.z ,self.eulerZYZ[0], self.eulerZYZ[1], self.eulerZYZ[2]))
+                    print('Target DRL Pose: ' , self.drl_pose)
+
+                    print('search complete')
+                    # search_pos = [-389.43310546875-cam_offsetx+px2mm_Col, 216.06378173828125-cam_offsety+px2mm_Row, 310.4500427246094, 0, 180, -90+theta*180/np.pi]
+                    movel(self.drl_pose)
+                    self.movel_z(204, [100, 100], [100, 100]) #go down
+                    self.gripper_close()
+                    self.movel_z(-204,[100, 100], [100, 100]) #go up
+                    movej(search_init_pos)
+                    
+                    self.gripper_open()
+                    self.jig_x_open()
+                    self.jig_y_open()
+
+                except (Exception):
+                    print "[ERROR]: The Target(TF) is not Detected !!!"
+                    pass
+
+
+
+        # Task [10007]: SEARCH AND APPROACH TO ''MULTIPLE'' SPECIMENS
+        elif(self.cmd_protocol == TASK_MULSPECIMEN_SEARCH):
+            self.setVelAcc(50, 50, [50,100], [50,100])
+
+            search_init_pos = [-17.66001319885254, 11.03127670288086, -128.7543487548828, -0.0, -62.27688980102539, 162.3400115966797]
+            movej(search_init_pos)
+
+            self.gripper_open()
+            self.jig_x_open()
+            self.jig_y_open()
+            rospy.sleep(5)
+
+            self.jig_x_close()
+            self.jig_y_close()
+            rospy.sleep(3)
             
             # the same position with below joint position
-            # init1=[-328.0, 157.0, 435.0, 0, 180, 0]
+            # init1=[-348.0, 147.0, 380.0, 0, 180, -180]
             # movel(init1)
 
-            
+            count=1
 
             #Set Region of Interest
-            rowEnd=600
-            colEnd=400
-            rowStart=220 #224
-            colStart=20
+            rowEnd=616
+            colEnd=402
+            rowStart=241 #224
+            colStart=24
 
             #Offset from camera to endeffector
-            cam_offsetx = 116
-            cam_offsety = 43
+            cam_offsetx = 112
+            cam_offsety = 36
 
             bgr_temp = self.specimen_image
             gray_temp=cv2.cvtColor(bgr_temp, cv2.COLOR_BGR2GRAY)
@@ -814,7 +702,8 @@ class DRLInterface():
                 y_Min_Vertice=[ptAccum[y_Min,0], ptAccum[y_Min,1]]
 
                 # FILTER2
-                print(ptAccum[x_Max,0], ptAccum[x_Min,0], ptAccum[y_Max,1], ptAccum[y_Min,1])            
+                print(ptAccum[x_Max,0], ptAccum[x_Min,0], ptAccum[y_Max,1], ptAccum[y_Min,1]) 
+                print(x_Max_Vertice, y_Max_Vertice)           
 
                 orientation1= float(x_Max_Vertice[1]-x_Min_Vertice[1])/float(x_Max_Vertice[0]-x_Min_Vertice[0])
                 orientation2= float(y_Max_Vertice[1]-y_Min_Vertice[1])/float(y_Max_Vertice[0]-y_Min_Vertice[0])
@@ -833,22 +722,117 @@ class DRLInterface():
                 cv2.imshow('image', bgr)
                 cv2.waitKey(30)
 
-                #Calibration 100mm / 188pixels
-                px2mm_Row=(centroid[0]+rowStart-320)*100/188
-                px2mm_Col=(centroid[1]+colStart-240)*100/188
+                #Calibration 150mm / 277.24pixels
+                px2mm_Row=(centroid[0]+rowStart-320)*150.0/277.24
+                px2mm_Col=(centroid[1]+colStart-240)*150.0/277.24
 
                 if centroid is not None:
                     print('search complete')
                     # search_pos = [-389.43310546875-cam_offsetx+px2mm_Col, 216.06378173828125-cam_offsety+px2mm_Row, 310.4500427246094, 0, 180, -90+theta*180/np.pi]
-                    self.movel_xyzjoint(cam_offsetx-px2mm_Col+10, -cam_offsety+px2mm_Row,0,0,0,theta*180/np.pi, [100, 100], [100, 100])
-                    self.movel_z(204, [100, 100], [100, 100]) #go down
+                    self.movel_xyzjoint(-cam_offsetx+px2mm_Col+3, cam_offsety-px2mm_Row+10,0,0,0,theta*180/np.pi, [100, 100], [100, 100])
+                    self.movel_z(150, [100, 100], [100, 100]) #go down
                     self.gripper_close()
-                    self.movel_z(-204,[100, 100], [100, 100]) #go up
+                    self.movel_z(-150,[100, 100], [100, 100]) #go up
                     movej(search_init_pos)
                     
+                    specimen_loc = [-403.63006591796875+count*50, -104.22643280029297, 186.01812744140625, 37.57080078125, 178.80581665039062, -144.4349365234375]
+                    self.setVelAcc(100, 100, [500,100], [500,100])
+                    
+                    movel(specimen_loc)
+                    count=count+1
+
                     self.gripper_open()
-                    self.jig_x_open()
-                    self.jig_y_open()
+                    movej(search_init_pos)
+
+            self.jig_x_open()
+            self.jig_y_open()
+
+
+        elif(self.cmd_protocol == DEMO_IDIM_BLOCK):
+            self.setVelAcc(50, 50, [50,100], [50,100])
+            search_init_pos = [-20.134538650512695, 15.13610553741455, -125.55142211914062, -0.0, -69.58480072021484, -20.13439178466797+180]
+            movej(search_init_pos)
+            
+            #Set Region of Interest
+            rowEnd=565
+            colEnd=345
+
+            rowStart=239 #224
+            colStart=20
+
+            #Offset from camera to endeffector
+            cam_offsetx = 116
+            cam_offsety = 43
+
+
+            bgr_temp = self.specimen_image
+            gray_temp=cv2.cvtColor(bgr_temp, cv2.COLOR_BGR2GRAY)
+            
+            bgr=bgr_temp[colStart:colEnd, rowStart:rowEnd]
+            gray=gray_temp[colStart:colEnd, rowStart:rowEnd]
+
+            edges=cv2.Canny(gray,50,200)
+            cv2.imshow('Canny', edges)
+            cv2.waitKey(0)
+            _, contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+            # cv2.imshow('Contours',contours)
+            # cv2.waitKey(0)
+            # box_pose = np.array([])
+            box_pose = []
+            try:
+                for ii in range(len(contours)):
+                    ptAccum=np.squeeze(contours[ii])
+
+                    # FILTER1 : the specimen edge should contain more than 300 points
+                    if len(ptAccum) <1: 
+                        print('bad search : point shortage')
+                        print(len(ptAccum))
+                        continue
+
+                    x_Max=np.argmax(ptAccum[:,0]) # x maximum coordinate index
+                    x_Min=np.argmin(ptAccum[:,0]) # x minimum coordinate index
+                    y_Max=np.argmax(ptAccum[:,1]) # y maximum coordinate index
+                    y_Min=np.argmin(ptAccum[:,1]) # y minimum coordinate index
+
+                    #find four rectnagular Vertices using maximum coordinate
+                    x_Max_Vertice=[ptAccum[x_Max,0], ptAccum[x_Max,1]]
+                    x_Min_Vertice=[ptAccum[x_Min,0], ptAccum[x_Min,1]]
+                    y_Max_Vertice=[ptAccum[y_Max,0], ptAccum[y_Max,1]]
+                    y_Min_Vertice=[ptAccum[y_Min,0], ptAccum[y_Min,1]]
+
+                    # FILTER2
+                    print(ptAccum[x_Max,0], ptAccum[x_Min,0], ptAccum[y_Max,1], ptAccum[y_Min,1])            
+
+                    orientation1= float(x_Max_Vertice[1]-x_Min_Vertice[1])/float(x_Max_Vertice[0]-x_Min_Vertice[0])
+                    orientation2= float(y_Max_Vertice[1]-y_Min_Vertice[1])/float(y_Max_Vertice[0]-y_Min_Vertice[0])
+                    orientation=(orientation1+orientation2)/2.0
+                    theta=math.atan(orientation)
+
+                    #centroid : average of all coordinates
+                    centroid=[float(sum(ptAccum[:,0])/float(len(ptAccum[:,0]))), float(sum(ptAccum[:,1]))/float(len(ptAccum[:,1]))]
+                    # box_pix = gray[ptAccum[x_Min,0]:ptAccum[x_Max,0],ptAccum[y_Min,0]:ptAccum[y_Max,0]]
+                    box_pix = ptAccum[x_Min:x_Max,y_Min:y_Max]
+                    text = pytesseract.image_to_string(rgb,lang='eng')
+                    # print('the text is' + text)
+                    # cv2.imshow('box_pix',box_pix)
+                    # cv2.waitKey()
+            except:
+                print "[ERROR]"
+                # box_pose_temp = [centroid[0],centroid[1]]
+                #plotting for debugging 
+                # cv2.circle(bgr, (int(centroid[0]), int(centroid[1])),2,(0,0,255),4)
+                # cv2.circle(bgr, (int(y_Max_Vertice[0]), int(y_Max_Vertice[1])),1,(0,255,255),2)
+                # cv2.circle(bgr, (int(x_Min_Vertice[0]), int(x_Min_Vertice[1])),1,(0,255,255),2)
+                # cv2.circle(bgr, (int(y_Min_Vertice[0]), int(y_Min_Vertice[1])),1,(0,255,255),2)
+                # cv2.circle(bgr, (int(x_Max_Vertice[0]), int(x_Max_Vertice[1])),1,(0,255,255),2)
+                # cv2.imshow('image', bgr)
+                # text = pytesseract.image_to_string(img,lang='euc')
+                
+
+
+
+
+
 
         ########################################################################################################################################################
         set_robot_mode(ROBOT_MODE_MANUAL)
