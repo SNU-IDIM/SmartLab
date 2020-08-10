@@ -56,6 +56,7 @@ class DRLInterface():
         self.image_sub = rospy.Subscriber("/R_001/camera/color/image_raw",Image,self.vision_cb)
         self.pnp_pub    = rospy.Publisher("ur_pnp", String, queue_size=1)
         self.status_pub = rospy.Publisher("ur_status", URStatus, queue_size=1)
+        self.vision_pub = rospy.Publisher("vision_2d_flag",Int32, queue_size=1)
 
         set_robot_mode(ROBOT_MODE_AUTONOMOUS)
         rospy.sleep(1)
@@ -605,13 +606,11 @@ class DRLInterface():
                     movel(contact_posx, vel=[20,20], acc=[100,50])
                     self.toolforce_max = 0.0
 
-        # Task [10006]: JOG_DEVEL
-        elif(self.cmd_protocol == JOG_DEVEL):
+        # Task [10006]: SEARCH AND APPROACH TO ''MULTIPLE'' SPECIMENS USING TF
+        elif(self.cmd_protocol == TASK_MULSPECIMEN_SEARCH):
 
-
-            self.setVelAcc(50, 50, [50,100], [50,100])
-            search_init_pos = [-20.134538650512695, 15.13610553741455, -125.55142211914062, -0.0, -69.58480072021484, -20.13439178466797]
-            movej(search_init_pos)
+            self.setVelAcc(50, 50, [150,100], [150,100])
+            movej(Q_MULSPECIMEN_SEARCH)
 
             self.gripper_open()
             self.jig_x_open()
@@ -623,38 +622,47 @@ class DRLInterface():
             rospy.sleep(3)
 
             object_count=1
+            # Publish Flag to 'snu_2d_vision.py' node
+            self.vision_pub.publish(TWOD_VISION_SEARCH_SPECIMEN)
+
             while True:
                 try:
-                    target_frame_name = 'object_target_' + str(object_count)
+                    target_frame_name = 'specimen_table_' + str(object_count)
                     reference_frame_name = 'base_0'
                     print "Searching specimen ..."
                     print("Target frame: "    + target_frame_name)
                     print("Reference frame: " + reference_frame_name)
-                    listener = tf.TransformListener()
                     print "Trying to search the specimen: %s ..."%target_frame_name
 
-                    self.listener.waitForTransform(reference_frame_name, target_frame_name, rospy.Time(), rospy.Duration(1.0))
+                    self.listener.waitForTransform(reference_frame_name, target_frame_name, rospy.Time(), rospy.Duration(10.0))
                     (trans,rot) = self.listener.lookupTransform(reference_frame_name, target_frame_name, rospy.Time(0))
                     self.update_cmd_pose(trans, rot)
                     self.updateEulZYZ()
-                    self.drl_pose = deepcopy(posx(self.target_pose.position.x, self.target_pose.position.y, self.target_pose.position.z ,self.eulerZYZ[0], self.eulerZYZ[1], self.eulerZYZ[2]))
+                    self.drl_pose = deepcopy(posx(self.target_pose.position.x, self.target_pose.position.y, 380 , 162.33998107910156, -179.99990844726562, -17.659982681274414-self.eulerZYZ[2]-self.eulerZYZ[0]))
                     print('Target DRL Pose: ' , self.drl_pose)
 
                     print('search complete')
-                    # search_pos = [-389.43310546875-cam_offsetx+px2mm_Col, 216.06378173828125-cam_offsety+px2mm_Row, 310.4500427246094, 0, 180, -90+theta*180/np.pi]
                     movel(self.drl_pose)
-                    self.movel_z(204, [100, 100], [100, 100]) #go down
+                    self.movel_z(150, [100, 100], [100, 100]) #go down
                     self.gripper_close()
-                    self.movel_z(-204,[100, 100], [100, 100]) #go up
-                    movej(search_init_pos)
+                    self.movel_z(-150,[100, 100], [100, 100]) #go up
+                    movej(Q_MULSPECIMEN_SEARCH)
+                    
+                    specimen_loc = [-403.63006591796875+object_count*50, -104.22643280029297, 186.01812744140625, 37.57080078125, 178.80581665039062, -144.4349365234375]
+                    self.setVelAcc(100, 100, [500,100], [500,100])
+                    movel(specimen_loc)
                     
                     self.gripper_open()
-                    self.jig_x_open()
-                    self.jig_y_open()
+                    movej(Q_MULSPECIMEN_SEARCH)
+                    object_count= object_count+1
 
                 except (Exception):
                     print "[ERROR]: The Target(TF) is not Detected !!!"
-                    pass
+                    print("Specimen count :" object_count-1)
+                    break
+
+            self.jig_x_open()
+            self.jig_y_open()
 
 
 
