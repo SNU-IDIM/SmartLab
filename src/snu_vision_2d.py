@@ -111,7 +111,7 @@ class snu_vision_2d():
 
         ########################################################################
         # VISION [30001] : SEARCH SPECIMEN (CANNY -> CONTOUR)
-        if self.vision_protocol == TWOD_VISION_SEARCH_SPECIMEN :
+        if self.vision_protocol == VISION_2D_SEARCH_SPECIMEN :
             
             #Set Region of Interest
             rowEnd=616

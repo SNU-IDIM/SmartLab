@@ -504,11 +504,11 @@ class DRLInterface():
             rospy.sleep(1)
             self.search_ar_target('4')
             if not self.drl_pose[0] == 0:
-                ########searching for the ar tag#2 which is placed on 3dp door####
-                #Searching is consisted of three steps
-                #TF: ar_target  -- robot base
-                # ar target which is a TF made from ar_marker it is facing the marker tf(z axis is towards each other)
-                #consist of three move which is  conducting scan, move and feedback
+                ### Searching for the ar tag#2 which is placed on 3dp door ###
+                ## Searching is consisted of three steps
+                ## TF: ar_target  -- robot base
+                ## AR Target which is a TF made from ar_marker it is facing the marker tf(z axis is towards each other)
+                ## Consist of three move which is  conducting scan, move and feedback
                 movel(self.drl_pose, vel=[130,50], acc=[100,50]) # 1st approach
                 self.search_ar_target('4')
                 movel(self.drl_pose, vel=[130,50], acc=[100,50]) # 2nd approach
@@ -528,9 +528,46 @@ class DRLInterface():
             movel([0,0,-200,0,0,0], mod = 1, ref = 1)
             viewpoint = [self.current_posx[0],self.current_posx[1],self.current_posx[2],self.current_posx[3],self.current_posx[4]-20,self.current_posx[5]]
             movel(viewpoint)
-        
-        # Task [10004]: Seperate workpiece from the printing bed on the universal jig
-        elif(self.cmd_protocol == TASK_SEPARATE):
+
+        # Task [10004]: Testing compliance mode using scale -> (F = -kx // k=10;10;100 , x=10;10;100)
+        elif(self.cmd_protocol == TASK_TEST_COMPLIANCE):
+            self.setVelAcc(50, 50, [50,100], [50,100])
+
+            init_posj = Q_BACK
+            movej(init_posj)
+
+            self.movel_z(280)
+            k = 10
+            x = 10
+            g = 9.81
+            
+            eef_weight = self.toolforce[2]
+            task_compliance_ctrl([100, 100, 10, 1000, 1000, 1000])
+
+
+            ##contact point 정의 필요 movel할 것
+            while(True):
+                if self.toolforce[2] == 0.0:  #set force in N
+                    contact_posx = posx(self.current_posx[0], self.current_posx[1], self.current_posx[2]+5, 180, 180, 0)
+                    release_compliance_ctrl()
+                    print("Z position: {}".format(contact_posx[2]))
+                    break
+
+            for k in range(10,1000,10):
+                for x in range(10,100,10):
+                    task_compliance_ctrl([100, 100, k, 1000, 1000, 1000])
+                    self.move_xyz(0, 0, x, velx=[10,10])
+                    print("----------------------------------")
+                    print("k: {}".format(k), "x: {}".format(x))
+                    # print("Expected mass -> {} [g]".format(k*x/g))
+                    # print("End-effector mass -> {} [g]".format(-eef_weight/g * 1000))
+                    print("Result mass -> {} g".format((self.toolforce_max - eef_weight)/g * 1000))
+
+                    release_compliance_ctrl()
+                    movel(contact_posx, vel=[20,20], acc=[100,50])
+                    self.toolforce_max = 0.0
+        # Task [10005]: Seperate workpiece from the printing bed on the universal jig
+        elif(self.cmd_protocol == TASK_SEPARATE_SPECIMEN):
             release_compliance_ctrl()
             self.setVelAcc(50, 50, [50,100], [50,100])
             
@@ -568,62 +605,20 @@ class DRLInterface():
                     self.toolforce_max = 0.0
             pass
         
-        # Task [20001]
-        elif(self.cmd_protocol == TASK_TEST_COMPLIANCE):
-            self.setVelAcc(50, 50, [50,100], [50,100])
 
-            init_posj = Q_BACK
-            movej(init_posj)
-
-            self.movel_z(280)
-            k = 10
-            x = 10
-            g = 9.81
-            
-            eef_weight = self.toolforce[2]
-            task_compliance_ctrl([100, 100, 10, 1000, 1000, 1000])
-
-
-            ##contact point 정의 필요 movel할 것
-            while(True):
-                if self.toolforce[2] == 0.0:  #set force in N
-                    contact_posx = posx(self.current_posx[0], self.current_posx[1], self.current_posx[2]+5, 180, 180, 0)
-                    release_compliance_ctrl()
-                    print("Z position: {}".format(contact_posx[2]))
-                    break
-
-            for k in range(10,1000,10):
-                for x in range(10,100,10):
-                    task_compliance_ctrl([100, 100, k, 1000, 1000, 1000])
-                    self.move_xyz(0, 0, x, velx=[10,10])
-                    print("----------------------------------")
-                    print("k: {}".format(k), "x: {}".format(x))
-                    # print("Expected mass -> {} [g]".format(k*x/g))
-                    # print("End-effector mass -> {} [g]".format(-eef_weight/g * 1000))
-                    print("Result mass -> {} g".format((self.toolforce_max - eef_weight)/g * 1000))
-
-                    release_compliance_ctrl()
-                    movel(contact_posx, vel=[20,20], acc=[100,50])
-                    self.toolforce_max = 0.0
 
         # Task [10006]: SEARCH AND APPROACH TO ''MULTIPLE'' SPECIMENS USING TF
         elif(self.cmd_protocol == TASK_MULSPECIMEN_SEARCH):
-
             self.setVelAcc(50, 50, [150,100], [150,100])
             movej(Q_MULSPECIMEN_SEARCH)
 
             self.gripper_open()
-            self.jig_x_open()
-            self.jig_y_open()
-            rospy.sleep(5)
-
-            self.jig_x_close()
-            self.jig_y_close()
-            rospy.sleep(3)
+            self.jig_x_open();  self.jig_y_open();  rospy.sleep(5)
+            self.jig_x_close(); self.jig_y_close(); rospy.sleep(3)
 
             object_count=1
-            # Publish Flag to 'snu_2d_vision.py' node
-            self.vision_pub.publish(TWOD_VISION_SEARCH_SPECIMEN)
+            ## Publish Flag to 'snu_2d_vision.py' node
+            self.vision_pub.publish(VISION_2D_SEARCH_SPECIMEN)
 
             while True:
                 try:
@@ -661,10 +656,7 @@ class DRLInterface():
                     print("Specimen count :" object_count-1)
                     break
 
-            self.jig_x_open()
-            self.jig_y_open()
-
-
+            self.jig_x_open();  self.jig_y_open()
 
         # Task [10007]: SEARCH AND APPROACH TO ''MULTIPLE'' SPECIMENS
         elif(self.cmd_protocol == TASK_MULSPECIMEN_SEARCH):
@@ -775,8 +767,8 @@ class DRLInterface():
             self.jig_x_open()
             self.jig_y_open()
 
-
-        elif(self.cmd_protocol == DEMO_IDIM_BLOCK):
+        # Task [10007]: IDIM block demo (under development...)
+        elif(self.cmd_protocol == TASK_IDIM_BLOCK_DEMO):
             self.setVelAcc(50, 50, [50,100], [50,100])
             search_init_pos = [-20.134538650512695, 15.13610553741455, -125.55142211914062, -0.0, -69.58480072021484, -20.13439178466797+180]
             movej(search_init_pos)
