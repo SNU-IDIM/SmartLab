@@ -364,7 +364,7 @@ class DRLInterface():
         elif(self.cmd_protocol == ACTION_TOOLCHANGE_1_ATTACH):
             self.toolchanger_detach()
 
-            P_TOOLCHANGE_1 = [-365.3647766113281, -366.5069580078125, 67.53353118896484, 94.95864868164062, 178.4238739013672, 16.476932525634766]
+            P_TOOLCHANGE_1 = [-436.074462890625, -346.8432312011719, 69.4855728149414, 101.02711486816406, 179.40762329101562, 22.690649032592773]
             p_tool1_step1 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step1[2] += 300
             p_tool1_step2 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step2[2] +=  20
             p_tool1_step3 = deepcopy(P_TOOLCHANGE_1)
@@ -382,7 +382,7 @@ class DRLInterface():
             movel(p_tool1_step5)
         # ACTION [-301]: Tool Changer - Place Tool1 to the Toolchanger1
         elif(self.cmd_protocol == ACTION_TOOLCHANGE_1_DETACH):
-            P_TOOLCHANGE_1 = [-365.3647766113281, -366.5069580078125, 67.53353118896484, 94.95864868164062, 178.4238739013672, 16.476932525634766]
+            P_TOOLCHANGE_1 = [-436.074462890625, -346.8432312011719, 69.4855728149414, 101.02711486816406, 179.40762329101562, 22.690649032592773]
             p_tool1_step1 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step1[1] += -20;    p_tool1_step1[2] += 300
             p_tool1_step2 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step2[1] += -20;    p_tool1_step2[2] += 20
             p_tool1_step3 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step3[1] += -20;    p_tool1_step2[2] += 5
@@ -411,7 +411,7 @@ class DRLInterface():
         elif(self.cmd_protocol == ACTION_TOOLCHANGE_2_ATTACH):
             self.toolchanger_detach()
 
-            P_TOOLCHANGE_2 = [-205.39808654785156, -365.46044921875, 67.84722900390625, 117.30207061767578, 178.88893127441406, 38.6947135925293]
+            P_TOOLCHANGE_2 = [-277.7904052734375, -346.1768493652344, 69.29383850097656, 109.82817840576172, 179.61642456054688, 31.086288452148438]
             p_tool2_step1 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step1[2] += 300
             p_tool2_step2 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step2[2] +=  20
             p_tool2_step3 = deepcopy(P_TOOLCHANGE_2)
@@ -429,7 +429,7 @@ class DRLInterface():
             movel(p_tool2_step5)
         # ACTION [-302]: Tool Changer - Place Tool2 to the Toolchanger2
         elif(self.cmd_protocol == ACTION_TOOLCHANGE_2_DETACH):
-            P_TOOLCHANGE_2 = [-205.39808654785156, -365.46044921875, 67.84722900390625, 117.30207061767578, 178.88893127441406, 38.6947135925293]
+            P_TOOLCHANGE_2 = [-277.7904052734375, -346.1768493652344, 69.29383850097656, 109.82817840576172, 179.61642456054688, 31.086288452148438]
             p_tool2_step1 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step1[1] += -20;    p_tool2_step1[2] += 300
             p_tool2_step2 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step2[1] += -20;    p_tool2_step2[2] += 20
             p_tool2_step3 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step3[1] += -20;    p_tool2_step2[2] += 5
@@ -658,7 +658,7 @@ class DRLInterface():
 
                 except (Exception):
                     print "[ERROR]: The Target(TF) is not Detected !!!"
-                    print("Specimen count :" object_count-1)
+                    print("Specimen count :{}".format(object_count-1))
                     break
 
             self.jig_x_open()
