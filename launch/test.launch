@@ -6,7 +6,7 @@
     <node pkg="snu_doosan" type="snu_drl_interface.py" name="snu_dsr_interface" ns="$(arg ns)" output='screen'/>
     <!--<node pkg="tf" type="static_transform_publisher" name="link62camera_link"   args="-0.118 0.020 -0.032 0 -1.572 0 link6 camera_link 10" />-->
 
-    <!--<node pkg="snu_doosan" type="snu_2d_vision.py" name="snu_2d_vision" ns="$(arg ns)" output='screen'/>-->
+    <node pkg="snu_doosan" type="snu_vision_2d.py" name="snu_2d_vision" ns="$(arg ns)" output='screen'/>
     <!--<node pkg="snu_doosan" type="snu_dsr_digital_io_controller.py" name="snu_dsr_digital_io_controller" ns="$(arg ns)" output='screen'/>-->
     <!--<include file="$(find snu_doosan)/launch/dsr_description_m1013.launch.xml" ns="$(arg ns)"/>-->
 </launch>

@@ -30,6 +30,16 @@ DSR_DEFAULT_VELX     = [50, 100]  # [mm/s, deg/s]
 DSR_DEFAULT_ACCX     = [50, 100]  # [mm/x^2, deg/s^2]
 DSR_DEFAULT_VELJ     = 50         # [deg/s]
 DSR_DEFAULT_ACCJ     = 50         # [deg/s^2]
+
+'''
+    AR target Default Parameters (Offset from AR_marker)
+'''
+DEFAULT_OFFSET_FROM_TARGET_X  = 0.0     ## unit in [m]
+DEFAULT_OFFSET_FROM_TARGET_Y  = 0.0     ## unit in [m]
+DEFAULT_OFFSET_FROM_TARGET_Z  = 0.175   ## unit in [m]
+DEFAULT_OFFSET_FROM_TARGET_RX = 180.0   ## unit in [deg]
+DEFAULT_OFFSET_FROM_TARGET_RY = 0.0     ## unit in [deg]
+DEFAULT_OFFSET_FROM_TARGET_RZ = -90.0    ## unit in [deg]
 ##################################################################################################################################################
 
 
@@ -123,10 +133,10 @@ ACTION_IO_COMPRESSOR_OFF     = -101
 ACTION_IO_TOOLCHANGER        =  2   ## DSR Digital I/O 2 -> Tool Changer
 ACTION_IO_TOOLCHANGER_DETACH =  102
 ACTION_IO_TOOLCHANGER_ATTACH = -102
-ACTION_IO_SUCTIONCUP         =  3   ## DSR Digital I/O 3 -> Suction Cup Gripper (Negative pressure)
-ACTION_IO_SUCTIONCUP_ON      =  103
-ACTION_IO_SUCTIONCUP_OFF     = -103
-# ACTION_IO_TBD               =  4   ## DSR Digital I/O 4 -> Pneumatic Gripper (Positive pressure)
+ACTION_IO_TBD                =  3   ## DSR Digital I/O 3
+ACTION_IO_TBD                =  103
+ACTION_IO_TBD                = -103
+# ACTION_IO_TBD               =  4   ## DSR Digital I/O 4
 # ACTION_IO_TBD               =  104
 # ACTION_IO_TBD               = -104
 ACTION_IO_JIG_X              =  5   ## DSR Digital I/O 5 -> Universal Jig X-axis
@@ -135,9 +145,12 @@ ACTION_IO_JIG_X_OPEN         = -105
 ACTION_IO_JIG_Y              =  6   ## DSR Digital I/O 6 -> Universal Jig Y-axis
 ACTION_IO_JIG_Y_CLOSE        =  106
 ACTION_IO_JIG_Y_OPEN         = -106
-# ACTION_IO_TBD               =  7   ## DSR Digital I/O 7 -> Suction Cup Gripper
+# ACTION_IO_TBD               =  7   ## DSR Digital I/O 7
 # ACTION_IO_TBD               =  107
 # ACTION_IO_TBD               = -107
+ACTION_IO_SUCTIONCUP         =  8   ## DSR Digital I/O 8 -> Suction Cup Gripper (Negative pressure)
+ACTION_IO_SUCTIONCUP_ON      =  108
+ACTION_IO_SUCTIONCUP_OFF     = -108
 
 ## ACTION [201 ~ 300] - Doosan-robot I/O Controller (DSR Flange)
 ACTION_IO_GRIPPER_CLOSE      = -201
@@ -164,6 +177,9 @@ TASK_TEST_COMPLIANCE    = 10004
 TASK_SEPARATE_SPECIMEN  = 10005
 TASK_MULSPECIMEN_SEARCH = 10006
 TASK_IDIM_BLOCK_DEMO    = 10007
+TASK_JOG_DEVEL          = 10008
+TASK_3DP_1_BED_OUT      = -10011
+TASK_3DP_1_BED_IN       = 10011
 
 ## TBD... [20001 ~ ]
 
@@ -188,17 +204,20 @@ Q_HOME               = [0.0, 0.0, -90.0, 0.0, -90.0, 0.0]
 Q_BACK               = [180.0, 0.0, -90.0, 0.0, -90.0, 0.0]
 Q_LEFT               = [90.0, 0.0, -90.0, 0.0, -90.0, 0.0]
 Q_RIGHT              = [-90.0, 0.0, -90.0, 0.0, -90.0, 0.0]
-Q_TOP_PLATE          = [0.0, 30.0, -110.0, 0.0, -100.0, 0.0]
+Q_TOP_PLATE          = [0.0, 30.0, -110.0, 0.0, -100.0, 180.0]
 Q_SEARCH_RIGHT       = [-1.587211119647868, 0.04192579550122713, -2.42067574545383, 0.02488730488522477, 0.060036456046744055, 5.683802467473106e-05]
 Q_SEARCH_LEFT        = [1.587211119647868, 0.04192579550122713, -2.42067574545383, 0.02488730488522477, 0.060036456046744055, 5.683802467473106e-05]
 Q_SEARCH_FRONT       = [0.006254249687429258, 0.0706465647310261, -1.8816342308005074, -0.009305934771632234, -0.518931153024292, 0.012760136888951999]
 Q_MULSPECIMEN_SEARCH = [-17.66001319885254, 11.03127670288086, -128.7543487548828, -0.0, -62.27688980102539, 162.3400115966797]
+Q_SEARCH_3DP_PLATE   = [-4.907486915588379, -1.1244078874588013, -125.49647521972656, 1.640427589416504, -52.70343780517578, 39.11506652832031]
+Q_SEARCH_3DP_RIGHT   = [-103.04147338867188, -6.241026401519775, -128.091552734375, 0.265263170003891, -42.99394607543945, 163.57440185546875]
 
 ## Task Space Coordinates (P)
 P_TOP_PLATE          = [-240.5, 34.5, 665.5, 0.0, 180.0, 0.0] ## Same configuration with "Q_TOP_PLATE"
 P_TOOLCHANGE_1       = [-375.4557800292969, -337.03533935546875, 38.78656005859375, 121.61463165283203, 179.27223205566406, 41.801002502441406] ## Toolchange position 1
 P_TOOLCHANGE_2       = [-236.75289916992188, -337.0860900878906, 38.72620391845703, 131.73924255371094, 179.73355102539062, 51.19792175292969]  ## Toolchange position 2
 P_MULSPECIMEN_SEARCH = [-348.00201416015625, 147.00033569335938, 379.99737548828125, 162.33998107910156, -179.99990844726562, -17.659982681274414]
+P_SEARCH_3DP_1_RIGHT = [70.47772979736328, 395.1345520019531, 409.1728210449219, 47.5877685546875, 177.3722381591797, -39.428524017333984]
 ##################################################################################################################################################
 
 
