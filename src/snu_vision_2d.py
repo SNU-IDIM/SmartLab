@@ -140,13 +140,30 @@ class snu_vision_2d():
             gray = gray_temp[colStart:colEnd, rowStart:rowEnd]
             bgr = bgr_temp[colStart:colEnd, rowStart:rowEnd]
             hsv = hsv_temp[colStart:colEnd, rowStart:rowEnd]
+
             # print(hsv.shape)
             # print(hsv_temp.shape)
 
-            #FILTER1 HSV threshold
-            lower_bound = np.array([0, 0, 125])
-            upper_bound = np.array([255, 30, 200])
-            hsv_filter = cv2.inRange(hsv, lower_bound, upper_bound)
+            # img = cv2.bilateralFilter(bgr, 9, 75, 75)
+            img = copy.deepcopy(bgr)
+            size_temp = np.shape(img)
+            for ii in range(size_temp[0]):
+                for jj in range(size_temp[1]):
+                    x = img[ii, jj, 0]; y = img[ii, jj, 1]; z = img[ii, jj, 2]
+                    if abs(((z-1.0227*x)/19.4392)-1) < 0.9 and abs(((y-0.9905*x)/15.9725)-1) < 0.9:
+                        img[ii,jj] = (0,0,0)
+                    if img[ii,jj,0] < 100:
+                        img[ii,jj] = (0,0,0)
+                    if img[ii,jj,2] > 190:
+                        img[ii,jj] = (0,0,0)
+
+            img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                
+
+            # #FILTER1 HSV threshold
+            # lower_bound = np.array([0, 0, 125])
+            # upper_bound = np.array([255, 30, 200])
+            # hsv_filter = cv2.inRange(hsv, lower_bound, upper_bound)
 
             # print(hsv)
             # hsv2gray = np.empty(shape=(colEnd-colStart, rowEnd-rowStart), dtype=np.uint8)
@@ -159,8 +176,8 @@ class snu_vision_2d():
             # print(gray)
 
             #Canny edge detection & Hough lines transform
-            # edges=cv2.Canny(hsv2gray, 50, 200)
-            _, contours, _ = cv2.findContours(hsv_filter, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+            edges=cv2.Canny(img_gray, 100, 200)
+            _, contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
             #image show for debugging
             # while True:
@@ -169,6 +186,7 @@ class snu_vision_2d():
                 # cv2.imshow('hsv_image', hsv)
                 # cv2.imshow('hsv_image_filter', hsv_filter)
                 # cv2.imshow('hsvgray_image', hsv2gray)
+                # cv2.imshow('color_filter_image', img)
                 # cv2.imshow('Canny', edges)
                 # cv2.imshow('Contour', contours)
                 # cv2.waitKey(10)
@@ -201,17 +219,17 @@ class snu_vision_2d():
                     elif ptAccum[ii, 0] <= ptAccum[x_Min,0] + 3:
                         x_Min_Filter += 1
                         x_Min_Accum = np.append(x_Min_Accum, np.array([ptAccum[ii]]), axis=0)
-                    if ptAccum [ii, 1] >= ptAccum[y_Max,1] - 3:
+                    if ptAccum [ii, 1] >= ptAccum[y_Max,1] - 4:
                         y_Max_Filter += 1
                         y_Max_Accum = np.append(y_Max_Accum, np.array([ptAccum[ii]]), axis=0)
-                    elif ptAccum[ii, 1] <= ptAccum[y_Min,1] + 3:
+                    elif ptAccum[ii, 1] <= ptAccum[y_Min,1] + 4:
                         y_Min_Filter += 1
                         y_Min_Accum = np.append(y_Min_Accum, np.array([ptAccum[ii]]), axis=0)
                 
-                print(x_Max_Filter, x_Min_Filter, y_Max_Filter, y_Min_Filter)
-                print(x_Max_Accum, x_Min_Accum, y_Max_Accum, y_Min_Accum)
+                # print(x_Max_Filter, x_Min_Filter, y_Max_Filter, y_Min_Filter)
+                # print(x_Max_Accum, x_Min_Accum, y_Max_Accum, y_Min_Accum)
 
-                if x_Max_Filter >= 35 and x_Min_Filter >= 35 and y_Max_Filter >= 35 and y_Min_Filter >= 35 :
+                if x_Max_Filter >= 20 and x_Min_Filter >= 20 and y_Max_Filter >= 20 and y_Min_Filter >= 20 :
                     perpen_Flag = True
                 else :
                     perpen_Flag = False
@@ -223,17 +241,16 @@ class snu_vision_2d():
                     y_Max_Vertice=[ptAccum[y_Max,0], ptAccum[y_Max,1]]
                     y_Min_Vertice=[ptAccum[y_Min,0], ptAccum[y_Min,1]]
                     vertice = [x_Min_Vertice, y_Max_Vertice, x_Max_Vertice, y_Min_Vertice]
-
                 elif perpen_Flag == True:
-                    right_Top_Vertice=[np.average(x_Max_Accum[:,0]), np.max(x_Max_Accum[:,1])]
-                    left_Top_Vertice=[np.average(x_Min_Accum[:,0]), np.max(x_Min_Accum[:,1])]
-                    right_Bottom_Vertice=[np.average(x_Max_Accum[:,0]), np.min(x_Max_Accum[:,1])]
-                    left_Bottom_Vertice=[np.average(x_Min_Accum[:,0]), np.min(x_Min_Accum[:,1])]
+                    # right_Top_Vertice=[np.average(x_Max_Accum[:,0]), np.max(x_Max_Accum[:,1])]
+                    # left_Top_Vertice=[np.average(x_Min_Accum[:,0]), np.max(x_Min_Accum[:,1])]
+                    # right_Bottom_Vertice=[np.average(x_Max_Accum[:,0]), np.min(x_Max_Accum[:,1])]
+                    # left_Bottom_Vertice=[np.average(x_Min_Accum[:,0]), np.min(x_Min_Accum[:,1])]
 
-                    # right_Top_Vertice=[np.max(y_Max_Accum[:,0]), np.average(y_Max_Accum[:,1])]
-                    # left_Top_Vertice=[np.min(y_Max_Accum[:,0]), np.average(y_Max_Accum[:,1])]
-                    # right_Bottom_Vertice=[np.max(y_Min_Accum[:,0]), np.average(y_Min_Accum[:,1])]
-                    # left_Bottom_Vertice=[np.min(y_Min_Accum[:,0]), np.average(y_Min_Accum[:,1])]
+                    right_Top_Vertice=[np.max(y_Max_Accum[:,0]), np.average(y_Max_Accum[:,1])]
+                    left_Top_Vertice=[np.min(y_Max_Accum[:,0]), np.average(y_Max_Accum[:,1])]
+                    right_Bottom_Vertice=[np.max(y_Min_Accum[:,0]), np.average(y_Min_Accum[:,1])]
+                    left_Bottom_Vertice=[np.min(y_Min_Accum[:,0]), np.average(y_Min_Accum[:,1])]
 
                     vertice=[left_Top_Vertice, right_Top_Vertice, right_Bottom_Vertice, left_Bottom_Vertice]
 
@@ -252,10 +269,15 @@ class snu_vision_2d():
                 print(vertice)
                 # orientation1 = float(x_Max_Vertice[1]-x_Min_Vertice[1])/float(x_Max_Vertice[0]-x_Min_Vertice[0])
                 # orientation2 = float(y_Max_Vertice[1]-y_Min_Vertice[1])/float(y_Max_Vertice[0]-y_Min_Vertice[0])
-                orientation1 = float(vertice[0][1]-vertice[2][1])/float(vertice[0][0]-vertice[2][0])
-                orientation2 = float(vertice[1][1]-vertice[3][1])/float(vertice[1][0]-vertice[3][0])
+                # orientation1 = float(vertice[0][1]-vertice[2][1])/float(vertice[0][0]-vertice[2][0])
+                # orientation2 = float(vertice[1][1]-vertice[3][1])/float(vertice[1][0]-vertice[3][0])
+
+                orientation1 = float(vertice[0][0]-vertice[2][0])/float(vertice[0][1]-vertice[2][1])
+                orientation2 = float(vertice[1][0]-vertice[3][0])/float(vertice[1][1]-vertice[3][1])
+
                 orientation = (orientation1+orientation2)/2.0
                 theta = math.atan(orientation)
+                print(theta)
 
                 #centroid : average of all coordinates
                 centroid=[np.average(ptAccum[:,0]), np.average(ptAccum[:,1])]
@@ -276,8 +298,9 @@ class snu_vision_2d():
                 px2mm_Col=(centroid[1]+colStart-240)*250.0/551.0
 
                 if centroid is not None:
-                    self.tf_broadcaster(CAMERA_FRAME_PREFIX_, TEMP_PREFIX_ + str(obj_count), 262.0, -px2mm_Row+22.0, -px2mm_Col-10.5, 0, np.pi/2, np.pi)
-                    self.tf_broadcaster(TEMP_PREFIX_ + str(obj_count), OBJECT_TARGET_PREFIX_ + str(obj_count), 0.0, 0.0, 0.0, 0.0, 0.0, -theta+5.5*np.pi/180)
+                    # self.tf_broadcaster(CAMERA_FRAME_PREFIX_, TEMP_PREFIX_ + str(obj_count), 262.0, -px2mm_Row+22.0, -px2mm_Col-10.5, 0, np.pi/2, np.pi)
+                    self.tf_broadcaster(CAMERA_FRAME_PREFIX_, TEMP_PREFIX_ + str(obj_count), 262.0, -px2mm_Row+22.0, -px2mm_Col+5, 0, np.pi/2, np.pi)
+                    self.tf_broadcaster(TEMP_PREFIX_ + str(obj_count), OBJECT_TARGET_PREFIX_ + str(obj_count), 0.0, 0.0, 0.0, 0.0, 0.0, -theta+(5.5+90)*np.pi/180)
                     obj_count = obj_count+1
 
         self.vision_status = "vision processing complete"

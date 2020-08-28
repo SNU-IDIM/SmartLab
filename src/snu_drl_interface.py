@@ -205,6 +205,8 @@ class DRLInterface():
         movel(posx(x, y, z, 0, 0, 0), vel=velx, acc=accx, ref=ref, mod=mod)
     def movel_xyzjoint(self,x,y,z,jz1,jy,jz2,velx=DSR_DEFAULT_JOG_VELX, accx=DSR_DEFAULT_JOG_ACCX, ref=DR_TOOL, mod=DR_MV_MOD_REL): # distance [mm], angle [degree]
         movel(posx(x, y, z, jz1, jy, jz2), vel=velx, acc=accx, ref=ref, mod=mod)
+    def rotate_z(self, jz, velx=DSR_DEFAULT_JOG_VELX, accx=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL):
+        movel(posx(0,0,0,0,0,jz), vel=velx, acc=accx, ref=ref, mod=mod)
 
     def move_lack_pick(self):
         self.gripper_open()
@@ -300,6 +302,96 @@ class DRLInterface():
         rospy.sleep(0.1)
         if get_tool_digital_output(2) == 0:
             set_tool_digital_output(2, 1)
+
+    def getBedFromPrinterToJig(self, printer_number):
+        bed_number = printer_number + 4
+        self.setVelAcc(30, 30, [100,50], [100,50])
+        self.jig_x_open();  self.jig_y_open();  rospy.sleep(1)
+        movej(Q_SEARCH_3DP_RIGHT)
+
+        self.UpdateParam(0.0, -0.12, 0.20, rx=180.0, ry=0.0, rz=-90.0); rospy.sleep(1)
+        self.search_ar_target(bed_number)
+        if not self.drl_pose[0] == 0: ## when AR tag is detected, execute the following codes
+            self.search_ar_target(bed_number);   movel(self.drl_pose, vel=[130,50], acc=[100,50]);   rospy.sleep(0.5) # 1st approach
+            self.search_ar_target(bed_number);   movel(self.drl_pose, vel=[130,50], acc=[100,50]);   rospy.sleep(0.5) # 2nd approach
+            self.search_ar_target(bed_number);   movel(self.drl_pose, vel=[130,50], acc=[100,50]);   rospy.sleep(0.5) # 3rd approach
+            self.search_ar_target(bed_number);   movel(self.drl_pose, vel=[130,50], acc=[100,50]);   rospy.sleep(0.5) # 4th approach
+        else:
+            print("ar target not found repeat")
+        
+        self.search_ar_target(bed_number)
+        if not self.drl_pose[0] == 0:
+            self.UpdateParam(0.0, 0.0, 0.3, rz=-45.0);   rospy.sleep(1);  self.search_ar_target(bed_number);   waypoint_0 = self.drl_pose
+            waypoint_1 = deepcopy(waypoint_0);     waypoint_1[1] -= 120
+            waypoint_2 = deepcopy(waypoint_0);     waypoint_2[1] += 35;     waypoint_2[2] -= 100
+            waypoint_3 = deepcopy(waypoint_2);     waypoint_3[2] -= 45
+            waypoint_4 = P_UNIVERSALJIG_3DP_BED;   waypoint_4[2] += 100
+            waypoint_5 = deepcopy(waypoint_4);     waypoint_5[2] -= 100
+            
+            print("1")
+            movel(waypoint_1)
+            print("2")
+            movel(waypoint_2)
+            print("3")
+            movel(waypoint_3)
+            self.suction_cup_on()
+            print("4")
+            movel(waypoint_2)
+            print("5")
+            movel(waypoint_1)
+            print("6")
+            movel(waypoint_4)
+            movel(waypoint_5)
+            self.suction_cup_off();  rospy.sleep(1)
+            self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
+            movel(waypoint_4)
+            movej(Q_TOP_PLATE)
+
+            self.UpdateParam(0.0, -0.12, 0.20, rx=180.0, ry=0.0, rz=-90.0)
+
+    def getBedFromJigToPrinter(self, printer_number):
+        bed_number = printer_number + 4
+        self.setVelAcc(30, 30, [100,50], [100,50])
+        self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
+        movej(Q_TOP_PLATE)
+
+        self.UpdateParam(0.0, -0.12, 0.20, rx=180.0, ry=0.0, rz=-90.0); rospy.sleep(1)
+        self.search_ar_target(bed_number)
+        if not self.drl_pose[0] == 0: ## when AR tag is detected, execute the following codes
+            movej(Q_SEARCH_3DP_PLATE)
+            self.movel_z(100)
+            self.suction_cup_on();  self.jig_x_open();  self.jig_y_open(); rospy.sleep(1)
+            self.movel_z(-100)
+            movej(Q_SEARCH_3DP_RIGHT)
+
+            self.search_ar_target(printer_number)
+            if not self.drl_pose[0] == 0: ## when AR tag is detected, execute the following codes
+                self.search_ar_target(printer_number);  movel(self.drl_pose, vel=[130,50], acc=[100,50]);  rospy.sleep(0.5) # 1st approach
+                self.search_ar_target(printer_number);  movel(self.drl_pose, vel=[130,50], acc=[100,50]);  rospy.sleep(0.5) # 2nd approach
+                self.search_ar_target(printer_number);  movel(self.drl_pose, vel=[130,50], acc=[100,50]);  rospy.sleep(0.5) # 3rd approach
+                self.search_ar_target(printer_number);  movel(self.drl_pose, vel=[130,50], acc=[100,50]);  rospy.sleep(0.5) # 4th approach
+            else:
+                print("ar target not found repeat")
+            
+            self.search_ar_target(printer_number)
+            if not self.drl_pose[0] == 0:
+                self.UpdateParam(-0.09, -0.30, 0.40, rz=135.0);    rospy.sleep(1);  self.search_ar_target(printer_number) 
+                waypoint_1 = self.drl_pose;           waypoint_1[0] -= 35
+                waypoint_2 = deepcopy(waypoint_1);    waypoint_2[2] -= 90
+                waypoint_3 = deepcopy(waypoint_2);    waypoint_3[1] += 295
+                waypoint_4 = deepcopy(waypoint_3);    waypoint_4[2] -= 120
+                
+                movel(waypoint_1, vel=[130,50], acc=[100,50])
+                movel(waypoint_2, vel=[130,50], acc=[100,50])
+                movel(waypoint_3, vel=[130,50], acc=[100,50])
+                movel(waypoint_4, vel=[130,50], acc=[100,50])
+                self.suction_cup_off()
+                movel(waypoint_3, vel=[130,50], acc=[100,50])
+                movel(waypoint_2, vel=[130,50], acc=[100,50])
+                movel(waypoint_1, vel=[130,50], acc=[100,50])
+
+                # movej(Q_SEARCH_3DP_PLATE)
+                self.UpdateParam(0.0, -0.12, 0.20, rx=180.0, ry=0.0, rz=-90.0)
 
     
     '''
@@ -649,13 +741,14 @@ class DRLInterface():
 
         # Task [10006]: SEARCH AND APPROACH TO ''MULTIPLE'' SPECIMENS USING TF
         elif(self.cmd_protocol == TASK_MULSPECIMEN_SEARCH):
-            self.setVelAcc(50, 50, [150,100], [150,100])
+            # self.setVelAcc(50, 50, [150,100], [150,100])
+            self.setVelAcc(30, 30, [30,30], [30,30])
             # movel([-357.0, 165.0, 322.0, -181.3, -180.0, 0.0])
             movej([-19.77288246154785, 5.743539333343506, -131.46726989746094, -0.0, -54.27621841430664, 161.5270538330078])
 
             self.gripper_open()
-            self.jig_x_open();  self.jig_y_open();  rospy.sleep(5)
-            self.jig_x_close(); self.jig_y_close(); rospy.sleep(3)
+            self.jig_x_open();  self.jig_y_open();  rospy.sleep(2)
+            self.jig_x_close(); self.jig_y_close(); rospy.sleep(2)
 
             object_count=1
             
@@ -683,15 +776,29 @@ class DRLInterface():
                     movel(self.drl_pose)
                     self.movel_z(105, [100, 100], [100, 100]) #go down 95 for development
                     self.gripper_close()
+
+                    #SHAKING
+                    task_compliance_ctrl([3000, 3000, 3000, 1000, 1000, 1000])
+                    # self.movel_x(20, [100, 100], [100, 100])
+                    # self.movel_x(-20, [100, 100], [100, 100])
+                    self.rotate_z(10)
+                    self.rotate_z(-20)
+                    self.rotate_z(10)
+                    self.movel_y(30)
+                    self.rotate_z(10)
+                    self.rotate_z(-20)
+                    self.rotate_z(10)
+                    release_compliance_ctrl()
+
                     self.movel_z(-105,[100, 100], [100, 100]) #go up
                     movej([-19.77288246154785, 5.743539333343506, -131.46726989746094, -0.0, -54.27621841430664, 161.5270538330078])
                     
-                    specimen_loc = [-403.63006591796875+object_count*50, -104.22643280029297, 186.01812744140625, 37.57080078125, 178.80581665039062, -144.4349365234375]
-                    self.setVelAcc(100, 100, [500,100], [500,100])
-                    movel(specimen_loc)
+                    # specimen_loc = [-403.63006591796875+object_count*50, -104.22643280029297, 186.01812744140625, 37.57080078125, 178.80581665039062, -144.4349365234375]
+                    # self.setVelAcc(100, 100, [500,100], [500,100])
+                    # movel(specimen_loc)
                     
                     self.gripper_open()
-                    movej([-19.77288246154785, 5.743539333343506, -131.46726989746094, -0.0, -54.27621841430664, 161.5270538330078])
+                    # movej([-19.77288246154785, 5.743539333343506, -131.46726989746094, -0.0, -54.27621841430664, 161.5270538330078])
                     object_count= object_count+1
 
                 except (Exception):
@@ -893,87 +1000,33 @@ class DRLInterface():
             # self.move_lack_pick()
             # self.gripper_open()
 
-
-        # Task [-10011]: "TASK_3DP_1_BED_OUT" - Take printing bed out of 3DP-#1
-        elif(self.cmd_protocol == TASK_3DP_1_BED_OUT):
-            printer_number = '4'
-            self.setVelAcc(30, 30, [100,50], [100,50])
-            self.jig_x_open();  self.jig_y_open();  rospy.sleep(1)
-            movel(P_SEARCH_3DP_1_RIGHT)
-
-            self.UpdateParam(0.0, -0.12, 0.20, rx=180.0, ry=0.0, rz=-90.0); rospy.sleep(1)
-            self.search_ar_target(printer_number)
-            if not self.drl_pose[0] == 0: ## when AR tag is detected, execute the following codes
-                self.search_ar_target(printer_number);  movel(self.drl_pose, vel=[130,50], acc=[100,50]) # 1st approach
-                self.search_ar_target(printer_number);  movel(self.drl_pose, vel=[130,50], acc=[100,50]) # 2nd approach
-                self.search_ar_target(printer_number);  movel(self.drl_pose, vel=[130,50], acc=[100,50]) # 3rd approach
-                self.search_ar_target(printer_number);  movel(self.drl_pose, vel=[130,50], acc=[100,50]) # 4th approach
-            else:
-                print("ar target not found repeat")
-            
-            self.search_ar_target(printer_number)
-            if not self.drl_pose[0] == 0:
-                self.UpdateParam(0.0, -0.12, 0.30, rz=-45.0);   rospy.sleep(1);  self.search_ar_target(printer_number);   waypoint_1 = self.drl_pose
-                self.UpdateParam(0.0, 0.035, 0.20, rz=-45.0);   rospy.sleep(1);  self.search_ar_target(printer_number);   waypoint_2 = self.drl_pose
-
-                movel(waypoint_2, vel=[130,50], acc=[100,50])
-                self.movel_z(45)
-                self.suction_cup_on()
-                movel(waypoint_2, vel=[130,50], acc=[100,50])
-                movel(waypoint_1, vel=[130,50], acc=[100,50])
-            P_UNIVERSALJIG_3DP_BED = [-435.0015869140625, 52.0435791015625, 225.61996459960938, 0.5350197553634644, -178.6567840576172, -136.9725341796875]
-            waypoint_3 = deepcopy(P_UNIVERSALJIG_3DP_BED);    waypoint_3[2] = waypoint_3[2] + 80
-            movel(waypoint_3)
-            movel(P_UNIVERSALJIG_3DP_BED)
-            self.suction_cup_off();     rospy.sleep(1)
-            self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
-
-            self.UpdateParam(0.0, -0.12, 0.20, rx=180.0, ry=0.0, rz=-90.0)
-
-        # Task [10011]: "TASK_3DP_1_BED_IN" - Put printing bed on 3DP-#1
+        # Task [10011]: "TASK_3DP_1_BED_IN"   - (3DP-#1 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_1_BED_IN):
-            printer_number = '4'
-            self.setVelAcc(30, 30, [100,50], [100,50])
-            self.jig_x_close();  self.jig_y_close(); rospy.sleep(1)
-            movej(Q_TOP_PLATE)
-            movej(Q_SEARCH_3DP_PLATE)
-            self.movel_z(100)
-            self.suction_cup_on()
-            self.jig_x_open();  self.jig_y_open(); rospy.sleep(1)
-            self.movel_z(-100)
-            movej(Q_SEARCH_3DP_RIGHT)
+            self.getBedFromJigToPrinter(1)
+        # Task [-10011]: "TASK_3DP_1_BED_OUT" - (3DP-#1 Bed) Printer -> Jig 
+        elif(self.cmd_protocol == TASK_3DP_1_BED_OUT):
+            self.getBedFromPrinterToJig(1)
 
-            printer_number = '2'
-            self.UpdateParam(0.0, -0.12, 0.20, rz=-90.0);   rospy.sleep(1)
-            self.search_ar_target(printer_number)
+        # Task [10012]: "TASK_3DP_2_BED_IN"   - (3DP-#2 Bed) Jig -> Printer 
+        elif(self.cmd_protocol == TASK_3DP_2_BED_IN):
+            self.getBedFromJigToPrinter(2)
+        # Task [-10012]: "TASK_3DP_2_BED_OUT" - (3DP-#2 Bed) Printer -> Jig 
+        elif(self.cmd_protocol == TASK_3DP_2_BED_OUT):
+            self.getBedFromPrinterToJig(2)
 
-            if not self.drl_pose[0] == 0: ## when AR tag is detected, execute the following codes
-                self.search_ar_target(printer_number);  movel(self.drl_pose, vel=[130,50], acc=[100,50]) # 1st approach
-                self.search_ar_target(printer_number);  movel(self.drl_pose, vel=[130,50], acc=[100,50]) # 2nd approach
-                self.search_ar_target(printer_number);  movel(self.drl_pose, vel=[130,50], acc=[100,50]) # 3rd approach
-                self.search_ar_target(printer_number);  movel(self.drl_pose, vel=[130,50], acc=[100,50]) # 4th approach
-            else:
-                print("ar target not found repeat")
-            
-            self.search_ar_target(printer_number)
-            if not self.drl_pose[0] == 0:
-                self.UpdateParam(-0.09, -0.30, 0.40, rz=135.0);    rospy.sleep(1);  self.search_ar_target(printer_number) 
-                waypoint_1 = self.drl_pose;           waypoint_1[0] -= 35
-                waypoint_2 = deepcopy(waypoint_1);    waypoint_2[2] -= 90
-                waypoint_3 = deepcopy(waypoint_2);    waypoint_3[1] += 295
-                waypoint_4 = deepcopy(waypoint_3);    waypoint_4[2] -= 120
+        # Task [10013]: "TASK_3DP_3_BED_IN"   - (3DP-#3 Bed) Jig -> Printer 
+        elif(self.cmd_protocol == TASK_3DP_3_BED_IN):
+            self.getBedFromJigToPrinter(3)
+        # Task [-10013]: "TASK_3DP_3_BED_OUT" - (3DP-#3 Bed) Printer -> Jig 
+        elif(self.cmd_protocol == TASK_3DP_3_BED_OUT):
+            self.getBedFromPrinterToJig(3)
 
-                movel(waypoint_1, vel=[130,50], acc=[100,50])
-                movel(waypoint_2, vel=[130,50], acc=[100,50])
-                movel(waypoint_3, vel=[130,50], acc=[100,50])
-                movel(waypoint_4, vel=[130,50], acc=[100,50])
-                self.suction_cup_off()
-                movel(waypoint_3, vel=[130,50], acc=[100,50])
-                movel(waypoint_2, vel=[130,50], acc=[100,50])
-                movel(waypoint_1, vel=[130,50], acc=[100,50])
-                
-                self.UpdateParam(0.0, -0.12, 0.20, rx=180.0, ry=0.0, rz=-90.0)
-
+        # Task [10014]: "TASK_3DP_4_BED_IN"   - (3DP-#4 Bed) Jig -> Printer 
+        elif(self.cmd_protocol == TASK_3DP_4_BED_IN):
+            self.getBedFromJigToPrinter(4)
+        # Task [-10014]: "TASK_3DP_4_BED_OUT" - (3DP-#4 Bed) Printer -> Jig 
+        elif(self.cmd_protocol == TASK_3DP_4_BED_OUT):
+            self.getBedFromPrinterToJig(4)
 
 
 
