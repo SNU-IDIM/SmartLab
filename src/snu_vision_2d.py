@@ -144,25 +144,26 @@ class snu_vision_2d():
             # print(hsv.shape)
             # print(hsv_temp.shape)
 
+            # SONDORI BED FILTER
             # img = cv2.bilateralFilter(bgr, 9, 75, 75)
             img = copy.deepcopy(bgr)
             size_temp = np.shape(img)
             for ii in range(size_temp[0]):
                 for jj in range(size_temp[1]):
-                    x = img[ii, jj, 0]; y = img[ii, jj, 1]; z = img[ii, jj, 2]
-                    if abs(((z-1.0227*x)/19.4392)-1) < 0.9 and abs(((y-0.9905*x)/15.9725)-1) < 0.9:
+                    # x = img[ii, jj, 0]; y = img[ii, jj, 1]; z = img[ii, jj, 2]
+                    # if abs(((z-1.0227*x)/19.4392)-1) < 0.8 and abs(((y-0.9905*x)/15.9725)-1) < 0.8:
+                        # img[ii,jj] = (255,255,255)
+                    if img[ii,jj,0] < 60 and img[ii,jj,1] < 60 and img[ii,jj,2] < 60:
                         img[ii,jj] = (0,0,0)
-                    if img[ii,jj,0] < 100:
-                        img[ii,jj] = (0,0,0)
-                    if img[ii,jj,2] > 190:
-                        img[ii,jj] = (0,0,0)
+                    # if img[ii,jj,2] > 190:
+                        # img[ii,jj] = (255, 255, 255)
 
             img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                 
 
-            # #FILTER1 HSV threshold
+            # # #FILTER1 HSV threshold
             # lower_bound = np.array([0, 0, 125])
-            # upper_bound = np.array([255, 30, 200])
+            # upper_bound = np.array([255, 40, 200])
             # hsv_filter = cv2.inRange(hsv, lower_bound, upper_bound)
 
             # print(hsv)
@@ -176,7 +177,7 @@ class snu_vision_2d():
             # print(gray)
 
             #Canny edge detection & Hough lines transform
-            edges=cv2.Canny(img_gray, 100, 200)
+            edges=cv2.Canny(img_gray, 50, 200)
             _, contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
             #image show for debugging
@@ -193,10 +194,12 @@ class snu_vision_2d():
             
             for ii in range(len(contours)):
                 ptAccum=np.squeeze(contours[ii])
+                
 
                 # FILTER2 : the specimen edge should contain more than 300 points
                 if (len(ptAccum) < 600 or len(ptAccum) > 900) : 
                     print('bad search : points are too many or ')
+                    print(len(ptAccum))
                     # print(len(ptAccum))
                     continue
                 # print(len(ptAccum))
@@ -229,7 +232,7 @@ class snu_vision_2d():
                 # print(x_Max_Filter, x_Min_Filter, y_Max_Filter, y_Min_Filter)
                 # print(x_Max_Accum, x_Min_Accum, y_Max_Accum, y_Min_Accum)
 
-                if x_Max_Filter >= 20 and x_Min_Filter >= 20 and y_Max_Filter >= 20 and y_Min_Filter >= 20 :
+                if x_Max_Filter >= 40 and x_Min_Filter >= 40 and y_Max_Filter >= 40 and y_Min_Filter >= 40 :
                     perpen_Flag = True
                 else :
                     perpen_Flag = False

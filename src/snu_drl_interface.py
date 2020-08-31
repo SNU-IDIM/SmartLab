@@ -36,6 +36,13 @@ class DRLInterface():
         self.toolforce_max      = 0.0
         self.toolforce_max_flag = False
         
+        self.orient_truth       = 0.0
+        self.orient_roll        = 0.0
+        self.orient_pitch       = 0.0
+        self.orient_yaw         = 0.0
+        self.orient_calib_flag  = False
+        self.orient_calib_exec  = False
+
         self.offset_x           = 0.0
         self.offset_y           = -0.12
         self.offset_z           = 0.2
@@ -117,22 +124,6 @@ class DRLInterface():
 
 
     '''
-        update_cmd_pose: update 'target_pose' to feed 'movel' function for Doosan-robot
-            @ input 1: geometry_msgs/Vector3 trans
-            @ input 2: geometry_msgs/Quaternion rot
-    '''
-    def update_cmd_pose(self, trans, rot):
-        self.target_pose.position.x    = M2MM(trans[0])# + self.offset_x) # 보정 @(arm -> 측면)
-        self.target_pose.position.y    = M2MM(trans[1])# + self.offset_y) # 보정 @(arm -> 정면)
-        self.target_pose.position.z    = M2MM(trans[2])# + self.offset_z)
-        self.target_pose.orientation.x = rot[0]
-        self.target_pose.orientation.y = rot[1]
-        self.target_pose.orientation.z = rot[2]
-        self.target_pose.orientation.w = rot[3]
-        print(self.target_pose)
-
-
-    '''
         updateEulZYZ: Calculate ZYZ rotation to feed 'movel' function for Doosan-robot
     '''
     def updateEulZYZ(self):
@@ -146,31 +137,107 @@ class DRLInterface():
         y1 = 2*math.acos(math.sqrt(q_w*q_w + q_z*q_z))
         z2 = t2 + t1  
         self.eulerZYZ = [RAD2DEG(z1), RAD2DEG(y1), RAD2DEG(z2)]
-        print('The Euler angles are calculated:', self.eulerZYZ)
+        # print('The Euler angles are calculated:', self.eulerZYZ)
 
 
     '''
         search_ar_target: lookupTransform to get AR_Target (calculated from AR_Marker)
             @ input 1: int ar_tag_number (ex - 0, 1, 2, 3, ...)
     '''
-    def search_ar_target(self, ar_tag_number):
+    def ARsearchFromBase(self, ar_tag_number):
         target_frame_name = 'ar_target_' + str(ar_tag_number)
         reference_frame_name = 'base_0'
-        print "Searching AR tag ..."
-        print("Target frame: "    + target_frame_name)
-        print("Reference frame: " + reference_frame_name)
+        # print "Searching AR tag ..."
+        # print("Target frame: "    + target_frame_name)
+        # print("Reference frame: " + reference_frame_name)
         listener = tf.TransformListener()
         try:
-            print "Trying to search the target: %s ..."%target_frame_name
+            # print "Trying to search the target: %s ..."%target_frame_name
             self.listener.waitForTransform(reference_frame_name, target_frame_name, rospy.Time(), rospy.Duration(1.0))
             (trans,rot) = self.listener.lookupTransform(reference_frame_name, target_frame_name, rospy.Time(0))
-            self.update_cmd_pose(trans, rot)
+
+            self.target_pose.position.x    = M2MM(trans[0])# + self.offset_x) # 보정 @(arm -> 측면)
+            self.target_pose.position.y    = M2MM(trans[1])# + self.offset_y) # 보정 @(arm -> 정면)
+            self.target_pose.position.z    = M2MM(trans[2])# + self.offset_z)
+            self.target_pose.orientation.x = rot[0]
+            self.target_pose.orientation.y = rot[1]
+            self.target_pose.orientation.z = rot[2]
+            self.target_pose.orientation.w = rot[3]
             self.updateEulZYZ()
-            self.drl_pose = deepcopy(posx(self.target_pose.position.x, self.target_pose.position.y, self.target_pose.position.z ,self.eulerZYZ[0], self.eulerZYZ[1], self.eulerZYZ[2]))
-            print('Target DRL Pose: ' , self.drl_pose)
+            pos = self.target_pose.position;   ori = self.eulerZYZ
+            self.drl_pose = deepcopy(posx(pos.x, pos.y, pos.z ,ori[0], ori[1], ori[2]))
+            return True
         except (Exception):
             print "[ERROR]: The Target(TF) is not Detected !!!"
-            pass
+            return False
+
+    def ARsearchFromEEF(self, ar_tag_number):
+        target_frame_name = 'ar_target_' + str(ar_tag_number)
+        reference_frame_name = 'link6'
+        # print "Searching AR tag ..."
+        # print("Target frame: "    + target_frame_name)
+        # print("Reference frame: " + reference_frame_name)
+        listener = tf.TransformListener()
+        try:
+            # print "Trying to search the target: %s ..."%target_frame_name
+            self.listener.waitForTransform(reference_frame_name, target_frame_name, rospy.Time(), rospy.Duration(1.0))
+            (trans,rot) = self.listener.lookupTransform(reference_frame_name, target_frame_name, rospy.Time(0))
+
+            self.target_pose.position.x    = M2MM(trans[0])# + self.offset_x) # 보정 @(arm -> 측면)
+            self.target_pose.position.y    = M2MM(trans[1])# + self.offset_y) # 보정 @(arm -> 정면)
+            self.target_pose.position.z    = M2MM(trans[2])# + self.offset_z)
+            self.target_pose.orientation.x = rot[0]
+            self.target_pose.orientation.y = rot[1]
+            self.target_pose.orientation.z = rot[2]
+            self.target_pose.orientation.w = rot[3]
+            return True
+        except (Exception):
+            print "[ERROR]: The Target(TF) is not Detected !!!"
+            return False
+    def ARcheckFlipped(self, ar_tag_number):
+        self.ARgetOrientRPY(ar_tag_number)
+        if self.orient_calib_flag == True:
+            self.orient_truth = self.orient_yaw
+            self.orient_calib_flag = False
+        else:
+            if abs(RAD2DEG(self.orient_truth - self.orient_yaw)) > 60.0 and self.orient_calib_exec == False:
+                # print("initial yaw: {}".format(RAD2DEG(self.orient_truth)))
+                # print("current yaw: {}".format(RAD2DEG(self.orient_yaw)))
+                print("AR tag flipped !!!")
+                dx = rospy.get_param('/R_001/snu_object_tracker/offset_from_target/x')
+                dy = rospy.get_param('/R_001/snu_object_tracker/offset_from_target/y')
+                rospy.set_param('/R_001/snu_object_tracker/offset_from_target/x', dy)
+                rospy.set_param('/R_001/snu_object_tracker/offset_from_target/y', dx)
+                rospy.set_param('/R_001/snu_object_tracker/offset_from_target/rz', -90.0)
+                rospy.sleep(1)
+                self.ARsearchFromEEF(ar_tag_number)
+                self.orient_calib_exec = True
+
+    def ARgetOrientRPY(self, ar_tag_number):
+        if self.ARsearchFromEEF(ar_tag_number):
+            orientation = self.target_pose.orientation
+            self.orient_roll  = euler_from_quaternion([orientation.x, orientation.y, orientation.z, orientation.w])[0]
+            self.orient_pitch = euler_from_quaternion([orientation.x, orientation.y, orientation.z, orientation.w])[1]
+            self.orient_yaw   = euler_from_quaternion([orientation.x, orientation.y, orientation.z, orientation.w])[2]
+            # print("Roll: {}".format(RAD2DEG(self.orient_roll)))
+            # print("Pitch: {}".format(RAD2DEG(self.orient_pitch)))
+            # print("Yaw: {}".format(RAD2DEG(self.orient_yaw)))
+            
+    def ARalignMove(self, ar_tag_number):
+        self.ARcheckFlipped(ar_tag_number)
+        self.updateEulZYZ()
+        pos = self.target_pose.position;   ori = self.eulerZYZ
+        self.drl_pose = deepcopy(posx(pos.x, pos.y, pos.z ,ori[0], ori[1], ori[2]))
+        movel(self.drl_pose, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+
+    def ARsetReference(self, ar_tag_number, iter=1):
+        self.ARsearchFromEEF(ar_tag_number)
+        self.orient_calib_flag = True
+        for i in range(iter):
+            if self.ARsearchFromEEF(ar_tag_number) == True:
+                self.ARcheckFlipped(ar_tag_number)
+                self.ARalignMove(ar_tag_number)
+        self.orient_calib_exec = False
 
 
     '''
@@ -305,93 +372,69 @@ class DRLInterface():
 
     def getBedFromPrinterToJig(self, printer_number):
         bed_number = printer_number + 4
-        self.setVelAcc(30, 30, [100,50], [100,50])
+        self.setVelAcc(100, 100, [100,50], [100,50])
         self.jig_x_open();  self.jig_y_open();  rospy.sleep(1)
         movej(Q_SEARCH_3DP_RIGHT)
 
-        self.UpdateParam(0.0, -0.12, 0.20, rx=180.0, ry=0.0, rz=-90.0); rospy.sleep(1)
-        self.search_ar_target(bed_number)
-        if not self.drl_pose[0] == 0: ## when AR tag is detected, execute the following codes
-            self.search_ar_target(bed_number);   movel(self.drl_pose, vel=[130,50], acc=[100,50]);   rospy.sleep(0.5) # 1st approach
-            self.search_ar_target(bed_number);   movel(self.drl_pose, vel=[130,50], acc=[100,50]);   rospy.sleep(0.5) # 2nd approach
-            self.search_ar_target(bed_number);   movel(self.drl_pose, vel=[130,50], acc=[100,50]);   rospy.sleep(0.5) # 3rd approach
-            self.search_ar_target(bed_number);   movel(self.drl_pose, vel=[130,50], acc=[100,50]);   rospy.sleep(0.5) # 4th approach
-        else:
-            print("ar target not found repeat")
-        
-        self.search_ar_target(bed_number)
-        if not self.drl_pose[0] == 0:
-            self.UpdateParam(0.0, 0.0, 0.3, rz=-45.0);   rospy.sleep(1);  self.search_ar_target(bed_number);   waypoint_0 = self.drl_pose
-            waypoint_1 = deepcopy(waypoint_0);     waypoint_1[1] -= 120
-            waypoint_2 = deepcopy(waypoint_0);     waypoint_2[1] += 35;     waypoint_2[2] -= 100
-            waypoint_3 = deepcopy(waypoint_2);     waypoint_3[2] -= 45
-            waypoint_4 = P_UNIVERSALJIG_3DP_BED;   waypoint_4[2] += 100
-            waypoint_5 = deepcopy(waypoint_4);     waypoint_5[2] -= 100
-            
-            print("1")
-            movel(waypoint_1)
-            print("2")
-            movel(waypoint_2)
-            print("3")
-            movel(waypoint_3)
-            self.suction_cup_on()
-            print("4")
-            movel(waypoint_2)
-            print("5")
-            movel(waypoint_1)
-            print("6")
-            movel(waypoint_4)
-            movel(waypoint_5)
-            self.suction_cup_off();  rospy.sleep(1)
-            self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
-            movel(waypoint_4)
-            movej(Q_TOP_PLATE)
+        self.UpdateParam(-0.12, 0.0, 0.17, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
+        self.ARsetReference(bed_number, 4)
 
-            self.UpdateParam(0.0, -0.12, 0.20, rx=180.0, ry=0.0, rz=-90.0)
+        self.UpdateParam(0.0, 0.0, 0.3, rz=-45.0);  rospy.sleep(1);  self.ARsearchFromBase(bed_number);  waypoint_0 = deepcopy(self.drl_pose)
+        waypoint_1 = deepcopy(waypoint_0);     waypoint_1[1] -= 120
+        waypoint_2 = deepcopy(waypoint_0);     waypoint_2[1] += 35;     waypoint_2[2] -= 100
+        waypoint_3 = deepcopy(waypoint_2);     waypoint_3[2] -= 45
+        waypoint_4 = P_UNIVERSALJIG_3DP_BED;   waypoint_4[2] += 100
+        waypoint_5 = deepcopy(waypoint_4);     waypoint_5[2] -= 100
+        
+        movel(waypoint_1, ref=DR_BASE, mod=DR_MV_MOD_ABS)
+        movel(waypoint_2)
+        movel(waypoint_3)
+        self.suction_cup_on()
+        movel(waypoint_2)
+        movel(waypoint_1)
+        movel(waypoint_4)
+        movel(waypoint_5)
+        self.suction_cup_off();  rospy.sleep(1)
+        self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
+        movel(waypoint_4)
+        movej(Q_TOP_PLATE)
+
+        self.UpdateParam(0.0, -0.12, 0.20, rx=180.0, ry=0.0, rz=180.0)
 
     def getBedFromJigToPrinter(self, printer_number):
         bed_number = printer_number + 4
-        self.setVelAcc(30, 30, [100,50], [100,50])
+        self.setVelAcc(100, 100, [200,100], [200,100])
         self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
         movej(Q_TOP_PLATE)
 
-        self.UpdateParam(0.0, -0.12, 0.20, rx=180.0, ry=0.0, rz=-90.0); rospy.sleep(1)
-        self.search_ar_target(bed_number)
-        if not self.drl_pose[0] == 0: ## when AR tag is detected, execute the following codes
+        self.UpdateParam(-0.12, 0.0, 0.17, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
+
+        if self.ARsearchFromEEF(bed_number) == True: ## when AR tag is detected, execute the following codes
             movej(Q_SEARCH_3DP_PLATE)
             self.movel_z(100)
-            self.suction_cup_on();  self.jig_x_open();  self.jig_y_open(); rospy.sleep(1)
+            self.suction_cup_on();  rospy.sleep(1)
+            self.jig_x_open();  self.jig_y_open(); rospy.sleep(1)
             self.movel_z(-100)
             movej(Q_SEARCH_3DP_RIGHT)
 
-            self.search_ar_target(printer_number)
-            if not self.drl_pose[0] == 0: ## when AR tag is detected, execute the following codes
-                self.search_ar_target(printer_number);  movel(self.drl_pose, vel=[130,50], acc=[100,50]);  rospy.sleep(0.5) # 1st approach
-                self.search_ar_target(printer_number);  movel(self.drl_pose, vel=[130,50], acc=[100,50]);  rospy.sleep(0.5) # 2nd approach
-                self.search_ar_target(printer_number);  movel(self.drl_pose, vel=[130,50], acc=[100,50]);  rospy.sleep(0.5) # 3rd approach
-                self.search_ar_target(printer_number);  movel(self.drl_pose, vel=[130,50], acc=[100,50]);  rospy.sleep(0.5) # 4th approach
-            else:
-                print("ar target not found repeat")
+            self.ARsetReference(printer_number, 4)
+            self.UpdateParam(-0.05, -0.30, 0.38, rz=135.0);  rospy.sleep(1);  self.ARsearchFromBase(printer_number)
+            waypoint_1 = self.drl_pose;           waypoint_1[0] -= 35
+            waypoint_2 = deepcopy(waypoint_1);    waypoint_2[2] -= 90
+            waypoint_3 = deepcopy(waypoint_2);    waypoint_3[1] += 295
+            waypoint_4 = deepcopy(waypoint_3);    waypoint_4[2] -= 120
             
-            self.search_ar_target(printer_number)
-            if not self.drl_pose[0] == 0:
-                self.UpdateParam(-0.09, -0.30, 0.40, rz=135.0);    rospy.sleep(1);  self.search_ar_target(printer_number) 
-                waypoint_1 = self.drl_pose;           waypoint_1[0] -= 35
-                waypoint_2 = deepcopy(waypoint_1);    waypoint_2[2] -= 90
-                waypoint_3 = deepcopy(waypoint_2);    waypoint_3[1] += 295
-                waypoint_4 = deepcopy(waypoint_3);    waypoint_4[2] -= 120
-                
-                movel(waypoint_1, vel=[130,50], acc=[100,50])
-                movel(waypoint_2, vel=[130,50], acc=[100,50])
-                movel(waypoint_3, vel=[130,50], acc=[100,50])
-                movel(waypoint_4, vel=[130,50], acc=[100,50])
-                self.suction_cup_off()
-                movel(waypoint_3, vel=[130,50], acc=[100,50])
-                movel(waypoint_2, vel=[130,50], acc=[100,50])
-                movel(waypoint_1, vel=[130,50], acc=[100,50])
+            movel(waypoint_1, vel=[130,50], acc=[100,50])
+            movel(waypoint_2, vel=[130,50], acc=[100,50])
+            movel(waypoint_3, vel=[130,50], acc=[100,50])
+            movel(waypoint_4, vel=[130,50], acc=[100,50])
+            self.suction_cup_off()
+            movel(waypoint_3, vel=[130,50], acc=[100,50])
+            movel(waypoint_2, vel=[130,50], acc=[100,50])
+            movel(waypoint_1, vel=[130,50], acc=[100,50])
 
-                # movej(Q_SEARCH_3DP_PLATE)
-                self.UpdateParam(0.0, -0.12, 0.20, rx=180.0, ry=0.0, rz=-90.0)
+            # movej(Q_SEARCH_3DP_PLATE)
+            self.UpdateParam(0.0, -0.12, 0.20, rx=180.0, ry=0.0, rz=180.0)
 
     
     '''
@@ -774,23 +817,28 @@ class DRLInterface():
 
                     print('search complete')
                     movel(self.drl_pose)
-                    self.movel_z(105, [100, 100], [100, 100]) #go down 95 for development
+                    self.movel_z(104, [100, 100], [100, 100]) #go down 95 for development
+                    task_compliance_ctrl([3000, 3000, 3000, 1000, 1000, 1000])
                     self.gripper_close()
 
                     #SHAKING
-                    task_compliance_ctrl([3000, 3000, 3000, 1000, 1000, 1000])
+                    print(1)
                     # self.movel_x(20, [100, 100], [100, 100])
                     # self.movel_x(-20, [100, 100], [100, 100])
+                    print(2)
                     self.rotate_z(10)
                     self.rotate_z(-20)
                     self.rotate_z(10)
+                    print(3)
                     self.movel_y(30)
+                    print(4)
                     self.rotate_z(10)
                     self.rotate_z(-20)
                     self.rotate_z(10)
+                    print(5)
                     release_compliance_ctrl()
 
-                    self.movel_z(-105,[100, 100], [100, 100]) #go up
+                    self.movel_z(-104,[100, 100], [100, 100]) #go up
                     movej([-19.77288246154785, 5.743539333343506, -131.46726989746094, -0.0, -54.27621841430664, 161.5270538330078])
                     
                     # specimen_loc = [-403.63006591796875+object_count*50, -104.22643280029297, 186.01812744140625, 37.57080078125, 178.80581665039062, -144.4349365234375]
@@ -1027,6 +1075,57 @@ class DRLInterface():
         # Task [-10014]: "TASK_3DP_4_BED_OUT" - (3DP-#4 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_4_BED_OUT):
             self.getBedFromPrinterToJig(4)
+        
+        # TEST [20002]
+        elif(self.cmd_protocol == 20005):
+            # self.search_ar_target(4)
+            self.setVelAcc(200, 200, [150,50], [150,50])
+            ar_tag_number = 4
+            self.UpdateParam(-0.12, 0.0, 0.18, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
+            self.ARsetReference(ar_tag_number, 3)
+
+            # self.orient_calib_flag = True
+            # if self.search_ar_target(ar_tag_number): ## when AR tag is detected, execute the following codes
+            #     movel(self.drl_pose, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+            # if self.search_ar_target(ar_tag_number): ## when AR tag is detected, execute the following codes
+            #     movel(self.drl_pose, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+
+
+                # roll  = euler_from_quaternion([self.target_pose.orientation.x, 
+                #                                self.target_pose.orientation.y,
+                #                                self.target_pose.orientation.z, 
+                #                                self.target_pose.orientation.w])[0]
+
+                # pitch = euler_from_quaternion([self.target_pose.orientation.x, 
+                #                                self.target_pose.orientation.y,
+                #                                self.target_pose.orientation.z, 
+                #                                self.target_pose.orientation.w])[1]
+
+                # yaw   = euler_from_quaternion([self.target_pose.orientation.x, 
+                #                                self.target_pose.orientation.y,
+                #                                self.target_pose.orientation.z, 
+                #                                self.target_pose.orientation.w])[2]
+                # yaw = RAD2DEG(yaw)                 
+                # if self.orient_calib_flag == True:
+                #     print("init!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                #     self.orient_calib = yaw
+                #     print("initial yaw: {}".format(self.orient_calib))
+                #     self.orient_calib_flag = False
+                # else:
+                #     if abs(self.orient_calib - yaw) > 60.0:
+                #         print("initial yaw: {}".format(self.orient_calib))
+                #         print("current yaw: {}".format(yaw))
+                #         yaw += 90.0;    yaw = DEG2RAD(yaw)
+                #         quaternion = quaternion_from_euler(roll, pitch, yaw)
+                #         self.target_pose.orientation.x = quaternion[0]
+                #         self.target_pose.orientation.y = quaternion[1]
+                #         self.target_pose.orientation.z = quaternion[2]
+                #         self.target_pose.orientation.w = quaternion[3]
+                #         print("AR tag flipped !!!")
+                # self.search_ar_target(4);   movel(self.drl_pose, vel=[130,50], acc=[100,50]);   rospy.sleep(0.5) # 1st approach
+                # self.search_ar_target(4);   movel(self.drl_pose, vel=[130,50], acc=[100,50]);   rospy.sleep(0.5) # 2nd approach
+                # self.search_ar_target(4);   movel(self.drl_pose, vel=[130,50], acc=[100,50]);   rospy.sleep(0.5) # 3rd approach
+                # self.search_ar_target(4);   movel(self.drl_pose, vel=[130,50], acc=[100,50]);   rospy.sleep(0.5) # 4th approach
 
 
 
