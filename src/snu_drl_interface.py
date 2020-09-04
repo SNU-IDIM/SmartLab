@@ -31,6 +31,9 @@ class DRLInterface():
         self.drl_pose = Q_TOP_PLATE
         self.eulerZYZ = np.zeros(3)
         self.cmd_protocol = ACTION_HOME
+        
+        self.eef = EEF_NONE
+        self.eef_angle = -45
 
         self.toolforce          = []
         self.toolforce_max      = 0.0
@@ -101,6 +104,27 @@ class DRLInterface():
     def current_status_cb(self, data):
         self.joints_state = data
 
+    def setEEF(self, eef): ## 나중에 Tool weight 받아서 tool 있는지 확인하는 코드 추가할 것
+        self.eef = eef
+        rospy.set_param('/R_001/dsr/eef', self.eef)
+    
+    def calcRelMove(self, waypoint, eef_flag):
+        for i in range(len(waypoint)):
+            waypoint[i] += self.drl_pose[i]
+        if eef_flag == True:
+            eef_angle = -DEG2RAD(self.eef_angle)
+            print(self.eef_angle)
+            if abs(eef_angle) > EPSILON:
+                dx = waypoint[0]
+                dy = waypoint[1]
+                waypoint[0] = dx * math.cos(eef_angle) + dy * math.sin(eef_angle)
+                waypoint[1] = dx * math.sin(eef_angle) + dy * math.cos(eef_angle)
+                return waypoint
+            else:
+                return waypoint
+        else:
+            return waypoint
+    
 
     '''
         vision_cb: OpenCV image visualization
@@ -194,22 +218,62 @@ class DRLInterface():
         except (Exception):
             print "[ERROR]: The Target(TF) is not Detected !!!"
             return False
+            
     def ARcheckFlipped(self, ar_tag_number):
+        pass
         self.ARgetOrientRPY(ar_tag_number)
         if self.orient_calib_flag == True:
+            print("flip check start !!!")
             self.orient_truth = self.orient_yaw
             self.orient_calib_flag = False
         else:
-            if abs(RAD2DEG(self.orient_truth - self.orient_yaw)) > 60.0 and self.orient_calib_exec == False:
-                # print("initial yaw: {}".format(RAD2DEG(self.orient_truth)))
-                # print("current yaw: {}".format(RAD2DEG(self.orient_yaw)))
-                print("AR tag flipped !!!")
-                dx = rospy.get_param('/R_001/snu_object_tracker/offset_from_target/x')
-                dy = rospy.get_param('/R_001/snu_object_tracker/offset_from_target/y')
-                rospy.set_param('/R_001/snu_object_tracker/offset_from_target/x', dy)
-                rospy.set_param('/R_001/snu_object_tracker/offset_from_target/y', dx)
-                rospy.set_param('/R_001/snu_object_tracker/offset_from_target/rz', -90.0)
-                rospy.sleep(1)
+            angle_error = RAD2DEG(self.orient_truth - self.orient_yaw)
+            tol = 20
+            if angle_error < -(180.0+tol):
+                angle_error += 360.0
+            if angle_error > (180.0+tol):
+                angle_error -= 360.0
+
+            print(angle_error)
+
+            
+            # math.sin(DEG2RAD(angle_error)) < 0 + tol and math.sin(DEG2RAD(angle_error)) > 0 - tol ## 0 deg
+            # math.sin(DEG2RAD(angle_error)) > 1 - tol ## 90 deg
+            # math.sin(DEG2RAD(angle_error)) < -1 + tol
+            # math.sin(DEG2RAD(angle_error)) < 0 + tol and math.sin(DEG2RAD(angle_error)) > 0 - tol
+
+            if abs(angle_error) > 0 + tol and self.orient_calib_exec == False:
+                if angle_error < 90 + tol and angle_error > 90 - tol:
+                    print("AR Flipped: 90 deg, (error: {})".format(angle_error))
+                    dx = -rospy.get_param('/R_001/snu_object_tracker/offset_from_target/y')
+                    dy = -rospy.get_param('/R_001/snu_object_tracker/offset_from_target/x')
+                    rz = 90
+                elif angle_error < -90 + tol and angle_error > -90 - tol:
+                    print("AR Flipped: -90 deg, (error: {})".format(angle_error))
+                    dx = rospy.get_param('/R_001/snu_object_tracker/offset_from_target/y')
+                    dy = rospy.get_param('/R_001/snu_object_tracker/offset_from_target/x')
+                    rz = -90
+                    # dx = -rospy.get_param('/R_001/snu_object_tracker/offset_from_target/x')
+                    # dy = -rospy.get_param('/R_001/snu_object_tracker/offset_from_target/y')
+                    # rz = 90
+                elif angle_error < 180 + tol and angle_error > 180 - tol:
+                    print("AR Flipped: 180 deg, (error: {})".format(angle_error))
+                    dx = -rospy.get_param('/R_001/snu_object_tracker/offset_from_target/x')
+                    dy = -rospy.get_param('/R_001/snu_object_tracker/offset_from_target/y')
+                    rz = 0
+                else:
+                    print("AR Flipped: not flipped, (error: {})".format(angle_error))
+                    dx = rospy.get_param('/R_001/snu_object_tracker/offset_from_target/x')
+                    dy = rospy.get_param('/R_001/snu_object_tracker/offset_from_target/y')
+                    rz = 180
+
+                # dx = rospy.get_param('/R_001/snu_object_tracker/offset_from_target/x')
+                # dy = rospy.get_param('/R_001/snu_object_tracker/offset_from_target/y')
+                # rz = 180
+                rospy.set_param('/R_001/snu_object_tracker/offset_from_target/x',  dx)
+                rospy.set_param('/R_001/snu_object_tracker/offset_from_target/y',  dy)
+                rospy.set_param('/R_001/snu_object_tracker/offset_from_target/rz', rz)
+                rospy.sleep(2)
                 self.ARsearchFromEEF(ar_tag_number)
                 self.orient_calib_exec = True
 
@@ -235,18 +299,18 @@ class DRLInterface():
         self.orient_calib_flag = True
         for i in range(iter):
             if self.ARsearchFromEEF(ar_tag_number) == True:
-                self.ARcheckFlipped(ar_tag_number)
                 self.ARalignMove(ar_tag_number)
+                rospy.sleep(0.25)
         self.orient_calib_exec = False
 
 
     '''
-        UpdateParam: Updating parameters for target pose w.r.t. AR_Marker
+        ARupdateParam: Updating parameters for target pose w.r.t. AR_Marker
             @ input 1: double dx [m]
             @ input 2: double dy [m]
             @ input 3: double dz [m]
     '''
-    def UpdateParam(self, dx, dy, dz, rx=DEFAULT_OFFSET_FROM_TARGET_RX, ry=DEFAULT_OFFSET_FROM_TARGET_RY, rz=DEFAULT_OFFSET_FROM_TARGET_RZ):
+    def ARupdateParam(self, dx, dy, dz, rx=DEFAULT_OFFSET_FROM_TARGET_RX, ry=DEFAULT_OFFSET_FROM_TARGET_RY, rz=DEFAULT_OFFSET_FROM_TARGET_RZ):
         rospy.set_param('/R_001/snu_object_tracker/offset_from_target/x', dx)
         rospy.set_param('/R_001/snu_object_tracker/offset_from_target/y', dy)
         rospy.set_param('/R_001/snu_object_tracker/offset_from_target/z', dz)
@@ -254,7 +318,32 @@ class DRLInterface():
         rospy.set_param('/R_001/snu_object_tracker/offset_from_target/ry', ry)
         rospy.set_param('/R_001/snu_object_tracker/offset_from_target/rz', rz)
         rospy.sleep(2)
-    
+
+    def getColorSensor(self, number):
+        if isinstance(number, int) and number >= 1 and number <= 8:
+            movej(Q_COLOR_SENSOR_TRAY_RETRACT)
+            movel(P_COLOR_SENSOR_TRAY)
+            if number == 1:
+                movel(P_COLOR_SENSOR_1)
+            if number == 2:
+                movel(P_COLOR_SENSOR_2)
+            if number == 3:
+                movel(P_COLOR_SENSOR_3)
+            if number == 4:
+                movel(P_COLOR_SENSOR_4)
+            if number == 5:
+                movel(P_COLOR_SENSOR_5)
+            if number == 6:
+                movel(P_COLOR_SENSOR_6)
+            if number == 7:
+                movel(P_COLOR_SENSOR_7)
+            if number == 8:
+                movel(P_COLOR_SENSOR_8)
+            self.movel_z(5)
+            self.suction_cup_on()
+            self.movel_z(-5)
+            movej(Q_COLOR_SENSOR_TRAY_RETRACT)
+
 
     '''
         Doosan-robot Relative Move (translation in x, y, z [mm])
@@ -268,7 +357,7 @@ class DRLInterface():
         movel(posx(0, distance, 0, 0, 0, 0), vel=velx, acc=accx, ref=ref, mod=mod)
     def movel_z(self, distance, velx=DSR_DEFAULT_JOG_VELX, accx=DSR_DEFAULT_JOG_ACCX, ref=DR_TOOL, mod=DR_MV_MOD_REL): # distance [mm]
         movel(posx(0, 0, distance, 0, 0, 0), vel=velx, acc=accx, ref=ref, mod=mod)
-    def move_xyz(self, x, y, z, velx=DSR_DEFAULT_JOG_VELX, accx=DSR_DEFAULT_JOG_ACCX, ref=DR_TOOL, mod=DR_MV_MOD_REL): # distance [mm]
+    def movel_xyz(self, x, y, z, velx=DSR_DEFAULT_JOG_VELX, accx=DSR_DEFAULT_JOG_ACCX, ref=DR_TOOL, mod=DR_MV_MOD_REL): # distance [mm]
         movel(posx(x, y, z, 0, 0, 0), vel=velx, acc=accx, ref=ref, mod=mod)
     def movel_xyzjoint(self,x,y,z,jz1,jy,jz2,velx=DSR_DEFAULT_JOG_VELX, accx=DSR_DEFAULT_JOG_ACCX, ref=DR_TOOL, mod=DR_MV_MOD_REL): # distance [mm], angle [degree]
         movel(posx(x, y, z, jz1, jy, jz2), vel=velx, acc=accx, ref=ref, mod=mod)
@@ -376,30 +465,64 @@ class DRLInterface():
         self.jig_x_open();  self.jig_y_open();  rospy.sleep(1)
         movej(Q_SEARCH_3DP_RIGHT)
 
-        self.UpdateParam(-0.12, 0.0, 0.17, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
-        self.ARsetReference(bed_number, 4)
+        # self.ARupdateParam(-0.12, 0.0, 0.17, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
+        # if self.ARsearchFromEEF(bed_number) == True:
+        #     self.ARsetReference(bed_number, 3)
+        #     self.eef_angle = -45
 
-        self.UpdateParam(0.0, 0.0, 0.3, rz=-45.0);  rospy.sleep(1);  self.ARsearchFromBase(bed_number);  waypoint_0 = deepcopy(self.drl_pose)
-        waypoint_1 = deepcopy(waypoint_0);     waypoint_1[1] -= 120
-        waypoint_2 = deepcopy(waypoint_0);     waypoint_2[1] += 35;     waypoint_2[2] -= 100
-        waypoint_3 = deepcopy(waypoint_2);     waypoint_3[2] -= 45
-        waypoint_4 = P_UNIVERSALJIG_3DP_BED;   waypoint_4[2] += 100
-        waypoint_5 = deepcopy(waypoint_4);     waypoint_5[2] -= 100
-        
-        movel(waypoint_1, ref=DR_BASE, mod=DR_MV_MOD_ABS)
-        movel(waypoint_2)
-        movel(waypoint_3)
-        self.suction_cup_on()
-        movel(waypoint_2)
-        movel(waypoint_1)
-        movel(waypoint_4)
-        movel(waypoint_5)
-        self.suction_cup_off();  rospy.sleep(1)
-        self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
-        movel(waypoint_4)
-        movej(Q_TOP_PLATE)
+        #     waypoint_1 = self.calcRelMove([50, 0, -100, 0, 0, self.eef_angle], False)
+        #     waypoint_2 = self.calcRelMove([-208, 0, 80, 0, 0, 0], True)
+        #     waypoint_3 = self.calcRelMove([0, 0, 43, 0, 0, 0], True)
+        #     waypoint_4 = self.calcRelMove([0, 0, -80, 0, 0, 0], True)
+        #     waypoint_5 = self.calcRelMove([300, 0, 0, 0, 0, 0], True)
+        #     waypoint_6 = P_UNIVERSALJIG_3DP_BED;   waypoint_6[2] += 100
+        #     waypoint_7 = deepcopy(waypoint_6);     waypoint_7[2] -= 100
 
-        self.UpdateParam(0.0, -0.12, 0.20, rx=180.0, ry=0.0, rz=180.0)
+
+        #     movel(waypoint_1, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+        #     movel(waypoint_2, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+        #     movel(waypoint_3, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+        #     self.suction_cup_on()
+        #     movel(waypoint_4, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+        #     movel(waypoint_5, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+        #     movel(waypoint_6)
+        #     movel(waypoint_7)
+        #     self.suction_cup_off();  rospy.sleep(1)
+        #     self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
+        #     movel(waypoint_6)
+        #     movej(Q_TOP_PLATE)
+
+        #     self.ARupdateParam(0.0, -0.12, 0.20, rx=180.0, ry=0.0, rz=180.0)
+
+
+
+
+        self.ARupdateParam(-0.12, 0.0, 0.17, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
+        if self.ARsearchFromEEF(bed_number) == True:
+            self.ARsetReference(bed_number, 4)
+            P_UNIVERSALJIG_3DP_BED = [-440.0015869140625, 52.0435791015625, 225.61996459960938, 0.5350197553634644, -178.6567840576172, -136.9725341796875]
+
+            self.ARupdateParam(0.0, 0.0, 0.3, rz=-45.0);  rospy.sleep(1);  self.ARsearchFromBase(bed_number);  waypoint_0 = deepcopy(self.drl_pose)
+            waypoint_1 = deepcopy(waypoint_0);     waypoint_1[1] -= 120
+            waypoint_2 = deepcopy(waypoint_0);     waypoint_2[1] += 35;     waypoint_2[2] -= 100
+            waypoint_3 = deepcopy(waypoint_2);     waypoint_3[2] -= 45
+            waypoint_4 = P_UNIVERSALJIG_3DP_BED;   waypoint_4[2] += 100
+            waypoint_5 = deepcopy(waypoint_4);     waypoint_5[2] -= 100
+            
+            movel(waypoint_1, ref=DR_BASE, mod=DR_MV_MOD_ABS)
+            movel(waypoint_2)
+            movel(waypoint_3)
+            self.suction_cup_on()
+            movel(waypoint_2)
+            movel(waypoint_1)
+            movel(waypoint_4)
+            movel(waypoint_5)
+            self.suction_cup_off();  rospy.sleep(1)
+            self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
+            movel(waypoint_4)
+            movej(Q_TOP_PLATE)
+
+            self.ARupdateParam(0.0, -0.12, 0.20, rx=180.0, ry=0.0, rz=180.0)
 
     def getBedFromJigToPrinter(self, printer_number):
         bed_number = printer_number + 4
@@ -407,7 +530,7 @@ class DRLInterface():
         self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
         movej(Q_TOP_PLATE)
 
-        self.UpdateParam(-0.12, 0.0, 0.17, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
+        self.ARupdateParam(-0.12, 0.0, 0.15, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
 
         if self.ARsearchFromEEF(bed_number) == True: ## when AR tag is detected, execute the following codes
             movej(Q_SEARCH_3DP_PLATE)
@@ -418,7 +541,7 @@ class DRLInterface():
             movej(Q_SEARCH_3DP_RIGHT)
 
             self.ARsetReference(printer_number, 4)
-            self.UpdateParam(-0.05, -0.30, 0.38, rz=135.0);  rospy.sleep(1);  self.ARsearchFromBase(printer_number)
+            self.ARupdateParam(-0.047, -0.310, 0.38, rz=135.0);  rospy.sleep(1);  self.ARsearchFromBase(printer_number)
             waypoint_1 = self.drl_pose;           waypoint_1[0] -= 35
             waypoint_2 = deepcopy(waypoint_1);    waypoint_2[2] -= 90
             waypoint_3 = deepcopy(waypoint_2);    waypoint_3[1] += 295
@@ -434,7 +557,7 @@ class DRLInterface():
             movel(waypoint_1, vel=[130,50], acc=[100,50])
 
             # movej(Q_SEARCH_3DP_PLATE)
-            self.UpdateParam(0.0, -0.12, 0.20, rx=180.0, ry=0.0, rz=180.0)
+            self.ARupdateParam(0.0, -0.12, 0.20, rx=180.0, ry=0.0, rz=180.0)
 
     
     '''
@@ -455,6 +578,7 @@ class DRLInterface():
         set_robot_mode(ROBOT_MODE_AUTONOMOUS)
         release_compliance_ctrl()
         self.robot_status = "running"
+        self.setVelAcc(50, 50, [150,50], [150,50])
         self.status_pub.publish(URStatus(status=self.robot_status, arm_status = self.joints_state))
         self.cmd_protocol = int(float(msg.data))
         print(self.cmd_protocol)
@@ -475,7 +599,7 @@ class DRLInterface():
         # ACTION [4]: Approach
         elif(self.cmd_protocol == ACTION_APPROACH):
             movej(Q_TOP_PLATE, 50, 50) # Search pose
-            self.UpdateParam(0.0, -0.12, 0.20)
+            self.ARupdateParam(0.0, -0.12, 0.20)
             self.search_ar_target(4)
             movel(self.drl_pose, vel=[100,50], acc=[100,50]) # 1st approach
             self.search_ar_target(4)
@@ -484,7 +608,7 @@ class DRLInterface():
             movel(self.drl_pose, vel=[100,50], acc=[100,50]) # 3rd approach
         # ACTION [5]: ALIGN
         elif(self.cmd_protocol == ACTION_ALIGN):
-            self.UpdateParam(0.0, 0.0, 0.2)
+            self.ARupdateParam(0.0, 0.0, 0.2)
             self.search_ar_target(1)
             movel(self.drl_pose, vel=[100,30], acc=[100,30])
 
@@ -630,8 +754,7 @@ class DRLInterface():
             self.setVelAcc(100, 100, [400,100], [400,100])
             movel(p_tool2_step7)
             self.setVelAcc(50, 50, [50,100], [50,100])
-            
-            
+
 
         # ACTION [1000 ~ 1999]: Trans X (relative move)
         elif(abs(self.cmd_protocol) >= ACTION_TRANS_X and abs(self.cmd_protocol) < ACTION_TRANS_Y):
@@ -675,33 +798,24 @@ class DRLInterface():
             self.setVelAcc(30, 30, [100,50], [100,50])
             see_point1j = [81.08692169189453, -0.4761710464954376, -143.7606658935547, -9.412845611572266, 57.22504806518555, 100.97422790527344]
             movej(see_point1j)
-
-            self.UpdateParam(0.0, -0.12, 0.25)
-            rospy.sleep(1)
-            self.search_ar_target('4')
-            if not self.drl_pose[0] == 0:
-                ### Searching for the ar tag#2 which is placed on 3dp door ###
-                ## Searching is consisted of three steps
-                ## TF: ar_target  -- robot base
-                ## AR Target which is a TF made from ar_marker it is facing the marker tf(z axis is towards each other)
-                ## Consist of three move which is  conducting scan, move and feedback
-                movel(self.drl_pose, vel=[130,50], acc=[100,50]) # 1st approach
-                self.search_ar_target('4')
-                movel(self.drl_pose, vel=[130,50], acc=[100,50]) # 2nd approach
-                self.search_ar_target('4')
-                movel(self.drl_pose, vel=[130,50], acc=[100,50]) # 3rd approach
-                self.search_ar_target('4')
-            else:
-                print("ar target not found repeat")
             
-            movel([170,70,0,0,0,-90], mod = 1, ref = 1)
-            movel([0,0,97,0,0,0], mod = 1, ref = 1)
+            ar_tag = 4
+
+            self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
+            if self.ARsearchFromEEF(ar_tag) == True:
+                self.ARsetReference(ar_tag, 4)
+                movel([-157,-70,0,0,0,0], mod = 1, ref = 1)
+                movel([0,0,125,0,0,0], mod = 1, ref = 1)
+
 	    
         # Task [10003]: Place specimen and go to the monitoring position
         elif(self.cmd_protocol == TASK_INSTRON_MOVEOUT):
-            rospy.sleep(10)
+            # rospy.sleep(10)
+            movel([0,0,-200,0,0,90], mod = 1, ref = 1)
             self.gripper_open()
-            movel([0,0,-200,0,0,0], mod = 1, ref = 1)
+            self.movel_z(-200)
+            # movel([0,0,-200,0,0,90], mod = 1, ref = 1)
+            # viewpoint = deepcopy(self.current_posx);    viewpoint[4] -= 20
             viewpoint = [self.current_posx[0],self.current_posx[1],self.current_posx[2],self.current_posx[3],self.current_posx[4]-20,self.current_posx[5]]
             movel(viewpoint)
 
@@ -732,7 +846,7 @@ class DRLInterface():
             for k in range(10,1000,10):
                 for x in range(10,100,10):
                     task_compliance_ctrl([100, 100, k, 1000, 1000, 1000])
-                    self.move_xyz(0, 0, x, velx=[10,10])
+                    self.movel_xyz(0, 0, x, velx=[10,10])
                     print("----------------------------------")
                     print("k: {}".format(k), "x: {}".format(x))
                     # print("Expected mass -> {} [g]".format(k*x/g))
@@ -748,39 +862,42 @@ class DRLInterface():
             release_compliance_ctrl()
             self.setVelAcc(50, 50, [50,100], [50,100])
             
-            init_posj = [-6.106618404388428, -3.9530131816864014, -111.23585510253906, -3.684967041015625, -69.19756317138672, -1.9469901323318481]
+            init_posj = [28.917829513549805, 1.1613552570343018, -122.7469711303711, -2.9645230770111084, -58.70412826538086, 209.00265502929688]
             movej(init_posj,50,50)
             self.movel_z(100)
 
             k = 100
+            g = 9.81
             
             eef_weight = self.toolforce[2]
-            task_compliance_ctrl([100, 100, 10, 1000, 1000, 1000])
+            task_compliance_ctrl([3000, 3000, 2000, 2000, 2000, 2000])
 
             # movel(moving_down,[50,50],[50,50])
 
             ##contact point 정의 필요 movel할 것
             while(True):
-                if self.toolforce[2] == 0.0:  #set force in N
+                print(self.toolforce[2])
+                if self.toolforce[2] > -8.0:  #set force in N
                     contact_posx = posx(self.current_posx[0], self.current_posx[1], self.current_posx[2]+5, 180, 180, 0)
                     release_compliance_ctrl()
                     print("Z position: {}".format(contact_posx[2]))
                     break
+            movej(init_posj,50,50)
 
-            for k in range(10,1000,10):
-                for x in range(10,100,10):
-                    task_compliance_ctrl([100, 100, k, 1000, 1000, 1000])
-                    self.move_xyz(0, 0, x, velx=[10,10])
-                    print("----------------------------------")
-                    print("k: {}".format(k), "x: {}".format(x))
-                    # print("Expected mass -> {} [g]".format(k*x/g))
-                    # print("End-effector mass -> {} [g]".format(-eef_weight/g * 1000))
-                    print("Result mass -> {} g".format((self.toolforce_max - eef_weight)/g * 1000))
+            # for k in range(10,1000,10):
+            #     for x in range(10,100,10):
+            #         task_compliance_ctrl([100, 100, k, 1000, 1000, 1000])
+            #         self.movel_xyz(0, 0, x, velx=[10,10])
+            #         print("----------------------------------")
+            #         print("k: {}".format(k), "x: {}".format(x))
+            #         # print("Expected mass -> {} [g]".format(k*x/g))
+            #         # print("End-effector mass -> {} [g]".format(-eef_weight/g * 1000))
+            #         print("Result mass -> {} g".format((self.toolforce_max - eef_weight)/g * 1000))
 
-                    release_compliance_ctrl()
-                    movel(contact_posx, vel=[20,20], acc=[100,50])
-                    self.toolforce_max = 0.0
-            pass
+            #         release_compliance_ctrl()
+            #         movel(contact_posx, vel=[20,20], acc=[100,50])
+            #         self.toolforce_max = 0.0
+            # pass
 
         # Task [10006]: SEARCH AND APPROACH TO ''MULTIPLE'' SPECIMENS USING TF
         elif(self.cmd_protocol == TASK_MULSPECIMEN_SEARCH):
@@ -1075,14 +1192,135 @@ class DRLInterface():
         # Task [-10014]: "TASK_3DP_4_BED_OUT" - (3DP-#4 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_4_BED_OUT):
             self.getBedFromPrinterToJig(4)
-        
-        # TEST [20002]
+
+        # Task [10020]: "TASK_COLOR_SENSOR_HANDLE" - Color sensor handling demo
+        elif(self.cmd_protocol == TASK_COLOR_SENSOR_HANDLE):
+            movej(Q_HOME)
+            self.getColorSensor(1); movej(Q_COLOR_SENSOR_TRAY_RETRACT); movel(P_COLOR_SENSOR_TRAY); movel(P_COLOR_SENSOR_1); self.movel_z(5); self.suction_cup_off(); self.movel_z(-5)
+            self.getColorSensor(2); movej(Q_COLOR_SENSOR_TRAY_RETRACT); movel(P_COLOR_SENSOR_TRAY); movel(P_COLOR_SENSOR_2); self.movel_z(5); self.suction_cup_off(); self.movel_z(-5)
+            self.getColorSensor(3); movej(Q_COLOR_SENSOR_TRAY_RETRACT); movel(P_COLOR_SENSOR_TRAY); movel(P_COLOR_SENSOR_3); self.movel_z(5); self.suction_cup_off(); self.movel_z(-5)
+            self.getColorSensor(4); movej(Q_COLOR_SENSOR_TRAY_RETRACT); movel(P_COLOR_SENSOR_TRAY); movel(P_COLOR_SENSOR_4); self.movel_z(5); self.suction_cup_off(); self.movel_z(-5)
+            self.getColorSensor(5); movej(Q_COLOR_SENSOR_TRAY_RETRACT); movel(P_COLOR_SENSOR_TRAY); movel(P_COLOR_SENSOR_5); self.movel_z(5); self.suction_cup_off(); self.movel_z(-5)
+            self.getColorSensor(6); movej(Q_COLOR_SENSOR_TRAY_RETRACT); movel(P_COLOR_SENSOR_TRAY); movel(P_COLOR_SENSOR_6); self.movel_z(5); self.suction_cup_off(); self.movel_z(-5)
+            self.getColorSensor(7); movej(Q_COLOR_SENSOR_TRAY_RETRACT); movel(P_COLOR_SENSOR_TRAY); movel(P_COLOR_SENSOR_7); self.movel_z(5); self.suction_cup_off(); self.movel_z(-5)
+            self.getColorSensor(8); movej(Q_COLOR_SENSOR_TRAY_RETRACT); movel(P_COLOR_SENSOR_TRAY); movel(P_COLOR_SENSOR_8); self.movel_z(5); self.suction_cup_off(); self.movel_z(-5)
+            movej(Q_HOME)
+
+
+
+        # TEST: Specimen + sensor [20002]
+        elif(self.cmd_protocol == 20002):
+            self.setVelAcc(50, 50, [150,50], [150,50])
+            Q_SPECIMEN_RETRACT = [35.044342041015625, 9.633670806884766, -137.1417694091797, -0.0, -52.49190902709961, 35.044342041015625]
+            P_SPECIMEN_GLUE_SUCTION = [-357.6464538574219, -232.03623962402344, 186.0482940673828, 180, -180, 180]
+            P_SPECIMEN_GLUE_MECH    = [-374.74671630859375, -179.0755157470703, 186.5482940673828, 0, 180, 90]
+            P_SPECIMEN_SENSOR_SUCTION = [-270.86053466796875, -232.03623962402344, 185.5482940673828, 90, 180, -90]
+            P_SPECIMEN_SENSOR_ATTACH = [-263.843505859375, -179.81179809570312, 187.67666625976562, 180, 180, 0]
+            movel(P_SPECIMEN_SENSOR_ATTACH)
+
+            movej(Q_SPECIMEN_RETRACT)
+            waypoint_1 = deepcopy(P_SPECIMEN_GLUE_SUCTION);  waypoint_1[2] += 50
+            waypoint_2 = deepcopy(P_SPECIMEN_GLUE_SUCTION)
+            waypoint_3 = deepcopy(waypoint_2);               waypoint_3[0] += 100
+            waypoint_4 = deepcopy(waypoint_3);               waypoint_4[2] += 50
+            waypoint_5 = deepcopy(P_SPECIMEN_GLUE_MECH);     waypoint_5[2] += 50
+            waypoint_6 = deepcopy(P_SPECIMEN_GLUE_MECH);     waypoint_6[0] += 10
+            waypoint_7 = deepcopy(waypoint_6);               waypoint_7[0] += 110
+            waypoint_8 = deepcopy(waypoint_7);               waypoint_8[2] += 50
+            ## Sensor 부착
+            waypoint_9 = deepcopy(P_SPECIMEN_SENSOR_ATTACH); waypoint_9[2] += 30
+            waypoint_10 = deepcopy(P_SPECIMEN_SENSOR_ATTACH)
+
+
+            # waypoint_9 = deepcopy(P_SPECIMEN_SENSOR_SUCTION)
+            # waypoint_10 = deepcopy(waypoint_9);              waypoint_10[0] -= 15
+
+            # waypoint_3 = deepcopy(waypoint_2);    waypoint_3[0] -= 30
+            
+            movel(waypoint_1)
+            movel(waypoint_2)
+            self.suction_cup_on();  rospy.sleep(1)
+            movel(waypoint_3)
+            self.suction_cup_off()
+            movel(waypoint_4)
+            movel(waypoint_5)
+            movel(waypoint_6)
+            movel(waypoint_7)
+            movel(waypoint_8)
+
+            movej(Q_SPECIMEN_RETRACT)
+            self.getColorSensor(1)
+            movej(Q_SPECIMEN_RETRACT)
+            movel(waypoint_9)
+            movel(waypoint_10)
+
+            # movel(waypoint_9)
+            # self.suction_cup_on();  rospy.sleep(1)
+            # movel(waypoint_10)
+            # self.suction_cup_off()
+            # movej(Q_SPECIMEN_RETRACT)
+
+        # TEST: Specimen + sensor [20003]
+        elif(self.cmd_protocol == 20003):
+            self.setVelAcc(50, 50, [150,50], [150,50])
+            Q_SPECIMEN_RETRACT = [35.044342041015625, 9.633670806884766, -137.1417694091797, -0.0, -52.49190902709961, 35.044342041015625]
+            P_SPECIMEN_GLUE_SUCTION = [-357.6464538574219, -122.03623962402344, 186.5482940673828, 180, -180, 180]
+            P_SPECIMEN_GLUE_MECH    = [-374.44671630859375, -179.0755157470703, 236.5482940673828, 0, 180, 90]
+
+            waypoint_1 = deepcopy(P_SPECIMEN_GLUE_MECH);     waypoint_1[0] += 30
+            waypoint_2 = deepcopy(waypoint_1);    waypoint_2[2] -= 50
+            waypoint_3 = deepcopy(waypoint_2);    waypoint_3[0] -= 30
+
+            movej(Q_SPECIMEN_RETRACT)
+            movel(waypoint_1)
+            movel(waypoint_2)
+            movel(waypoint_3)
+            movel(waypoint_2)
+            movel(waypoint_1)
+            # self.movel_z(50)
+
+        # TEST: Color sensor handling [20004]
+        elif(self.cmd_protocol == 20004):
+            self.getColorSensor(1)
+            
+
+
+                        
+                        
+
+            
+
+
+            # movej(Q_COLOR_SENSOR_TRAY_RETRACT)
+            # movel(P_COLOR_SENSOR_TRAY)
+            # movel(P_COLOR_SENSOR_1)
+            # movel(P_COLOR_SENSOR_2)
+            # movel(P_COLOR_SENSOR_3)
+            # movel(P_COLOR_SENSOR_4)
+            # movel(P_COLOR_SENSOR_5)
+            # movel(P_COLOR_SENSOR_6)
+            # movel(P_COLOR_SENSOR_7)
+            # movel(P_COLOR_SENSOR_8)
+
+            # self.movel_y(-4*dx)
+            # for i in range(n-1):
+            #     self.movel_z(5)
+            #     self.suction_cup_on()
+            #     self.movel_z(-5)
+            #     self.movel_z(5)
+            #     self.suction_cup_off()
+            #     self.movel_z(-5)
+            #     self.movel_y(dx)
+                
+            # movel(P_COLOR_SENSOR_TRAY)
+            # movej(Q_COLOR_SENSOR_TRAY_RETRACT)
+
+        # TEST: AR tag [20005]
         elif(self.cmd_protocol == 20005):
-            # self.search_ar_target(4)
             self.setVelAcc(200, 200, [150,50], [150,50])
-            ar_tag_number = 4
-            self.UpdateParam(-0.12, 0.0, 0.18, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
-            self.ARsetReference(ar_tag_number, 3)
+            ar_tag_number = 3
+            self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
+            self.ARsetReference(ar_tag_number, 5)
 
             # self.orient_calib_flag = True
             # if self.search_ar_target(ar_tag_number): ## when AR tag is detected, execute the following codes

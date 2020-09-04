@@ -16,10 +16,9 @@ CAMERA_FRAME_PREFIX_    = 'camera_link'
 OBJECT_TARGET_PREFIX_   = 'specimen_table_'
 TEMP_PREFIX_            = 'temp_'
 
-
 class snu_vision_2d():
     def __init__(self, ros_node_name="snu_vision_2d"):
-   
+        
         rospy.init_node('ros_node_name', anonymous=True)
         self.bridge = CvBridge()      
         self.listener = tf.TransformListener()
@@ -30,9 +29,9 @@ class snu_vision_2d():
 
         ### Topics to Subscribe ###
         self.flag_sub  = rospy.Subscriber("/R_001/vision_2d_flag", Int32, self.vision_flag, queue_size=1) # Trigger Topic
-        self.imagewindowflag = False #False : image pass, True : image show for debugging
+        self.imagewindowflag = True #False : image pass, True : image show for debugging
         self.image_sub = rospy.Subscriber("/R_001/camera/color/image_raw", Image, self.vision)
-
+        self.image_count = 1
         ### Topics to Publish ###
         self.pub1 = rospy.Publisher('cmd_moveit', Pose, queue_size=1) # Final target pose to be tracked
 
@@ -48,16 +47,24 @@ class snu_vision_2d():
         if self.imagewindowflag == False :
             pass
         elif self.imagewindowflag == True:
-            # rowEnd=639  #616 for sindoh 622 for sondori
-            # colEnd=480  #402 for sindoh 416 for sondori
-            # rowStart=156 #241 for sindoh 233 for sondori
-            # colStart=0 #24 for sindoh 24 for sondori
-            # self.bgr_image = self.specimen_image[colStart:colEnd, rowStart:rowEnd]
+            
+            rowEnd=639  #616 for sindoh 622 for sondori
+            colEnd=470  #402 for sindoh 416 for sondori
+            rowStart=186 #241 for sindoh 233 for sondori
+            colStart=0 #24 for sindoh 24 for sondori
 
+            # location = '/home/syscon/Desktop/image/default' + str(self.image_count) + '.png'
+            location = '/home/syscon/Desktop/image/specimen_cnn' + str(self.image_count) + '.png'
+            self.bgr_image = self.specimen_image[colStart:colEnd, rowStart:rowEnd]
+            
+            cv2.imwrite(location, self.bgr_image)
+            
             cv2.namedWindow('robot endeffector image', cv2.WINDOW_NORMAL)
-            cv2.imshow('robot endeffector image', self.cv_image)
-            # cv2.imshow('robot endeffector image', self.bgr_image)
-            cv2.waitKey(1)
+            # cv2.imshow('robot endeffector image', self.cv_image)
+            cv2.imshow('robot endeffector image', self.bgr_image)
+            cv2.waitKey(5000)
+            self.image_count += 1
+
 
 
     '''
