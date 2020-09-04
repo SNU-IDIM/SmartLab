@@ -1210,13 +1210,13 @@ class DRLInterface():
 
         # TEST: Specimen + sensor [20002]
         elif(self.cmd_protocol == 20002):
+            rospy.sleep(5)
             self.setVelAcc(50, 50, [150,50], [150,50])
             Q_SPECIMEN_RETRACT = [35.044342041015625, 9.633670806884766, -137.1417694091797, -0.0, -52.49190902709961, 35.044342041015625]
             P_SPECIMEN_GLUE_SUCTION = [-357.6464538574219, -232.03623962402344, 186.0482940673828, 180, -180, 180]
             P_SPECIMEN_GLUE_MECH    = [-374.74671630859375, -179.0755157470703, 186.5482940673828, 0, 180, 90]
             P_SPECIMEN_SENSOR_SUCTION = [-270.86053466796875, -232.03623962402344, 185.5482940673828, 90, 180, -90]
             P_SPECIMEN_SENSOR_ATTACH = [-263.843505859375, -179.81179809570312, 187.67666625976562, 180, 180, 0]
-            movel(P_SPECIMEN_SENSOR_ATTACH)
 
             movej(Q_SPECIMEN_RETRACT)
             waypoint_1 = deepcopy(P_SPECIMEN_GLUE_SUCTION);  waypoint_1[2] += 50
@@ -1230,13 +1230,35 @@ class DRLInterface():
             ## Sensor 부착
             waypoint_9 = deepcopy(P_SPECIMEN_SENSOR_ATTACH); waypoint_9[2] += 30
             waypoint_10 = deepcopy(P_SPECIMEN_SENSOR_ATTACH)
+            # waypoint_11 = deepcopy(P_SPECIMEN_SENSOR_SUCTION)
+            # waypoint_12 = deepcopy(waypoint_1);              waypoint_12[0] -= 15
 
 
-            # waypoint_9 = deepcopy(P_SPECIMEN_SENSOR_SUCTION)
-            # waypoint_10 = deepcopy(waypoint_9);              waypoint_10[0] -= 15
-
-            # waypoint_3 = deepcopy(waypoint_2);    waypoint_3[0] -= 30
             
+
+            release_compliance_ctrl()
+            init_posj = [28.917829513549805, 1.1613552570343018, -122.7469711303711, -2.9645230770111084, -58.70412826538086, 209.00265502929688]
+            movej(init_posj,50,50)
+            self.movel_z(100)
+
+            k = 100
+            g = 9.81
+            
+            eef_weight = self.toolforce[2]
+            task_compliance_ctrl([3000, 3000, 2000, 2000, 2000, 2000])
+
+            # movel(moving_down,[50,50],[50,50])
+
+            ##contact point 정의 필요 movel할 것
+            while(True):
+                print(self.toolforce[2])
+                if self.toolforce[2] > -8.0:  #set force in N
+                    contact_posx = posx(self.current_posx[0], self.current_posx[1], self.current_posx[2]+5, 180, 180, 0)
+                    release_compliance_ctrl()
+                    print("Z position: {}".format(contact_posx[2]))
+                    break
+
+            movej(Q_SPECIMEN_RETRACT)
             movel(waypoint_1)
             movel(waypoint_2)
             self.suction_cup_on();  rospy.sleep(1)
@@ -1253,10 +1275,17 @@ class DRLInterface():
             movej(Q_SPECIMEN_RETRACT)
             movel(waypoint_9)
             movel(waypoint_10)
+            self.suction_cup_off();  rospy.sleep(1)
+            movel(waypoint_9)
+            self.movel_xyz(-4, 51, 31)
+            self.suction_cup_on();  rospy.sleep(1)
+            self.movel_x(-15)
+            self.suction_cup_off()
+            movej(Q_SPECIMEN_RETRACT)
 
-            # movel(waypoint_9)
+            # movel(waypoint_11)
             # self.suction_cup_on();  rospy.sleep(1)
-            # movel(waypoint_10)
+            # movel(waypoint_12)
             # self.suction_cup_off()
             # movej(Q_SPECIMEN_RETRACT)
 
