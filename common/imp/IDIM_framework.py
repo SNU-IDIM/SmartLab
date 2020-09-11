@@ -187,7 +187,8 @@ TASK_TEST_COMPLIANCE     = 10004
 TASK_SEPARATE_SPECIMEN   = 10005
 TASK_MULSPECIMEN_SEARCH  = 10006
 TASK_IDIM_BLOCK_DEMO     = 10007
-TASK_JOG_DEVEL           = 10008
+TASK_PICK_PLACE_RACK     = 10008
+TASK_PICK_PLACE_RACK_TEST= 10009
 TASK_3DP_1_BED_IN        =  10011
 TASK_3DP_1_BED_OUT       = -10011
 TASK_3DP_2_BED_IN        =  10012
@@ -202,6 +203,7 @@ TASK_COLOR_SENSOR_HANDLE = 10020
 
 ## 2D VISION FLAG [30001 ~ ]
 VISION_2D_SEARCH_SPECIMEN = 30001
+TASK_JOG_DEVEL            = 30002
 
 ##################################################################################################################################################
 
