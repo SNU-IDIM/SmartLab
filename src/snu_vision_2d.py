@@ -364,7 +364,7 @@ class snu_vision_2d():
             cv2.imwrite(location, self.specimen_image)
             rospy.sleep(1)    
             os.system('python3 /home/syscon/test2.py')
-            rospy.sleep(5)
+            rospy.sleep(1)
             specimen_info = pd.read_csv('/home/syscon/catkin_ws/src/SNU_IDIM_ASMR/specimen_image/specimen.csv')
             specimen_np = specimen_info.to_numpy()
             # print(specimen_np)
@@ -376,7 +376,7 @@ class snu_vision_2d():
                 theta = specimen_np[i, 1]; px2mm_Row = specimen_np[i, 2]; px2mm_Col = specimen_np[i, 3]
                 print(i+1, theta, px2mm_Row, px2mm_Col)
                 # self.tf_broadcaster('camera_color_frame', TEMP_PREFIX_ + str(i+1), 262.0, -px2mm_Row, px2mm_Col, 0, 0, 0)
-                self.tf_broadcaster(CAMERA_FRAME_PREFIX_, TEMP_PREFIX_ + str(object_count), 262.0, -px2mm_Row+22.0, -px2mm_Col-10.5, 0, np.pi/2, np.pi)
+                self.tf_broadcaster(CAMERA_FRAME_PREFIX_, TEMP_PREFIX_ + str(i+1), 262.0, -px2mm_Row+22.0, -px2mm_Col-10.5, 0, np.pi/2, np.pi)
                 self.tf_broadcaster(TEMP_PREFIX_ + str(i+1), OBJECT_TARGET_PREFIX_ + str(i+1), 0.0, 0.0, 0.0, 0.0, 0.0, -theta+(90)*np.pi/180)
 
         self.vision_status = "vision processing complete"
