@@ -942,13 +942,13 @@ class DRLInterface():
                     task_compliance_ctrl([3000, 3000, 3000, 1000, 1000, 1000])
 
                     #SHAKING
-                    self.movel_x_base(-15)
+                    self.movel_x_base(-50)
                     self.gripper_close()
                     self.rotate_z(15)
                     self.rotate_z(-30)
                     self.rotate_z(15)
                     self.gripper_open()
-                    self.movel_x_base(30)
+                    self.movel_x_base(100)
                     self.gripper_close()
                     self.rotate_z(-15)
                     self.rotate_z(30)
@@ -1277,8 +1277,8 @@ class DRLInterface():
                     break
             movej(init_posj,50,50)
 
-        # Task [10033]: Move specimen to the left-hand-side of the working table
-        elif(self.cmd_protocol == TASK_SPECIMEN_TO_LEFT):
+        # Task [10033]: Move specimen to the center of the working table
+        elif(self.cmd_protocol == TASK_SEPCIMEN_TO_CENTER):
             self.setVelAcc(50, 50, [150,50], [150,50])
             Q_SPECIMEN_RETRACT = [35.044342041015625, 9.633670806884766, -137.1417694091797, -0.0, -52.49190902709961, 35.044342041015625]
             P_SPECIMEN_GLUE_SUCTION = [-357.6464538574219, -122.03623962402344, 186.5482940673828, 180, -180, 180]
@@ -1296,6 +1296,24 @@ class DRLInterface():
             movel(waypoint_5)
             self.gripper_open();    rospy.sleep(1)
             self.movel_z(-50)
+            movej(Q_SPECIMEN_RETRACT)
+
+            
+        # Task [10034]: Move specimen to the left-hand-side of the working table
+        elif(self.cmd_protocol == TASK_SPECIMEN_TO_LEFT):
+            self.setVelAcc(50, 50, [150,50], [150,50])
+            Q_SPECIMEN_RETRACT = [35.044342041015625, 9.633670806884766, -137.1417694091797, -0.0, -52.49190902709961, 35.044342041015625]
+            P_SPECIMEN_GLUE_SUCTION = [-357.6464538574219, -122.03623962402344, 186.5482940673828, 180, -180, 180]
+            P_SPECIMEN_GLUE_MECH    = [-324.44671630859375, -179.0755157470703, 236.5482940673828, 0, 180, 90]
+            P_SPECIMEN_START = [-330.6361999511719, -178.67942810058594, 185.79730224609375, 24.260906219482422, -178.50173950195312, 25.866914749145508]
+            
+            waypoint_1 = deepcopy(P_SPECIMEN_GLUE_MECH);   waypoint_1[0]+=30
+            waypoint_2 = deepcopy(waypoint_1);             waypoint_2[2]-=50
+            waypoint_3 = deepcopy(waypoint_2);             waypoint_3[0]-=80
+            waypoint_4 = deepcopy(P_SPECIMEN_START);       waypoint_4[1]+=30;  waypoint_4[2]+=50
+            waypoint_5 = deepcopy(waypoint_4);             waypoint_5[1]-=30;  waypoint_5[2]-=50
+
+            movej(Q_SPECIMEN_RETRACT)
             movel(waypoint_1)
             movel(waypoint_2)
             movel(waypoint_3)
@@ -1304,7 +1322,7 @@ class DRLInterface():
             movej(Q_SPECIMEN_RETRACT)
 
 
-        # Task [10034]: Move specimen to the right-hand-side of the working table
+        # Task [10035]: Move specimen to the right-hand-side of the working table
         elif(self.cmd_protocol == TASK_SPECIMEN_TO_RIGHT):
             self.setVelAcc(50, 50, [150,50], [150,50])
             Q_SPECIMEN_RETRACT = [35.044342041015625, 9.633670806884766, -137.1417694091797, -0.0, -52.49190902709961, 35.044342041015625]
