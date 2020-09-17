@@ -917,7 +917,7 @@ class DRLInterface():
             
             ## Publish Flag to 'snu_2d_vision.py' node
             self.vision_pub.publish(30002)
-            rospy.sleep(25) #In order to change previous specimen TF
+            rospy.sleep(17) #In order to change previous specimen TF
 
             while True:
                 try:
@@ -938,29 +938,36 @@ class DRLInterface():
 
                     print('search complete')
                     movel(self.drl_pose)
-                    self.movel_z(103, [100, 100], [100, 100]) #go down 94 for debug T4 -> 103mm
-                    task_compliance_ctrl([3000, 3000, 3000, 1000, 1000, 1000])
-
                     #SHAKING
                     self.movel_x_base(-50)
+                    self.movel_z(104, [100, 100], [100, 100]) #go down 94 for debug T4 -> 103mm
+                    task_compliance_ctrl([10000, 10000, 10000, 1500, 1500, 1500])
                     self.gripper_close()
-                    self.rotate_z(15)
-                    self.rotate_z(-30)
-                    self.rotate_z(15)
+                    self.movel_z(-2)
+                    self.rotate_z(10)
+                    self.rotate_z(-20)
+                    self.rotate_z(10)
                     self.gripper_open()
+                    self.movel_z_base(3)
                     self.movel_x_base(100)
+                    self.movel_z_base(-3)
                     self.gripper_close()
-                    self.rotate_z(-15)
-                    self.rotate_z(30)
-                    self.rotate_z(-15)
+                    self.rotate_z(-10)
+                    self.rotate_z(20)
+                    self.rotate_z(-10)
                     self.movel_y_base(-20)
-                    release_compliance_ctrl()
                     self.gripper_open()
-
-                    self.movel_z(-103,[100, 100], [100, 100]) #go up
+                    release_compliance_ctrl()
+                    # self.movel_x_base(-50)
+                    # self.gripper_close()
+            
+                    self.movel_z(-104,[100, 100], [100, 100]) #go up
                     movej(Q_MULSPECIMEN_SEARCH)
                     
                     # self.setVelAcc(100, 100, [500,100], [500,100])
+
+                    if object_count == 1:
+                        break
 
                     # self.gripper_open()
                     object_count= object_count+1
@@ -991,7 +998,7 @@ class DRLInterface():
             
             ## Publish Flag to 'snu_2d_vision.py' node
             self.vision_pub.publish(30002)
-            rospy.sleep(25) #In order to change previous specimen TF
+            rospy.sleep(20) #In order to change previous specimen TF
 
             target_frame_name = 'specimen_table_' + str(object_count)
             reference_frame_name = 'base_0'
@@ -1008,9 +1015,9 @@ class DRLInterface():
             print('search complete')
 
             movel(self.drl_pose)
-            self.movel_z(103, [100, 100], [100, 100]) #go down 95 for development T4 ->103
+            self.movel_z(104, [100, 100], [100, 100]) #go down 95 for development 
             self.gripper_close()
-            self.movel_z(-103,[100, 100], [100, 100]) #go up
+            self.movel_z(-104,[100, 100], [100, 100]) #go up
             movej(Q_MULSPECIMEN_SEARCH)
                 
 
@@ -1021,14 +1028,15 @@ class DRLInterface():
             Q_SPECIMEN_RETRACT = [35.044342041015625, 9.633670806884766, -137.1417694091797, -0.0, -52.49190902709961, 35.044342041015625]
             movej(Q_SPECIMEN_RETRACT)
             movel(P_AFTER_ATTACH)
-            self.movel_z_base(-23.5)
+            self.movel_z_base(-23)
             # rospy.sleep(5)
             self.gripper_close()
             self.movel_y_base(10)
             # movej(Q_MULSPECIMEN_SEARCH)
             self.movel_z_base(50)
 
-            movel(P_PLACE_INITIAL)
+            # movel(P_PLACE_INITIAL)
+            movej(Q_PLACE_INITIAL)
             movel(P_PLACE_INCLINE)
             movel(P_PLACE_RACK_1)
             self.move_lack_place()
@@ -1090,7 +1098,7 @@ class DRLInterface():
                     # self.setVelAcc(100, 100, [150,100], [150,100])
                     self.setVelAcc(30, 30, [30,30], [30,30])
 
-                    movel(P_PLACE_INITIAL)
+                    movej(Q_PLACE_INITIAL)
                     movel(P_PLACE_INCLINE)
                     
                     if object_count == 1:
@@ -1188,7 +1196,7 @@ class DRLInterface():
         # ACTION [10021 ~ 10030]: Attach sensor (1~8) to the specimen
         elif(abs(self.cmd_protocol) >= TASK_ATTACH_SENSOR and abs(self.cmd_protocol) < TASK_ATTACH_SENSOR+10):
             Q_SPECIMEN_RETRACT = [35.044342041015625, 9.633670806884766, -137.1417694091797, -0.0, -52.49190902709961, 35.044342041015625]
-            P_SPECIMEN_SENSOR_ATTACH = [-263.843505859375, -179.81179809570312, 187.67666625976562, 180, 180, 0]
+            P_SPECIMEN_SENSOR_ATTACH = [-262.343505859375, -179.81179809570312, 187.67666625976562, 180, 180, 0]
 
             waypoint_1 = deepcopy(P_SPECIMEN_SENSOR_ATTACH);  waypoint_1[2] += 30
             waypoint_2 = deepcopy(P_SPECIMEN_SENSOR_ATTACH)
@@ -1201,6 +1209,7 @@ class DRLInterface():
             movel(waypoint_1)
             movel(waypoint_2)
             self.suction_cup_off();  rospy.sleep(1)
+            self.movel_z(-10)
             movej(Q_SPECIMEN_RETRACT)
 
 
@@ -1230,7 +1239,7 @@ class DRLInterface():
             movej(init_posj);   self.gripper_open()
             goal_posj = [9.329447746276855, -3.420710563659668, -127.80497741699219, -0.0, -48.774375915527344, -170.6704864501953]
 
-            waypoint_0 = [-363.7647399902344, -177.87579345703125, 186.26629638671875, 180, -180, 90]
+            waypoint_0 = [-363.7647399902344, -177.87579345703125, 188.0, 180, -180, 90]
             waypoint_1 = deepcopy(waypoint_0);  waypoint_1[0]+=30;  waypoint_1[2]+=30
             waypoint_2 = deepcopy(waypoint_0)
             waypoint_3 = deepcopy(waypoint_2);  waypoint_3[0]-=3
@@ -1260,41 +1269,52 @@ class DRLInterface():
             init_posj = [27.18817138671875, 1.201263189315796, -122.7035140991211, -0.0, -58.497928619384766, -62.811859130859375]
 
             movej(init_posj,50,50)
-            self.movel_z(100)
+            self.movel_z(97)
 
             k = 100
             g = 9.81
             
             eef_weight = self.toolforce[2]
-            task_compliance_ctrl([3000, 3000, 2000, 2000, 2000, 2000])
+            print(self.toolforce)
+            print(task_compliance_ctrl([3000, 3000, 2000, 2000, 2000, 2000]))
+            print 'comliance working'
 
             while(True):
                 print(self.toolforce[2])
-                if self.toolforce[2] > -8.5:  #set force in N
+                if self.toolforce[2] > 7:  #set force in N
                     contact_posx = posx(self.current_posx[0], self.current_posx[1], self.current_posx[2]+5, 180, 180, 0)
                     release_compliance_ctrl()
                     print("Z position: {}".format(contact_posx[2]))
                     break
+                self.movel_z_base(-0.2)
             movej(init_posj,50,50)
 
         # Task [10033]: Move specimen to the center of the working table
         elif(self.cmd_protocol == TASK_SEPCIMEN_TO_CENTER):
             self.setVelAcc(50, 50, [150,50], [150,50])
+            
             Q_SPECIMEN_RETRACT = [35.044342041015625, 9.633670806884766, -137.1417694091797, -0.0, -52.49190902709961, 35.044342041015625]
             P_SPECIMEN_GLUE_SUCTION = [-357.6464538574219, -122.03623962402344, 186.5482940673828, 180, -180, 180]
             P_SPECIMEN_GLUE_MECH    = [-324.44671630859375, -179.0755157470703, 236.5482940673828, 0, 180, 90]
-            P_SPECIMEN_START = [-330.6361999511719, -178.67942810058594, 185.79730224609375, 24.260906219482422, -178.50173950195312, 25.866914749145508]
+            P_SPECIMEN_START = [-280.0, -174, 187, 24.260906219482422, -178.50173950195312, 25.866914749145508]
 
             waypoint_1 = deepcopy(P_SPECIMEN_GLUE_MECH);   waypoint_1[0]+=30
             waypoint_2 = deepcopy(waypoint_1);             waypoint_2[2]-=50
             waypoint_3 = deepcopy(waypoint_2);             waypoint_3[0]-=80
-            waypoint_4 = deepcopy(P_SPECIMEN_START);       waypoint_4[1]+=30;  waypoint_4[2]+=50
-            waypoint_5 = deepcopy(waypoint_4);             waypoint_5[1]-=30;  waypoint_5[2]-=50
+            waypoint_4 = deepcopy(P_SPECIMEN_START);       waypoint_4[1]+=30;  waypoint_4[2]+=20
+            waypoint_5 = deepcopy(waypoint_4);             waypoint_5[1]-=30;  waypoint_5[2]-=20
 
             movej(Q_SPECIMEN_RETRACT)
+            self.movel_z_base(-30)
             movel(waypoint_4)
             movel(waypoint_5)
+            task_compliance_ctrl([3000,200,3000,3000,3000,3000])
+            self.movel_y_base(-20)
+            release_compliance_ctrl()
             self.gripper_open();    rospy.sleep(1)
+
+
+
             self.movel_z(-50)
             movej(Q_SPECIMEN_RETRACT)
 
@@ -1307,9 +1327,10 @@ class DRLInterface():
             P_SPECIMEN_GLUE_MECH    = [-324.44671630859375, -179.0755157470703, 236.5482940673828, 0, 180, 90]
             P_SPECIMEN_START = [-330.6361999511719, -178.67942810058594, 185.79730224609375, 24.260906219482422, -178.50173950195312, 25.866914749145508]
             
-            waypoint_1 = deepcopy(P_SPECIMEN_GLUE_MECH);   waypoint_1[0]+=30
+            # waypoint_1 = deepcopy(P_SPECIMEN_GLUE_MECH);   waypoint_1[0]+=30
+            waypoint_1 = deepcopy(P_SPECIMEN_GLUE_MECH);   waypoint_1[0]+=80
             waypoint_2 = deepcopy(waypoint_1);             waypoint_2[2]-=50
-            waypoint_3 = deepcopy(waypoint_2);             waypoint_3[0]-=80
+            waypoint_3 = deepcopy(waypoint_2);             waypoint_3[0]-=130
             waypoint_4 = deepcopy(P_SPECIMEN_START);       waypoint_4[1]+=30;  waypoint_4[2]+=50
             waypoint_5 = deepcopy(waypoint_4);             waypoint_5[1]-=30;  waypoint_5[2]-=50
 
@@ -1352,7 +1373,7 @@ class DRLInterface():
             movel(waypoint_2)
             self.suction_cup_on();  rospy.sleep(1)
             movel(waypoint_3)
-            self.suction_cup_off()
+            self.suction_cup_off(); rospy.sleep(1)
             movel(waypoint_4)
             movel(waypoint_5)
             movel(waypoint_6)
@@ -1363,6 +1384,7 @@ class DRLInterface():
 
         # Task [10035]: Specimen is ready
         elif(self.cmd_protocol == TASK_SPECIMEN_READY):
+            rospy.sleep(30)
             Q_SPECIMEN_RETRACT = [35.044342041015625, 9.633670806884766, -137.1417694091797, -0.0, -52.49190902709961, 35.044342041015625]
             P_SPECIMEN_SENSOR_ATTACH = [-263.843505859375, -179.81179809570312, 187.67666625976562, 180, 180, 0]
 
