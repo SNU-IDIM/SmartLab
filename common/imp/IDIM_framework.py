@@ -217,6 +217,9 @@ TASK_SPECIMEN_READY       =  10036
 VISION_2D_SEARCH_SPECIMEN = 30001
 TASK_JOG_DEVEL            = 30002
 
+## 기계시스템설계 Task (100001 ~)
+MSD_YJ_1 = 100001
+
 ##################################################################################################################################################
 
 
@@ -316,3 +319,8 @@ JOY_AXIS_RIGHT_V       = 4
 JOY_AXIS_UPPER_RIGHT   = 5
 JOY_AXIS_DIR_H         = 6
 JOY_AXIS_DIR_V         = 7
+
+IDIM_TEST_GRIP           =100000
+IDIM_TEST_OPEN           =200000
+
+IDIM_CONTROL_TEST      = 30000

@@ -2,6 +2,7 @@
 <launch>
     <arg name="ns" value="R_001"/>
     <arg name="prefix_ns" value="R_001/dsr"/>
+    <!--<include file="$(find snu_doosan)/launch/ar_tracker_single.launch.xml" ns="$(arg ns)"/>-->
     <!--<node pkg="snu_doosan" type="snu_dsr_joy.py" name="joy_controller" ns="$(arg ns)" output='screen'/>-->
     <node pkg="snu_doosan" type="snu_drl_interface.py" name="snu_dsr_interface" ns="$(arg ns)" output='screen'/>
     <!--<node pkg="tf" type="static_transform_publisher" name="link62camera_link"   args="-0.118 0.020 -0.032 0 -1.572 0 link6 camera_link 10" />-->

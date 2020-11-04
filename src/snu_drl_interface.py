@@ -63,10 +63,12 @@ class DRLInterface():
         rospy.Subscriber("ur_pnp", String, self.pnp_cb, queue_size=1)
         rospy.Subscriber("dsr/state", RobotState, self.dsr_state_cb, queue_size=1)
         rospy.Subscriber("dsr/joint_states", JointState, self.current_status_cb, queue_size=1)
+        
         self.image_sub = rospy.Subscriber("/R_001/camera/color/image_raw",Image,self.vision_cb)
         self.pnp_pub    = rospy.Publisher("ur_pnp", String, queue_size=1)
         self.status_pub = rospy.Publisher("ur_status", URStatus, queue_size=1)
         self.vision_pub = rospy.Publisher("vision_2d_flag",Int32, queue_size=1)
+        self.gripper_pub = rospy.Publisher("PC_to_GRIPPER", String, queue_size=1)
 
         set_robot_mode(ROBOT_MODE_AUTONOMOUS)
         rospy.sleep(1)
@@ -83,6 +85,7 @@ class DRLInterface():
     def dsr_state_cb(self, msg):
         self.dsr_flag = msg.robot_state
         self.current_posx = msg.current_posx
+        self.current_posj = msg.current_posj
         self.toolforce = msg.actual_ett
         # print(self.toolforce[0], self.toolforce[1], self.toolforce[2])
         # print(self.current_posx)
@@ -284,7 +287,7 @@ class DRLInterface():
                 rospy.set_param('/R_001/snu_object_tracker/offset_from_target/x',  dx)
                 rospy.set_param('/R_001/snu_object_tracker/offset_from_target/y',  dy)
                 rospy.set_param('/R_001/snu_object_tracker/offset_from_target/rz', rz)
-                rospy.sleep(2)
+                rospy.sleep(3.0)
                 self.ARsearchFromEEF(ar_tag_number)
                 self.orient_calib_exec = True
 
@@ -311,7 +314,7 @@ class DRLInterface():
         for i in range(iter):
             if self.ARsearchFromEEF(ar_tag_number) == True:
                 self.ARalignMove(ar_tag_number)
-                rospy.sleep(0.25)
+                rospy.sleep(1.0)
         self.orient_calib_exec = False
 
 
@@ -392,13 +395,43 @@ class DRLInterface():
         self.gripper_open()
         movel(posx(0, -23, -23, 0, 0, 0), vel=DSR_DEFAULT_JOG_VELX, acc=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL)
         self.gripper_close()
-        movel(posx(0, -1, 1, 0, 0, 0), vel=DSR_DEFAULT_JOG_VELX, acc=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL)
+        movel(posx(0, -2, 2, 0, 0, 0), vel=DSR_DEFAULT_JOG_VELX, acc=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL)
         movel(posx(0, 40, 40, 0, 0, 0), vel=DSR_DEFAULT_JOG_VELX, acc=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL)
+
     def move_lack_place(self):
         self.gripper_close()
         movel(posx(0, -20, -20, 0, 0, 0), vel=DSR_DEFAULT_JOG_VELX, acc=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL)
         self.gripper_open()
         movel(posx(0, -40, 40, 0, 0, 0), vel=DSR_DEFAULT_JOG_VELX, acc=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL)
+
+
+    def specimen_shaking(self):
+        task_compliance_ctrl([10000, 10000, 10000, 1500, 1500, 500])
+        self.movel_z(2)
+        self.gripper_close()
+        self.movel_z(-2)
+        self.rotate_z(10)
+        self.rotate_z(-20)
+        self.rotate_z(10)
+        self.gripper_open()
+        self.movel_z(-2)
+        self.movel_x_base(100)  
+        self.movel_z(4)
+        self.gripper_close()
+        self.movel_z(-2)
+        self.rotate_z(-10)
+        self.rotate_z(20)
+        self.rotate_z(-10)
+        self.gripper_open()
+        self.movel_x_base(-50)
+        self.movel_z(2)
+        self.gripper_close()
+        self.movel_z(-2)
+        self.rotate_z(-10)
+        self.rotate_z(20)
+        self.rotate_z(-10)
+        self.movel_y_base(-20)
+
 
     '''
         setVelAcc: Set Doosan-robot Velocity(joint, task), Acceleration(joint, task)
@@ -465,6 +498,14 @@ class DRLInterface():
         if get_digital_output(pin) == 1:
             set_digital_output(pin,0)
 
+    def rotate_on(self):
+        pin = 9
+        if get_digital_output(pin) == 0:
+            set_digital_output(pin,1)
+    def rotate_off(self):
+        pin = 9
+        if get_digital_output(pin) == 1:
+            set_digital_output(pin,0)
 
     '''
         DSR Flange I/O Functions
@@ -710,8 +751,6 @@ class DRLInterface():
             # P_TOOLCHANGE_1 = [-435.8908386230469, -346.9735412597656, 71.24858093261719, 136.8338623046875, 178.95765686035156, 58.61622619628906]
             P_TOOLCHANGE_1 = [-436.25396728515625, -347.1180725097656, 69.14281463623047, 99.86766052246094, 178.8153076171875, 21.311969757080078]
 
-
-
             p_tool1_step1 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step1[1] += -20;    p_tool1_step1[2] += 300
             p_tool1_step2 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step2[1] += -20;    p_tool1_step2[2] += 20
             p_tool1_step3 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step3[1] += -20;    p_tool1_step2[2] += 5
@@ -744,8 +783,7 @@ class DRLInterface():
 
             # P_TOOLCHANGE_2 = [-277.7904052734375, -346.1768493652344, 69.29383850097656, 109.82817840576172, 179.61642456054688, 31.086288452148438]
             # P_TOOLCHANGE_2 = [-277.3737487792969, -345.2371826171875, 71.8157958984375, 71.0041732788086, -178.6968231201172, -7.797959804534912]
-            P_TOOLCHANGE_2 = [-277.885009765625, -346.0254211425781, 69.51176452636719, 88.24674224853516, -179.66615295410156, 9.469649314880371]
-
+            P_TOOLCHANGE_2 = [-277.465087890625, -346.6596984863281, 69.99971771240234, 49.05696487426758, 179.89199829101562, -29.439313888549805]
 
             p_tool2_step1 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step1[2] += 300
             p_tool2_step2 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step2[2] +=  20
@@ -760,17 +798,28 @@ class DRLInterface():
 
             movel(p_tool2_step3)
             self.movel_z(-10)
-            task_compliance_ctrl([5000, 5000, 100, 5000, 5000, 5000]);  self.movel_z(15); rospy.sleep(1);   release_compliance_ctrl()
+            task_compliance_ctrl([100, 100, 1000, 100, 100, 100]);  self.movel_z(50); rospy.sleep(1);   release_compliance_ctrl()
 
             self.toolchanger_attach();  rospy.sleep(1)
             movel(p_tool2_step4)
             movel(p_tool2_step5)
 
+        # ACTION [20010]: test
+        elif(self.cmd_protocol == 20010):
+            movej(Q_HOME)
+            task_compliance_ctrl([5000, 5000, 100, 5000, 5000, 5000])
+            print "1"
+            self.movel_z(20)
+            print "2"
+            release_compliance_ctrl()
+            print "3"
+
+
         # ACTION [-302]: Tool Changer - Place Tool2 to the Toolchanger2
         elif(self.cmd_protocol == ACTION_TOOLCHANGE_2_DETACH):
             # P_TOOLCHANGE_2 = [-277.7904052734375, -346.1768493652344, 69.29383850097656, 109.82817840576172, 179.61642456054688, 31.086288452148438]
             # P_TOOLCHANGE_2 = [-277.3737487792969, -345.2371826171875, 71.8157958984375, 71.0041732788086, -178.6968231201172, -7.797959804534912]
-            P_TOOLCHANGE_2 = [-277.885009765625, -346.0254211425781, 69.51176452636719, 88.24674224853516, -179.66615295410156, 9.469649314880371]
+            P_TOOLCHANGE_2 = [-277.465087890625, -346.6596984863281, 69.99971771240234, 49.05696487426758, 179.89199829101562, -29.439313888549805]
             
             p_tool2_step1 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step1[1] += -20;    p_tool2_step1[2] += 300
             p_tool2_step2 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step2[1] += -20;    p_tool2_step2[2] += 20
@@ -787,6 +836,7 @@ class DRLInterface():
             self.setVelAcc(50, 50, [50,100], [50,100])
             movel(p_tool2_step3)
             task_compliance_ctrl([1000, 4500, 4000, 1000, 1000, 1000])
+
             # movel(p_tool2_step4)
             release_compliance_ctrl()
             movel(p_tool2_step5);       rospy.sleep(1)
@@ -835,27 +885,35 @@ class DRLInterface():
 
         # Task [10002]: Search AR_Marker attached to the upper gripper of Instron
         elif(self.cmd_protocol == TASK_INSTRON_SEARCH):
+            self.gripper_close()
             movej(Q_TOP_PLATE, 50, 50)
 
             self.setVelAcc(30, 30, [100,50], [100,50])
-            see_point1j = [81.08692169189453, -0.4761710464954376, -143.7606658935547, -9.412845611572266, 57.22504806518555, 100.97422790527344]
+            see_point1j = [81.08692169189453, -0.4761710464954376, -143.7606658935547, -9.412845611572266, 57.22504806518555, -80.97422790527344+360]
             movej(see_point1j)
             
             ar_tag = 4
 
-            self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
-            if self.ARsearchFromEEF(ar_tag) == True:
+            self.ARupdateParam(-0.12, 0.0, 0.20, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(2)
+            if self.ARsearchFromEEF(ar_tag) == True: 
                 self.ARsetReference(ar_tag, 4)
-                movel([-157,-70,0,0,0,0], mod = 1, ref = 1)
-                movel([0,0,125,0,0,0], mod = 1, ref = 1)
+                self.movel_xyz(-157, -90, -180)
+                movej([self.current_posj[0], self.current_posj[1], self.current_posj[2], self.current_posj[3], self.current_posj[4], self.current_posj[5] - 180])
+                self.movel_xyz(0, 0, 230)
+                # self.ARsetReference(ar_tag, 1); rospy.sleep(0.5)
+                # self.ARsetReference(ar_tag, 1); rospy.sleep(0.5)
+                # self.ARsetReference(ar_tag, 1)
+                # self.movel_xyz(-157, -90, 0)
+                # self.movel_xyz(0, 0, 220)
 
 	    
         # Task [10003]: Place specimen and go to the monitoring position
         elif(self.cmd_protocol == TASK_INSTRON_MOVEOUT):
             # rospy.sleep(10)
-            movel([0,0,-200,0,0,90], mod = 1, ref = 1)
-            self.gripper_open()
-            self.movel_z(-200)
+            # movel([0,0,-200,0,0,90], mod = 1, ref = 1)
+            self.gripper_open();  rospy.sleep(1.0)
+            self.movel_z(-100)
+            self.movel_xyz(-200, -200, -100)
             # movel([0,0,-200,0,0,90], mod = 1, ref = 1)
             # viewpoint = deepcopy(self.current_posx);    viewpoint[4] -= 20
             viewpoint = [self.current_posx[0],self.current_posx[1],self.current_posx[2],self.current_posx[3],self.current_posx[4]-20,self.current_posx[5]]
@@ -940,28 +998,18 @@ class DRLInterface():
                     movel(self.drl_pose)
                     #SHAKING
                     self.movel_x_base(-50)
-                    self.movel_z(104, [100, 100], [100, 100]) #go down 94 for debug T4 -> 103mm
-                    task_compliance_ctrl([10000, 10000, 10000, 1500, 1500, 1500])
-                    self.gripper_close()
-                    self.movel_z(-2)
-                    self.rotate_z(10)
-                    self.rotate_z(-20)
-                    self.rotate_z(10)
-                    self.gripper_open()
-                    self.movel_z_base(3)
-                    self.movel_x_base(100)
-                    self.movel_z_base(-3)
-                    self.gripper_close()
-                    self.rotate_z(-10)
-                    self.rotate_z(20)
-                    self.rotate_z(-10)
-                    self.movel_y_base(-20)
-                    self.gripper_open()
-                    release_compliance_ctrl()
-                    # self.movel_x_base(-50)
-                    # self.gripper_close()
-            
-                    self.movel_z(-104,[100, 100], [100, 100]) #go up
+                    self.movel_z(102, [100, 100], [100, 100]) #go down 94 for debug T4 -> 103mm
+                    while True:
+                        self.specimen_shaking()
+                        if self.toolforce[1] > 30:
+                            self.gripper_open()
+                            self.movel_x_base(-50)
+                            continue
+                        else :
+                            self.gripper_open()
+                            release_compliance_ctrl()
+                            break
+                    self.movel_z(-102,[100, 100], [100, 100]) #go up
                     movej(Q_MULSPECIMEN_SEARCH)
                     
                     # self.setVelAcc(100, 100, [500,100], [500,100])
@@ -1021,7 +1069,7 @@ class DRLInterface():
             movej(Q_MULSPECIMEN_SEARCH)
                 
 
-        # Task [10008]: LOCATION TEST
+        # Task [10008]: AfTER ATTACHING SENSOR PICK SPECIMEN AND PLACE ON RACK
         elif(self.cmd_protocol == TASK_PICK_PLACE_RACK):
             self.gripper_open()
             self.setVelAcc(30, 30, [30, 30], [30, 30])
@@ -1041,7 +1089,6 @@ class DRLInterface():
             movel(P_PLACE_RACK_1)
             self.move_lack_place()
 
-
             # movej(Q_MULSPECIMEN_SEARCH)
 
             # self.specimenAlign()
@@ -1056,97 +1103,104 @@ class DRLInterface():
         # Task [10009]: Specimen pick and place at rack TEST
         elif(self.cmd_protocol == TASK_PICK_PLACE_RACK_TEST):
             self.gripper_open()
-            # rospy.sleep(5)
-            # self.gripper_close()
-            
-            self.setVelAcc(30, 30, [50,50], [50,50])
-            # movel([-357.0, 165.0, 322.0, -181.3, -180.0, 0.0])
-            movej(Q_MULSPECIMEN_SEARCH)
-
-            # self.gripper_open()
-            # self.jig_x_open();  self.jig_y_open();  rospy.sleep(2)
-            # self.jig_x_close(); self.jig_y_close(); rospy.sleep(2)
-
-            object_count=1
-            
-            ## Publish Flag to 'snu_2d_vision.py' node
-            self.vision_pub.publish(30002)
-            rospy.sleep(30) #In order to change previous specimen TF
-
-            while True:
-                try:
-                    target_frame_name = 'specimen_table_' + str(object_count)
-                    reference_frame_name = 'base_0'
-                    print "Searching specimen ..."
-                    print("Target frame: "    + target_frame_name)
-                    print("Reference frame: " + reference_frame_name)
-                    print "Trying to search the specimen: %s ..."%target_frame_name
-                    self.listener.waitForTransform(reference_frame_name, target_frame_name, rospy.Time(), rospy.Duration(5.0))
-                    (trans,rot) = self.listener.lookupTransform(reference_frame_name, target_frame_name, rospy.Time(0))
-                    self.update_target_pose(trans, rot)
-                    self.updateEulZYZ()
-                    self.drl_pose = deepcopy(posx(self.target_pose.position.x, self.target_pose.position.y, 332 , -181.3, -180, -self.eulerZYZ[2]-self.eulerZYZ[0]))
-                    print('Target DRL Pose: ' , self.drl_pose)
-                    print('search complete')
-
-                    movel(self.drl_pose)
-                    self.movel_z(104, [100, 100], [100, 100]) #go down 95 for development
-                    self.gripper_close()
-                    self.movel_z(-104,[100, 100], [100, 100]) #go up
-                    movej(Q_MULSPECIMEN_SEARCH)
-                    
-                    # self.setVelAcc(100, 100, [150,100], [150,100])
-                    self.setVelAcc(30, 30, [30,30], [30,30])
-
-                    movej(Q_PLACE_INITIAL)
-                    movel(P_PLACE_INCLINE)
-                    
-                    if object_count == 1:
-                        movel(P_PLACE_RACK_1)
-                    elif object_count == 2:
-                        movel(P_PLACE_RACK_2)
-                    elif object_count == 3:
-                        movel(P_PLACE_RACK_3)
-                    elif object_count == 4:
-                        movel(P_PLACE_RACK_4)
-
-                    self.move_lack_place()
-
-                    movej(Q_MULSPECIMEN_SEARCH)
-
-                    object_count = object_count+1
-
-                except (Exception):
-                    print "[ERROR]: The Target(TF) is not Detected !!!"
-                    print("Specimen count :{}".format(object_count-1))
-                    break
-
-            self.specimenAlign()
-
+            self.setVelAcc(70, 70, [50,50], [50,50])
             movej(Q_MULSPECIMEN_SEARCH)
             movel(P_PICK_INITIAL)
             movel(P_PICK_INCLINE)
             movel(P_PICK_RACK_1)
             self.move_lack_pick()
-
             movej(Q_MULSPECIMEN_SEARCH)
-            self.gripper_open()
-            movel(P_PICK_INITIAL)
-            movel(P_PICK_INCLINE)
-            movel(P_PICK_RACK_2)
-            self.move_lack_pick()
-
-            movej(Q_MULSPECIMEN_SEARCH)
-            self.gripper_open()
-            movel(P_PICK_INITIAL)
-            movel(P_PICK_INCLINE)
-            movel(P_PICK_RACK_3)
-            self.move_lack_pick()
-
-            # self.jig_x_open();  self.jig_y_open()
 
 
+            # self.gripper_open()
+            # # rospy.sleep(5)
+            # # self.gripper_close()
+            
+            # self.setVelAcc(30, 30, [50,50], [50,50])
+            # # movel([-357.0, 165.0, 322.0, -181.3, -180.0, 0.0])
+            # movej(Q_MULSPECIMEN_SEARCH)
 
+            # # self.gripper_open()
+            # # self.jig_x_open();  self.jig_y_open();  rospy.sleep(2)
+            # # self.jig_x_close(); self.jig_y_close(); rospy.sleep(2)
+
+            # object_count=1
+            
+            # ## Publish Flag to 'snu_2d_vision.py' node
+            # self.vision_pub.publish(30002)
+            # rospy.sleep(30) #In order to change previous specimen TF
+
+            # while True:
+            #     try:
+            #         target_frame_name = 'specimen_table_' + str(object_count)
+            #         reference_frame_name = 'base_0'
+            #         print "Searching specimen ..."
+            #         print("Target frame: "    + target_frame_name)
+            #         print("Reference frame: " + reference_frame_name)
+            #         print "Trying to search the specimen: %s ..."%target_frame_name
+            #         self.listener.waitForTransform(reference_frame_name, target_frame_name, rospy.Time(), rospy.Duration(5.0))
+            #         (trans,rot) = self.listener.lookupTransform(reference_frame_name, target_frame_name, rospy.Time(0))
+            #         self.update_target_pose(trans, rot)
+            #         self.updateEulZYZ()
+            #         self.drl_pose = deepcopy(posx(self.target_pose.position.x, self.target_pose.position.y, 332 , -181.3, -180, -self.eulerZYZ[2]-self.eulerZYZ[0]))
+            #         print('Target DRL Pose: ' , self.drl_pose)
+            #         print('search complete')
+
+            #         movel(self.drl_pose)
+            #         self.movel_z(104, [100, 100], [100, 100]) #go down 95 for development
+            #         self.gripper_close()
+            #         self.movel_z(-104,[100, 100], [100, 100]) #go up
+            #         movej(Q_MULSPECIMEN_SEARCH)
+                    
+            #         # self.setVelAcc(100, 100, [150,100], [150,100])
+            #         self.setVelAcc(30, 30, [30,30], [30,30])
+
+            #         movej(Q_PLACE_INITIAL)
+            #         movel(P_PLACE_INCLINE)
+                    
+            #         if object_count == 1:
+            #             movel(P_PLACE_RACK_1)
+            #         elif object_count == 2:
+            #             movel(P_PLACE_RACK_2)
+            #         elif object_count == 3:
+            #             movel(P_PLACE_RACK_3)
+            #         elif object_count == 4:
+            #             movel(P_PLACE_RACK_4)
+
+            #         self.move_lack_place()
+
+            #         movej(Q_MULSPECIMEN_SEARCH)
+
+            #         object_count = object_count+1
+
+            #     except (Exception):
+            #         print "[ERROR]: The Target(TF) is not Detected !!!"
+            #         print("Specimen count :{}".format(object_count-1))
+            #         break
+
+            # self.specimenAlign()
+
+            # movej(Q_MULSPECIMEN_SEARCH)
+            # movel(P_PICK_INITIAL)
+            # movel(P_PICK_INCLINE)
+            # movel(P_PICK_RACK_1)
+            # self.move_lack_pick()
+
+            # movej(Q_MULSPECIMEN_SEARCH)
+            # self.gripper_open()
+            # movel(P_PICK_INITIAL)
+            # movel(P_PICK_INCLINE)
+            # movel(P_PICK_RACK_2)
+            # self.move_lack_pick()
+
+            # movej(Q_MULSPECIMEN_SEARCH)
+            # self.gripper_open()
+            # movel(P_PICK_INITIAL)
+            # movel(P_PICK_INCLINE)
+            # movel(P_PICK_RACK_3)
+            # self.move_lack_pick()
+
+            # # self.jig_x_open();  self.jig_y_open()
 
         # Task [10010]: Alignment task
         elif(self.cmd_protocol == TASK_RACK_ALIGN):
@@ -1289,7 +1343,7 @@ class DRLInterface():
                 self.movel_z_base(-0.2)
             movej(init_posj,50,50)
 
-        # Task [10033]: Move specimen to the center of the working table
+        # Task [10033]: Move specimen t o the center of the working table
         elif(self.cmd_protocol == TASK_SEPCIMEN_TO_CENTER):
             self.setVelAcc(50, 50, [150,50], [150,50])
             
@@ -1375,7 +1429,7 @@ class DRLInterface():
             movel(waypoint_3)
             self.suction_cup_off(); rospy.sleep(1)
             movel(waypoint_4)
-            movel(waypoint_5)
+            movel(waypoint_5)   
             movel(waypoint_6)
             movel(waypoint_7)
             movel(waypoint_8)
@@ -1440,53 +1494,58 @@ class DRLInterface():
 
         # TEST: AR tag [20005]
         elif(self.cmd_protocol == 20005):
-            self.setVelAcc(200, 200, [150,50], [150,50])
-            ar_tag_number = 3
-            self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
+            self.setVelAcc(100, 100, [100,50], [100,50])
+
+            movej([-8.013907432556152, -4.613921165466309, -109.38079071044922, 7.04472017288208, -35.88261413574219, 172.5325164794922])
+            
+            ar_tag_number = 7
+            self.ARupdateParam(-0.12, 0.0, 0.22, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
             self.ARsetReference(ar_tag_number, 5)
 
-            # self.orient_calib_flag = True
-            # if self.search_ar_target(ar_tag_number): ## when AR tag is detected, execute the following codes
-            #     movel(self.drl_pose, ref=DR_TOOL, mod=DR_MV_MOD_REL)
-            # if self.search_ar_target(ar_tag_number): ## when AR tag is detected, execute the following codes
-            #     movel(self.drl_pose, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+
+        ## 기계시스템설계2 최영진 학생 코드   `
+        elif(self.cmd_protocol == MSD_YJ_1):
+            ## Action 1. attaching fabric to the end-effector
+            movej(Q_TOP_PLATE, 50, 50)  # Search pose
+            ar_tag_fabric = 7
+            self.ARupdateParam(-0.12, 0.0, 0.20, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
+            self.ARsetReference(ar_tag_fabric, 4)
+            if self.ARsearchFromEEF(ar_tag_fabric) == True:
+                self.setVelAcc(50, 50, [50, 100], [50, 100])
+                # task_compliance_ctrl([4500, 4500, 1000, 1000, 1000, 1000])
+                self.movel_x(-120, ref=DR_BASE)
+                task_compliance_ctrl([100, 100, 1000, 100, 100, 100])
+                self.movel_z(-50, ref=DR_BASE)
+                self.movel_z(+50, ref=DR_BASE)
+                release_compliance_ctrl()
+                # release_compliance_ctrl()
 
 
-                # roll  = euler_from_quaternion([self.target_pose.orientation.x, 
-                #                                self.target_pose.orientation.y,
-                #                                self.target_pose.orientation.z, 
-                #                                self.target_pose.orientation.w])[0]
+                self.movel_x(120, ref = DR_BASE)
+                task_compliance_ctrl([100, 100, 1000, 100, 100, 100])
+                self.rotate_on()
+                self.movel_x(120, ref = DR_BASE)
+                self.movel_y(-100, ref = DR_BASE)
+                self.movel_x(-120, ref = DR_BASE)
+                self.movel_y(-100, ref = DR_BASE)
+                release_compliance_ctrl()
+                self.rotate_off()
 
-                # pitch = euler_from_quaternion([self.target_pose.orientation.x, 
-                #                                self.target_pose.orientation.y,
-                #                                self.target_pose.orientation.z, 
-                #                                self.target_pose.orientation.w])[1]
+                
+                ## Action 2. move to the target spot
+                ## self.setVelAcc(100, 100, [400, 100], [400, 100])
+                ## movej(Q_TOP_PLATE, 50, 50)
 
-                # yaw   = euler_from_quaternion([self.target_pose.orientation.x, 
-                #                                self.target_pose.orientation.y,
-                #                                self.target_pose.orientation.z, 
-                #                                self.target_pose.orientation.w])[2]
-                # yaw = RAD2DEG(yaw)                 
-                # if self.orient_calib_flag == True:
-                #     print("init!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                #     self.orient_calib = yaw
-                #     print("initial yaw: {}".format(self.orient_calib))
-                #     self.orient_calib_flag = False
-                # else:
-                #     if abs(self.orient_calib - yaw) > 60.0:
-                #         print("initial yaw: {}".format(self.orient_calib))
-                #         print("current yaw: {}".format(yaw))
-                #         yaw += 90.0;    yaw = DEG2RAD(yaw)
-                #         quaternion = quaternion_from_euler(roll, pitch, yaw)
-                #         self.target_pose.orientation.x = quaternion[0]
-                #         self.target_pose.orientation.y = quaternion[1]
-                #         self.target_pose.orientation.z = quaternion[2]
-                #         self.target_pose.orientation.w = quaternion[3]
-                #         print("AR tag flipped !!!")
-                # self.search_ar_target(4);   movel(self.drl_pose, vel=[130,50], acc=[100,50]);   rospy.sleep(0.5) # 1st approach
-                # self.search_ar_target(4);   movel(self.drl_pose, vel=[130,50], acc=[100,50]);   rospy.sleep(0.5) # 2nd approach
-                # self.search_ar_target(4);   movel(self.drl_pose, vel=[130,50], acc=[100,50]);   rospy.sleep(0.5) # 3rd approach
-                # self.search_ar_target(4);   movel(self.drl_pose, vel=[130,50], acc=[100,50]);   rospy.sleep(0.5) # 4th approach
+                ## ar_tag_target = 6
+                ## self.ARupdateParam(-0.12, 0.0, 0.20, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
+                ## self.ARsetReference(ar_tag_target, 4)
+
+        ##CONTROL IDIM_GRIPPER (30000)
+        elif(self.cmd_protocol == IDIM_CONTROL_TEST):
+            ##publish_once
+            while self.gripper_pub.get_num_connections()<1:
+                self.gripper_pub.publish(True)
+                print("interface to gripper success")
 
 
 
