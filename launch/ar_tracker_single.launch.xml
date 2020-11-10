@@ -1,8 +1,8 @@
 <launch>
 
-    <arg name="marker_size" default="2.5" /> <!-- 4.4 [cm] -->
+    <arg name="marker_size" default="3.9" /> <!-- 2.5 [cm] -->
     <arg name="max_new_marker_error" default="0.08" />
-    <arg name="max_track_error" default="0.2" />
+    <arg name="max_track_error" default="1.0" /> <!--0.2[cm] -->
 
     <arg name="cam_image_topic" default="camera/depth_registered/points" />
     <arg name="cam_info_topic" default="camera/color/camera_info" />

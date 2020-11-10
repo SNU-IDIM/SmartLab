@@ -302,7 +302,7 @@ class DRLInterface():
             # print("Yaw: {}".format(RAD2DEG(self.orient_yaw)))
             
     def ARalignMove(self, ar_tag_number):
-        self.ARcheckFlipped(ar_tag_number)
+        # self.ARcheckFlipped(ar_tag_number)
         self.updateEulZYZ()
         pos = self.target_pose.position;   ori = self.eulerZYZ
         self.drl_pose = deepcopy(posx(pos.x, pos.y, pos.z ,ori[0], ori[1], ori[2]))
@@ -314,7 +314,7 @@ class DRLInterface():
         for i in range(iter):
             if self.ARsearchFromEEF(ar_tag_number) == True:
                 self.ARalignMove(ar_tag_number)
-                rospy.sleep(1.0)
+                rospy.sleep(1.5)
         self.orient_calib_exec = False
 
 
@@ -557,17 +557,18 @@ class DRLInterface():
 
             self.ARupdateParam(0.0, -0.12, 0.20, rx=180.0, ry=0.0, rz=180.0)
         '''
-        self.ARupdateParam(-0.12, 0.0, 0.17, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
+        self.ARupdateParam(-0.12, 0.0, 0.26, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
         if self.ARsearchFromEEF(bed_number) == True:
             self.ARsetReference(bed_number, 4)
-            P_UNIVERSALJIG_3DP_BED = [-440.0015869140625, 52.0435791015625, 225.61996459960938, 0.5350197553634644, -178.6567840576172, -136.9725341796875]
+            P_UNIVERSALJIG_3DP_BED = [-461.6261901855469, 51.8516845703125, 272.7024841308594, 91.4110336303711, 175.78863525390625, -131.13372802734375]
+
 
             self.ARupdateParam(0.0, 0.0, 0.3, rz=-45.0);  rospy.sleep(1);  self.ARsearchFromBase(bed_number);  waypoint_0 = deepcopy(self.drl_pose)
             waypoint_1 = deepcopy(waypoint_0);     waypoint_1[1] -= 120
-            waypoint_2 = deepcopy(waypoint_0);     waypoint_2[1] += 35;     waypoint_2[2] -= 100
+            waypoint_2 = deepcopy(waypoint_0);     waypoint_2[1] += 40;     waypoint_2[2] -= 110
             waypoint_3 = deepcopy(waypoint_2);     waypoint_3[2] -= 45
             waypoint_4 = P_UNIVERSALJIG_3DP_BED;   waypoint_4[2] += 100
-            waypoint_5 = deepcopy(waypoint_4);     waypoint_5[2] -= 100
+            waypoint_5 = deepcopy(waypoint_4);     waypoint_5[2] -= 120
             
             movel(waypoint_1, ref=DR_BASE, mod=DR_MV_MOD_ABS)
             movel(waypoint_2)
@@ -590,7 +591,7 @@ class DRLInterface():
         self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
         movej(Q_TOP_PLATE)
 
-        self.ARupdateParam(-0.12, 0.0, 0.15, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
+        self.ARupdateParam(-0.12, 0.0, 0.26, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
 
         if self.ARsearchFromEEF(bed_number) == True: ## when AR tag is detected, execute the following codes
             movej(Q_SEARCH_3DP_PLATE)
@@ -1496,10 +1497,10 @@ class DRLInterface():
         elif(self.cmd_protocol == 20005):
             self.setVelAcc(100, 100, [100,50], [100,50])
 
-            movej([-8.013907432556152, -4.613921165466309, -109.38079071044922, 7.04472017288208, -35.88261413574219, 172.5325164794922])
-            
-            ar_tag_number = 7
-            self.ARupdateParam(-0.12, 0.0, 0.22, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
+            # movej([-11.182025909423828, 24.15623664855957, -115.94084167480469, 2.3839638233184814, -86.38208770751953, 168.0590057373047])
+            movej(Q_SEARCH_3DP_RIGHT)
+            ar_tag_number = 6
+            self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
             self.ARsetReference(ar_tag_number, 5)
 
 
@@ -1546,6 +1547,12 @@ class DRLInterface():
             while self.gripper_pub.get_num_connections()<1:
                 self.gripper_pub.publish(True)
                 print("interface to gripper success")
+
+
+        ##AR TAG FLIP TEST
+        elif(self.cmd_protocol == 50000):
+            movej([0.0, 0.0, -90.0, 0.0, -90.0, 180.0])
+            
 
 
 
