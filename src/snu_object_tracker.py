@@ -7,6 +7,7 @@ import sys
 import math
 import tf
 import tf2_ros
+import numpy as np
 from std_msgs.msg import String, Float32MultiArray
 from geometry_msgs.msg import Twist, Pose, TransformStamped
 from ar_track_alvar_msgs.msg import *
@@ -19,6 +20,8 @@ MM2M = 1.0 / 1000.0
 M2MM  = 1000.0
 
 AR_MARKER_FRAME_PREFIX_ = 'ar_marker_'
+AR_TEMP_FRAME_PREFIX_  = 'ar_temp_'
+AR_CALIB_FRAME_PREFIX_  = 'ar_calib_'
 AR_TARGET_FRAME_PREFIX_ = 'ar_target_'
 CAMERA_FRAME_PREFIX_    = 'camera_link'
 
@@ -94,35 +97,130 @@ class snu_object_tracker():
         self.update_ros_param()
 
         n_tags = len(msg.markers)
-        print "Number of detected tags: %d"%n_tags
+        # print "Number of detected tags: %d"%n_tags
         
         if n_tags is not 0:
             idx = 0
             for x in msg.markers:
                 # self.static_transformStamped.header.stamp    = msg.header.stamp
-                # self.static_transformStamped.header.frame_id = CAMERA_FRAME_PREFIX_
-                # self.static_transformStamped.child_frame_id  = AR_MARKER_FRAME_PREFIX_ + str(msg.markers[idx].id)
-                # self.static_transformStamped.transform.translation.x = msg.markers[idx].pose.pose.position.x
-                # self.static_transformStamped.transform.translation.y = msg.markers[idx].pose.pose.position.y
-                # self.static_transformStamped.transform.translation.z = msg.markers[idx].pose.pose.position.z
-                # self.static_transformStamped.transform.rotation.x = msg.markers[idx].pose.pose.orientation.x
-                # self.static_transformStamped.transform.rotation.y = msg.markers[idx].pose.pose.orientation.y
-                # self.static_transformStamped.transform.rotation.z = msg.markers[idx].pose.pose.orientation.z
-                # self.static_transformStamped.transform.rotation.w = msg.markers[idx].pose.pose.orientation.w
+                # self.static_transformStamped.header.frame_id = AR_MARKER_FRAME_PREFIX_ + str(msg.markers[idx].id)
+                # self.static_transformStamped.child_frame_id  = AR_TARGET_FRAME_PREFIX_ + str(msg.markers[idx].id)
+                # self.static_transformStamped.transform.translation.x = 0.0 + self.offset_from_target_x
+                # self.static_transformStamped.transform.translation.y = 0.0 + self.offset_from_target_y
+                # self.static_transformStamped.transform.translation.z = 0.0 + self.offset_from_target_z
+                # quat = tf.transformations.quaternion_from_euler(self.offset_from_target_rx, self.offset_from_target_ry, self.offset_from_target_rz)
+                # self.static_transformStamped.transform.rotation.x = quat[0]
+                # self.static_transformStamped.transform.rotation.y = quat[1]
+                # self.static_transformStamped.transform.rotation.z = quat[2]
+                # self.static_transformStamped.transform.rotation.w = quat[3]
                 # self.broadcaster.sendTransform(self.static_transformStamped)
 
-                self.static_transformStamped.header.stamp    = msg.header.stamp
-                self.static_transformStamped.header.frame_id = AR_MARKER_FRAME_PREFIX_ + str(msg.markers[idx].id)
-                self.static_transformStamped.child_frame_id  = AR_TARGET_FRAME_PREFIX_ + str(msg.markers[idx].id)
-                self.static_transformStamped.transform.translation.x = 0.0 + self.offset_from_target_x
-                self.static_transformStamped.transform.translation.y = 0.0 + self.offset_from_target_y
-                self.static_transformStamped.transform.translation.z = 0.0 + self.offset_from_target_z
-                quat = tf.transformations.quaternion_from_euler(self.offset_from_target_rx, self.offset_from_target_ry, self.offset_from_target_rz)
-                self.static_transformStamped.transform.rotation.x = quat[0]
-                self.static_transformStamped.transform.rotation.y = quat[1]
-                self.static_transformStamped.transform.rotation.z = quat[2]
-                self.static_transformStamped.transform.rotation.w = quat[3]
-                self.broadcaster.sendTransform(self.static_transformStamped)
+
+                # 여기 수정 필요 (20.11.09)
+                try:
+                    ar_marker_frame = AR_MARKER_FRAME_PREFIX_ + str(msg.markers[idx].id)
+                    ar_temp_frame = AR_TEMP_FRAME_PREFIX_+ str(msg.markers[idx].id)
+                    ar_calib_frame = AR_CALIB_FRAME_PREFIX_+ str(msg.markers[idx].id)
+                    base_frame = 'base_0'
+                    reference_frame = 'link6'
+                    
+                    # reference_frame_name = AR_MARKER_FRAME_PREFIX_ + str(msg.markers[idx].id)
+                    # target_frame_name = 'camera_link'
+                    self.listener.waitForTransform(base_frame, reference_frame, rospy.Time(), rospy.Duration(1.0))
+                    (trans_base2ref,rot_base2ref) = self.listener.lookupTransform(base_frame, reference_frame, rospy.Time(0))
+                    self.listener.waitForTransform(reference_frame, ar_marker_frame, rospy.Time(), rospy.Duration(1.0))
+                    (trans_ref2ar,rot_ref2ar) = self.listener.lookupTransform(reference_frame, ar_marker_frame, rospy.Time(0))
+
+
+                    dist = math.sqrt(trans_ref2ar[0]*trans_ref2ar[0] + trans_ref2ar[1]*trans_ref2ar[1] + trans_ref2ar[2]*trans_ref2ar[2])
+
+                    epsilon = 0.05
+                    tol_error_deg = 5
+
+                    yaw = euler_from_quaternion(rot_ref2ar)[2]
+                    sign = int(np.sign(math.sin(yaw)))
+
+                    if dist < 0.5:
+                        yaw = euler_from_quaternion(rot_ref2ar)[2]
+                        # if abs(math.cos(yaw)) < 0.2:
+                        #     print(abs(math.cos(yaw)))
+                        #     q_rot_calib = quaternion_from_euler(0, 0, math.pi/2.0)
+                        #     print('Fixed: {}'.format(RAD2DEG * np.asarray(euler_from_quaternion(q_rot_calib))))
+
+                        if abs(RAD2DEG*yaw) > 180.0-tol_error_deg: ## 0 deg
+                            print("[Debug] 0 deg")
+                            q_rot_calib = quaternion_from_euler(0, 0, 0)
+
+                        elif abs(RAD2DEG*yaw) < tol_error_deg : ## 180 deg
+                            print("[Debug] 180 deg")
+                            q_rot_calib = quaternion_from_euler(0, 0, math.pi)
+
+                        elif sign == 1 and abs(math.sin(yaw)) > 1.0 - epsilon: ## 90 deg
+                            print("[Debug] 90 deg")
+                            q_rot_calib = quaternion_from_euler(0, 0, -math.pi/2.0)
+
+                        elif sign == -1 and abs(math.sin(yaw)) > 1.0 - epsilon: ## -90 deg
+                            print("[Debug] -90 deg")
+                            q_rot_calib = quaternion_from_euler(0, 0, math.pi/2.0)
+
+                        else:
+                            q_rot_calib = quaternion_from_euler(0, 0, 0)
+                            print('[Original1]: {}'.format(RAD2DEG * np.asarray(euler_from_quaternion(q_rot_calib))))
+                    else:
+                        q_rot_calib = quaternion_from_euler(0, 0, 0)
+                        print('[Debug] Distance: {}'.format(dist))
+
+                    
+                    self.static_transformStamped.header.stamp    = msg.header.stamp
+                    self.static_transformStamped.header.frame_id = reference_frame
+                    self.static_transformStamped.child_frame_id  = AR_CALIB_FRAME_PREFIX_  + str(msg.markers[idx].id)
+                    self.static_transformStamped.transform.translation.x = 0.0 + trans_ref2ar[0] 
+                    self.static_transformStamped.transform.translation.y = 0.0 + trans_ref2ar[1]
+                    self.static_transformStamped.transform.translation.z = 0.0 + trans_ref2ar[2]
+
+                    q_rot_calib = tf.transformations.quaternion_multiply(rot_ref2ar, q_rot_calib)
+                    self.static_transformStamped.transform.rotation.x = q_rot_calib[0]
+                    self.static_transformStamped.transform.rotation.y = q_rot_calib[1]
+                    self.static_transformStamped.transform.rotation.z = q_rot_calib[2]
+                    self.static_transformStamped.transform.rotation.w = q_rot_calib[3]
+                    self.broadcaster.sendTransform(self.static_transformStamped)
+
+                    self.static_transformStamped.header.stamp    = msg.header.stamp
+                    self.static_transformStamped.header.frame_id = AR_CALIB_FRAME_PREFIX_  + str(msg.markers[idx].id)
+                    self.static_transformStamped.child_frame_id  = AR_TARGET_FRAME_PREFIX_ + str(msg.markers[idx].id)
+                    self.static_transformStamped.transform.translation.x = 0.0 + self.offset_from_target_x
+                    self.static_transformStamped.transform.translation.y = 0.0 + self.offset_from_target_y
+                    self.static_transformStamped.transform.translation.z = 0.0 + self.offset_from_target_z
+                    q_target = tf.transformations.quaternion_from_euler(self.offset_from_target_rx, self.offset_from_target_ry, self.offset_from_target_rz)
+                    self.static_transformStamped.transform.rotation.x = q_target[0]
+                    self.static_transformStamped.transform.rotation.y = q_target[1]
+                    self.static_transformStamped.transform.rotation.z = q_target[2]
+                    self.static_transformStamped.transform.rotation.w = q_target[3]
+                    self.broadcaster.sendTransform(self.static_transformStamped)
+
+                    # try:
+                    #     self.listener.waitForTransform(reference_frame, ar_calib_frame, rospy.Time(), rospy.Duration(1.0))
+                    #     (trans_ref2temp,rot_ref2temp) = self.listener.lookupTransform(reference_frame, ar_calib_frame, rospy.Time(0))
+                    #     yaw_temp = RAD2DEG * euler_from_quaternion(rot_ref2temp)[2]
+                    #     if abs(yaw_temp) > 180-tol_error_deg and abs(yaw_temp) < 180 + tol_error_deg:
+                    #         print('[Temp] Yaw: {}'.format(yaw_temp))
+                    #         self.static_transformStamped.header.stamp    = msg.header.stamp
+                    #         self.static_transformStamped.header.frame_id = AR_CALIB_FRAME_PREFIX_  + str(msg.markers[idx].id)
+                    #         self.static_transformStamped.child_frame_id  = AR_TARGET_FRAME_PREFIX_ + str(msg.markers[idx].id)
+                    #         self.static_transformStamped.transform.translation.x = 0.0 + self.offset_from_target_x
+                    #         self.static_transformStamped.transform.translation.y = 0.0 + self.offset_from_target_y
+                    #         self.static_transformStamped.transform.translation.z = 0.0 + self.offset_from_target_z
+                    #         q_target = tf.transformations.quaternion_from_euler(self.offset_from_target_rx, self.offset_from_target_ry, self.offset_from_target_rz)
+                    #         self.static_transformStamped.transform.rotation.x = q_target[0]
+                    #         self.static_transformStamped.transform.rotation.y = q_target[1]
+                    #         self.static_transformStamped.transform.rotation.z = q_target[2]
+                    #         self.static_transformStamped.transform.rotation.w = q_target[3]
+                    #         self.broadcaster.sendTransform(self.static_transformStamped)
+                    #         print('good')
+                    # except:
+                    #     print("[ERROR] on temp")
+                except:
+                    print("[ERROR] on ar_tag")
 
                 idx += 1
             return 1
