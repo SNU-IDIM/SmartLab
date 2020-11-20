@@ -112,16 +112,17 @@ class DRLInterface():
         rospy.set_param('/R_001/dsr/eef', self.eef)
     
     def calcRelMove(self, waypoint, eef_flag):
-        for i in range(len(waypoint)):
-            waypoint[i] += self.drl_pose[i]
+        # for i in range(len(waypoint)):
+        #     waypoint[i] += self.drl_pose[i]
         if eef_flag == True:
             eef_angle = -DEG2RAD(self.eef_angle)
             print(self.eef_angle)
             if abs(eef_angle) > EPSILON:
-                dx = waypoint[0]
-                dy = waypoint[1]
+                dx = deepcopy(waypoint[0])
+                dy = deepcopy(waypoint[1])
                 waypoint[0] = dx * math.cos(eef_angle) + dy * math.sin(eef_angle)
                 waypoint[1] = dx * math.sin(eef_angle) + dy * math.cos(eef_angle)
+                print(waypoint)
                 return waypoint
             else:
                 return waypoint
@@ -314,7 +315,7 @@ class DRLInterface():
         for i in range(iter):
             if self.ARsearchFromEEF(ar_tag_number) == True:
                 self.ARalignMove(ar_tag_number)
-                rospy.sleep(1.5)
+                rospy.sleep(2.0)
         self.orient_calib_exec = False
 
 
@@ -524,7 +525,7 @@ class DRLInterface():
             set_tool_digital_output(2, 1)
 
     def getBedFromPrinterToJig(self, printer_number):
-        bed_number = printer_number + 4
+        bed_number = printer_number
         self.setVelAcc(50, 50, [100,50], [100,50])
         self.jig_x_open();  self.jig_y_open();  rospy.sleep(1)
         movej(Q_SEARCH_3DP_RIGHT)
@@ -536,7 +537,7 @@ class DRLInterface():
             self.eef_angle = 225
 
             waypoint_1 = self.calcRelMove([50, 0, -100, 0, 0, self.eef_angle], False)
-            waypoint_2 = self.calcRelMove([-203, 0, 172, 0, 0, 0], True)
+            waypoint_2 = self.calcRelMove([-210, 0, 172, 0, 0, 0], True)
             waypoint_3 = self.calcRelMove([0, 0, 43, 0, 0, 0], True)
             waypoint_4 = self.calcRelMove([0, 0, -80, 0, 0, 0], True)
             waypoint_5 = self.calcRelMove([300, 0, 0, 0, 0, 0], True)
@@ -553,7 +554,7 @@ class DRLInterface():
             movel(waypoint_6)
             movel(waypoint_7)
             self.suction_cup_off();  rospy.sleep(1)
-            # self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
+            self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
             movel(waypoint_6)
             movej(Q_TOP_PLATE)
             self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0)
@@ -585,8 +586,8 @@ class DRLInterface():
     def getBedFromJigToPrinter(self, printer_number):
         bed_number = printer_number + 4
         self.setVelAcc(50, 50, [100,100], [100,100])
-        # self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
-        # movej(Q_TOP_PLATE)
+        self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
+        movej(Q_TOP_PLATE)
 
         self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
 
@@ -600,14 +601,13 @@ class DRLInterface():
             movej(Q_SEARCH_3DP_RIGHT)
 
             if self.ARsearchFromEEF(printer_number) == True:
-                self.ARsetReference(printer_number, 5)
-                self.eef_angle = 225
+                self.ARsetReference(printer_number, 4)
+                self.eef_angle = 223
                 waypoint_1 = self.calcRelMove([0, 90, 0, 0, 0, self.eef_angle], False)
-                waypoint_2 = self.calcRelMove([-100, 0, 80, 0, 0, 0], True)
-                waypoint_3 = self.calcRelMove([0, 0, 10, 0, 0, 0], True)
+                waypoint_2 = self.calcRelMove([-110, -7, 80, 0, 0, 0], True)
+                waypoint_3 = self.calcRelMove([0, 0, 20, 0, 0, 0], True)
                 waypoint_4 = self.calcRelMove([0, 0, -50, 0, 0, 0], True)
                 waypoint_5 = self.calcRelMove([200, 0, -50, 0, 0, 0], True)
-
 
                 movel(waypoint_1, ref=DR_TOOL, mod=DR_MV_MOD_REL)
                 movel(waypoint_2, ref=DR_TOOL, mod=DR_MV_MOD_REL)
@@ -769,7 +769,7 @@ class DRLInterface():
             self.setVelAcc(50, 50, [50,100], [50,100])
             movel(p_tool1_step3)
             self.movel_z(-10)
-            task_compliance_ctrl([100, 100, 1000, 100, 100, 100]);  self.movel_z(50); rospy.sleep(1);   release_compliance_ctrl()
+            task_compliance_ctrl([100, 100, 1000, 100, 100, 100]);  self.movel_z(50);  rospy.sleep(1);   release_compliance_ctrl()
             self.toolchanger_attach();  rospy.sleep(1)
             movel(p_tool1_step4)
             movel(p_tool1_step5)
@@ -920,14 +920,14 @@ class DRLInterface():
             see_point1j = [81.08692169189453, -0.4761710464954376, -143.7606658935547, -9.412845611572266, 57.22504806518555, -80.97422790527344+360]
             movej(see_point1j)
             
-            ar_tag = 4
+            ar_tag = 0
 
-            self.ARupdateParam(-0.12, 0.0, 0.20, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(2)
+            self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(2)
             if self.ARsearchFromEEF(ar_tag) == True: 
                 self.ARsetReference(ar_tag, 4)
-                self.movel_xyz(-157, -90, -180)
+                self.movel_xyz(-178, -90, -180)
                 movej([self.current_posj[0], self.current_posj[1], self.current_posj[2], self.current_posj[3], self.current_posj[4], self.current_posj[5] - 180])
-                self.movel_xyz(0, 0, 230)
+                self.movel_xyz(0, 0, 298)
                 # self.ARsetReference(ar_tag, 1); rospy.sleep(0.5)
                 # self.ARsetReference(ar_tag, 1); rospy.sleep(0.5)
                 # self.ARsetReference(ar_tag, 1)
@@ -941,7 +941,7 @@ class DRLInterface():
             # movel([0,0,-200,0,0,90], mod = 1, ref = 1)
             self.gripper_open();  rospy.sleep(1.0)
             self.movel_z(-100)
-            self.movel_xyz(-200, -200, -100)
+            self.movel_xyz(100, -200, -100)
             # movel([0,0,-200,0,0,90], mod = 1, ref = 1)
             # viewpoint = deepcopy(self.current_posx);    viewpoint[4] -= 20
             viewpoint = [self.current_posx[0],self.current_posx[1],self.current_posx[2],self.current_posx[3],self.current_posx[4]-20,self.current_posx[5]]
@@ -1535,7 +1535,7 @@ class DRLInterface():
         elif(self.cmd_protocol == MSD_YJ_1):
             ## Action 1. attaching fabric to the end-effector
             movej(Q_TOP_PLATE, 50, 50)  # Search pose
-            ar_tag_fabric = 7
+            ar_tag_fabric = 0
             self.ARupdateParam(-0.12, 0.0, 0.20, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
             self.ARsetReference(ar_tag_fabric, 4)
             if self.ARsearchFromEEF(ar_tag_fabric) == True:
