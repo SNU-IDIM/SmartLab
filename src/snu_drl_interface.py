@@ -525,7 +525,7 @@ class DRLInterface():
             set_tool_digital_output(2, 1)
 
     def getBedFromPrinterToJig(self, printer_number):
-        bed_number = printer_number
+        bed_number = printer_number + 4
         self.setVelAcc(50, 50, [100,50], [100,50])
         self.jig_x_open();  self.jig_y_open();  rospy.sleep(1)
         movej(Q_SEARCH_3DP_RIGHT)
@@ -554,7 +554,7 @@ class DRLInterface():
             movel(waypoint_6)
             movel(waypoint_7)
             self.suction_cup_off();  rospy.sleep(1)
-            self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
+            # self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
             movel(waypoint_6)
             movej(Q_TOP_PLATE)
             self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0)
@@ -586,7 +586,7 @@ class DRLInterface():
     def getBedFromJigToPrinter(self, printer_number):
         bed_number = printer_number + 4
         self.setVelAcc(50, 50, [100,100], [100,100])
-        self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
+        # self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
         movej(Q_TOP_PLATE)
 
         self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
@@ -914,7 +914,7 @@ class DRLInterface():
         # Task [10002]: Search AR_Marker attached to the upper gripper of Instron
         elif(self.cmd_protocol == TASK_INSTRON_SEARCH):
             self.gripper_close()
-            movej(Q_TOP_PLATE, 50, 50)
+            movej(Q_TOP_PLATE, 50, 50) 
 
             self.setVelAcc(30, 30, [100,50], [100,50])
             see_point1j = [81.08692169189453, -0.4761710464954376, -143.7606658935547, -9.412845611572266, 57.22504806518555, -80.97422790527344+360]
