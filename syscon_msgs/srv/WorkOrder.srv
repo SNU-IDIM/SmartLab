@@ -1,0 +1,8 @@
+int32 WID
+string work
+string start_time
+string finish_time
+int32 repeat_num
+---
+bool success
+string message

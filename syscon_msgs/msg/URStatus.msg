@@ -1,0 +1,2 @@
+string status
+sensor_msgs/JointState arm_status

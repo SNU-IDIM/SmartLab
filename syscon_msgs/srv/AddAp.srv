@@ -1,0 +1,4 @@
+syscon_msgs/ActionPoint Ap
+---
+bool success
+string message

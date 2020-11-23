@@ -1,0 +1,5 @@
+<launch>
+
+	<node pkg="snu_idim_xmanager" type="ar_tracker.py" name="snu_test" ns="R_001" output="screen"/>
+
+</launch>

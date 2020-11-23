@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>snu_idim_cobot_upstart</name>
+  <version>0.2.0</version>
+  <description>The snu_idim_cobot_upstart package</description>
+
+  <maintainer email="wjyun@snu.ac.kr">Won-Jae Yun</maintainer>
+  <author email="wjyun@snu.ac.kr">Won-Jae Yun</author>
+
+  <license>BSD</license>
+
+
+  <buildtool_depend>catkin</buildtool_depend>
+	<depend>roscpp</depend>
+	<depend>std_msgs</depend>
+	<depend>tf</depend>
+	<depend>syscon_msgs</depend>
+</package>

@@ -1,0 +1,45 @@
+<launch>
+    <env name="ROSCONSOLE_CONFIG_FILE"  value="$(find dsr_control)/config/console.conf"/>
+    <arg name="ns" default="dsr"/>
+    <arg name="host" default="192.168.3.10"/>
+    <arg name="fake_execution" default="false"/>
+    <arg name="mode" default="real"/>
+    <arg name="port" default="12345"/>
+    <arg name="model" default="m1013"/>
+    <arg name="color" default="white"/>
+    <arg name="gripper" default="none"/>
+    <arg name="mobile" default="none"/>
+    <arg name="yaml" default="dsr_control"/>
+    
+    <!-- dsr controller 로드  -->
+    <rosparam file="$(find dsr_control)/config/dsr_control.yaml" command="load" ns="$(arg ns)"/>
+
+    <!-- trajectory controller, joint_state 실행  -->
+    <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
+          output="screen" ns="$(arg ns)" args="dsr_joint_trajectory_controller dsr_joint_publisher"> <!-- dsr_joint_position_controller -->
+    </node>
+
+    <!-- moveit은 멀티 arm이 안되므로 model은 참조용으로 사용 -->
+    <node pkg="dsr_control" type="dsr_control_node" name="$(arg ns)" respawn="false" output="screen" >
+        <param name="name" value="$(arg ns)"/>
+        <param name="rate" value="10"/>
+        <param name="standby" value="5000"/>
+        <param name="command" value="true"/>
+        <param name="host" value="$(arg host)"/>
+        <param name="port" value="$(arg port)"/>
+        <param name="mode" value="$(arg mode)" />
+        <param name="model" value="$(arg model)" />
+	    <param name="gripper" value="$(arg gripper)"/>
+	    <param name="mobile" value="$(arg mobile)" />
+    </node>
+
+    <!-- model에 따른 moveit 실행 -->
+    <group if="$(eval arg('model') == 'm1013')">
+        <include file="$(find snu_idim_cobot)/launch/dsr_description_m1013.launch.xml" ns="$(arg ns)">
+            <arg name="fake_execution" value="$(arg fake_execution)"/>
+            <arg name="color" value="$(arg color)"/>
+        </include>
+    </group>
+
+
+</launch>

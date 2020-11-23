@@ -1,0 +1,15 @@
+P,3
+W10,instron_logo
+C1,home
+C1,test
+C1,next
+W10,next
+T,specimen_1
+C1,browse
+C1,dropdown
+F,Autonomous
+C2,save
+W10,start
+C1,balance_all
+W10,start
+C1,start

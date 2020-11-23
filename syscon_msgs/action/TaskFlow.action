@@ -1,0 +1,21 @@
+# Define the goal
+string task_id
+int32 start_idx
+int32 loop_flag
+syscon_msgs/WorkFlowGoal[] missionlist
+---
+# Define the result
+float32 elapsed_time
+---
+# Define a feedback message
+string task_id
+string work_id
+int32 action_indx
+int32 mission_indx
+bool act_complete
+bool mission_complete
+bool task_complete
+bool is_paused
+int32 loop_flag
+int32 loop_count
+float32 elapsed_time

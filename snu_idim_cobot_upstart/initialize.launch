@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<launch>
+
+  <include file="$(find snu_idim_cobot)/launch/dsr_moveit.launch" ns="$(env RID)"/>
+  <include file="$(find rospy_websocker_client)/launch/Publisher.launch" ns="$(env RID)"/>
+  <include file="$(find rospy_websocker_client)/launch/Subscriber.launch" ns="$(env RID)"/>
+  <include file="$(find snu_idim_cobot)/launch/demo.launch"/>
+  
+  <!--<node pkg="snu_idim_cobot" type="snu_moveit_commander.py" name="snu_moveit_commander" ns="$(env RID)"/>-->
+  <!--<node pkg="snu_idim_cobot" type="snu_dsr_digital_io_controller.py" name="snu_dsr_digital_io_controller" ns="$(env RID)"/>-->
+  <node pkg="snu_idim_cobot" type="snu_drl_interface.py" name="snu_dsr_interface" ns="$(env RID)"/>
+  <node pkg="snu_idim_cobot" type="snu_dsr_joy.py" name="snu_dsr_joy" ns="$(env RID)"/>
+  <include file="$(find amr_urdf)/launch/display.launch"/>
+</launch>
+

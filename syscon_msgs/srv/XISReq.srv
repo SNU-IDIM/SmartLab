@@ -1,0 +1,7 @@
+int32 req
+string device
+string ip
+string port
+---
+bool success
+string message

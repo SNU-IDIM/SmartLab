@@ -1,0 +1,4 @@
+std_msgs/Int32MultiArray reg
+---
+bool success
+string message

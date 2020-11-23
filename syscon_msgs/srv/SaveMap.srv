@@ -1,0 +1,6 @@
+bool save_in_db
+---
+bool success
+string message
+string map_stream
+string map_data

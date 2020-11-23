@@ -1,0 +1,1 @@
+syscon_msgs/RobotState[] robolist

@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+import rospy, roslaunch
+import os, signal
+import socket
+
+from std_msgs.msg import String
+
+
+def get_rid():
+	TCP_IP = 'AMR'
+	TCP_PORT = 11363
+	BUFFER_SIZE = 128
+	while True:
+		try:
+			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			s.connect((TCP_IP, TCP_PORT))
+
+			data = s.recv(BUFFER_SIZE)
+			return data
+		except KeyboardInterrupt:
+			break
+		except Exception, e:
+			rospy.logerr("[VISCoRE]%s"%e)
+			rospy.sleep(1)
+
+##Routine Control Functions******####################################
+def routine_spin():
+	global exitThread
+	while True:
+		rospy.sleep(1)
+		if exitThread == True: break
+
+def sigint_handler(signum, frame):
+	global exitThread
+	exitThread = True
+#####################################################################
+if __name__=="__main__":
+	rospy.init_node('VIS_CORE')
+
+	# Get uuid from ros configure
+	uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
+	roslaunch.configure_logging(uuid)
+
+	# source location for spcore
+	home_dir = os.getenv("HOME")
+	current_dir = os.getcwd() 
+	vis = '%s/catkin_ws/src/SNU_SmartLAB/snu_idim_cobot_upstart/initialize.launch'%home_dir
+	# vis = '%s/initialize.launch'%current_dir
+	# print('%s/initialize.launch'%current_dir)
+
+
+	# Signal handler for exitThread
+	global exitThread;	exitThread = False
+	signal.signal(signal.SIGINT, sigint_handler)
+
+	# Main Routine Start
+	while not rospy.is_shutdown():
+		if exitThread == True: break
+
+		os.environ['RID'] = get_rid()
+
+		launch = roslaunch.parent.ROSLaunchParent(uuid, [vis])
+		launch.start()
+
+		rospy.loginfo("[VISCoRE]VISCoRE System On")
+		
+		routine_spin()
+		launch.shutdown(); rospy.sleep(0.5)

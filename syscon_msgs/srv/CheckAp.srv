@@ -1,0 +1,5 @@
+geometry_msgs/Point32 point
+---
+bool success
+string message
+int32 occupancy

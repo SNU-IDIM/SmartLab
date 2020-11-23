@@ -1,0 +1,18 @@
+# Define the goal
+string work_id
+int32 action_start_idx
+int32 loop_flag
+syscon_msgs/Action[] work
+---
+# Define the result
+float32 elapsed_time
+---
+# Define a feedback message
+string work_id
+int32 action_indx
+bool act_complete
+bool mission_complete
+bool is_paused
+int32 loop_flag
+int32 loop_count
+float32 elapsed_time
