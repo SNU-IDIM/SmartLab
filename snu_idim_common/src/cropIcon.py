@@ -26,6 +26,7 @@ else:
 
 
 class cropIcon(): 
+    
     def __init__(self, namespace):
         self.ns = namespace
         try:

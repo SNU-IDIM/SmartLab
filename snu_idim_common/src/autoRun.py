@@ -25,7 +25,10 @@ else:
 
 
 class idimAutomation():
+
     def __init__(self, namespace):
+        time.sleep(1.0)
+        
         self.type = namespace
         if not os.path.exists(self.type):
             os.mkdir(self.type)

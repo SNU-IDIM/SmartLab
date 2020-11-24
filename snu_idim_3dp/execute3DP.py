@@ -11,10 +11,22 @@ from autoRun import *
 
 
 if __name__ == "__main__":
+    print("[DEBUG] 3DP Automation Started !!!")
+
+    ## Automation program setting
     folder_dir = "src"
+    script1 = '3DP_1_start'
+    script2 = '3DP_1_stop'
+    script3 = '3DP_2_start'
+    script4 = '3DP_2_stop'
+
     time.sleep(1.0)
+
+    ## Create an instance (initialize)
     auto3dp = idimAutomation(folder_dir)
-    auto3dp.execute('{}.txt'.format('3DP_1_start'))
-    auto3dp.execute('{}.txt'.format('3DP_1_stop'))
-    auto3dp.execute('{}.txt'.format('3DP_2_start'))
-    auto3dp.execute('{}.txt'.format('3DP_2_stop'))
+
+    ## Start automation
+    auto3dp.execute('{}.txt'.format(script1))
+    auto3dp.execute('{}.txt'.format(script2))
+    auto3dp.execute('{}.txt'.format(script3))
+    auto3dp.execute('{}.txt'.format(script4))
