@@ -4,7 +4,7 @@
 import os, sys
 sys.dont_write_bytecode = True
 HOME_DIR = os.getenv('HOME')
-sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__),"%s/catkin_ws/src/SNU_SmartLAB/snu_idim_common/src"%HOME_DIR)) )
+sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_common/src")) )
 from autoRun import *
 
 import time
@@ -22,7 +22,7 @@ class autoInstron:
 										 timeout=0.05)
 		self.flag = 0
 		self.state = 0
-		self.autoRun = idim_smart_lab(folder_dir)
+		self.autoRun = idimAutomation(folder_dir)
 
 
 	def write_data(self):
@@ -57,15 +57,16 @@ if __name__=='__main__':
 	print("[DEBUG] Instron Automation Started !!!")
 
 	## Serial communication setting
-	port = 'COM4'
+	port = 'COM5'
 	baud = 115200
-	s
+	
 	## Automation program setting
 	folder_dir = 'src'
 	script = 'Instron'
 
 	## Create an instance (initialize)
 	autoInstron = autoInstron(port=port, baud=baud, folder_dir=folder_dir)
+	autoInstron.autoRun.execute('{}.txt'.format(script))
 
 	## Start automation
 	autoInstron.execute(script)

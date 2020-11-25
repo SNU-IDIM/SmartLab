@@ -5,6 +5,7 @@ import os, sys
 import pandas as pd
 sys.dont_write_bytecode = True
 HOME_DIR = os.getenv('HOME')
+# sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../../snu_idim_common/imp")) )
 sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__),"%s/catkin_ws/src/SNU_SmartLAB/snu_idim_common/imp"%HOME_DIR)) )
 from IDIM_header import *
 from IDIM_framework import *

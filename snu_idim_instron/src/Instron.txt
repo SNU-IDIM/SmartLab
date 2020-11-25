@@ -11,5 +11,4 @@ find,Autonomous
 click,2,save
 wait,10,start
 click,1,balance_all
-wait,10,start
 click,1,start
