@@ -1,0 +1,55 @@
+# Smart Laboratory Project (IDIM Lab. @SNU)
+
+### Descriptions
+- **snu_idim_common** : framework of the project and some commonly used codes
+    - imp
+        - IDIM_framework.py
+        - IDIM_header.py
+    - src
+        - autoRun.py
+        - cropIcon.py
+- **snu_idim_cobot** : codes for Doosan collaborative robot
+    - src
+        - snu_drl_interface.py
+        - snu_object_tracker.py
+        - snu_vision_2d.py
+        - snu_dsr_joy.py
+        - snu_moveit_commander.py
+        - unet_mini.weights
+        - vgg_unet.weight
+    - launch
+        - dsr_description_m1013.launch.xml
+        - dsr_moveit.launch
+        - realsense_setup.launch.xml
+        - ar_tracker_single.launch.xml
+        - ar_tracker_bundle.launch.xml (not in use)
+        - rtabmap.launch.xml (not in use)
+        - test.launch
+        - demo.launch
+- **snu_idim_cobot_upstart** : upstarting cobot ($ sudo service upstart restart)
+    - ViSCoRE
+    - viscore_upstart.launch
+    - initialize.launch
+- **snu_idim_xmanager** : codes for external PC (execution manager)
+    - src
+        - snu_executionManager.py
+        - amr_initializer.py
+        - snu_joy.py
+    - launch
+        - bridge.launch
+        - rviz.launch
+    - spcore_client
+        - spcore_simple.py
+        - spcore_simple.ui
+- **snu_idim_3dp** : codes, images, command scripts for automation
+    - execute3DP.py
+    - src
+        - some icon images ...
+        - some command scripts ...
+- **snu_idim_instron** : codes, images, command scripts for automation
+    - executeInstron.py
+    - src
+        - some icon images ...
+        - some command scripts ...
+- **snu_idim_jetson** : serial communication between Jetson nano and Instron
+    - uartInstron.py
