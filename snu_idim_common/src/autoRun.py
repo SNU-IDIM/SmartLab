@@ -152,14 +152,18 @@ class idimAutomation():
         while True:
             data = File.readline().split("\n")[0]
             if data == "":
-                print("break"); break
+                print("[DEBUG] Command script file line end"); break
                 
             mode = data.split(',')[0]
             data = data.split(',')[1:]
             
             if mode == 'click':
                 n_click, image = int(data[0]), data[1]
-                self.wait_for_image(image, duration=10.0)
+                try:
+                    t_wait = float(data[2])
+                except:
+                    t_wait = 10.0
+                self.wait_for_image(image, duration=t_wait)
                 print("Click icon")
                 self.move_to_icon(image, click=n_click, sleep=0.5)
 
