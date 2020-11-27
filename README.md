@@ -27,29 +27,29 @@
         - **test.launch** : launch file for debugging
         - **demo.launch** : launch file for demo
 - **snu_idim_cobot_upstart** : upstarting cobot ($ sudo service upstart restart)
-    - **ViSCoRE**
-    - **viscore_upstart.launch**
-    - **initialize.launch**
+    - **ViSCoRE** : automatically start cobot interface when starting the computer (upstart)
+    - **viscore_upstart.launch** : launch file of VisCoRE node
+    - **initialize.launch** : launch files specified in this file will be executed with upstart
 - **snu_idim_xmanager** : codes for external PC (execution manager)
     - src
-        - snu_executionManager.py
-        - amr_initializer.py
-        - snu_joy.py
+        - **snu_executionManager.py** : execution manager node for smart lab
+        - **amr_initializer.py** : initialize amr when the external-PC connects to the AMR-PC
+        - **snu_joy.py** : joystick controller for AMR and cobot (split commands)
     - launch
-        - bridge.launch
-        - rviz.launch
+        - **bridge.launch** : connects external-PC and AMR-PC via ROS multimaster
+        - **rviz.launch** : visualization of the integrated robot state
     - spcore_client
-        - spcore_simple.py
-        - spcore_simple.ui
+        - **spcore_simple.py** : gui tool for amr (SYSCON)
+        - **spcore_simple.ui** : definition of gui using QT
 - **snu_idim_3dp** : codes, images, command scripts for automation
-    - execute3DP.py
+    - **execute3DP.py** : automatically control 3d printers (ROS node)
     - src
         - some icon images ...
         - some command scripts ...
 - **snu_idim_instron** : codes, images, command scripts for automation
-    - executeInstron.py
+    - **executeInstron.py** : automatically control Instron (serial comm. node included)
     - src
         - some icon images ...
         - some command scripts ...
 - **snu_idim_jetson** : serial communication between Jetson nano and Instron
-    - uartInstron.py
+    - **uartInstron.py** : connects between ROS and Instron-PC (merging rostopic and serial comm.)
