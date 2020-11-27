@@ -207,7 +207,10 @@ if __name__ == '__main__':
 
     sm.executeDSR(TASK_INSTRON_SEARCH)          # 24. Instron 장비 referencing
     sm.JetsonComm(10.0)                         # 25. Experiment start
+    rospy.sleep(3.0)
     sm.executeDSR(TASK_INSTRON_MOVEOUT)         # 26. Gripper open & 실험 장면 촬영
+    sm.JetsonComm(20.0)
+    sm.executeDSR(ACTION_HOME)
     # rospy.sleep(10.0)
     # sm.JetsonComm(20.0)
 
