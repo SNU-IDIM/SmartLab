@@ -38,12 +38,15 @@ class StateMachine():
                           Param('xy_goal_tolerance','float','0.20'),
                           Param('yaw_goal_tolerance','float','0.05')]
 
+        self.jetson_status = None
+
         rospy.init_node(ros_node_name, anonymous=True)
         self.client = actionlib.SimpleActionClient('/R_001/WAS', WorkFlowAction)
         self.client.wait_for_server(timeout=rospy.Duration(1))
         self.pnp_pub = rospy.Publisher("/R_001/ur_pnp", String, queue_size=1)
         self.jetson_pub = rospy.Publisher("/pc_to_jetson", Float64, queue_size=1)
         rospy.Subscriber("/R_001/ur_status", URStatus, self.dsr_status_cb, queue_size=1)
+        rospy.Subscriber("/jetson", String, self.jetson_cb, queue_size=1)
         rospy.sleep(3.0)
 
         print("-------------------------------------")
@@ -60,11 +63,13 @@ class StateMachine():
         if(self.dsr_status != msg.status):
             self.dsr_flag = 1
             self.dsr_status = msg.status
-            print("DSR Status Changed !!!")
+            print("[Cobot] DSR Status Changed !!!")
             # print(self.dsr_status)
         else:
             self.dsr_flag = 0
 
+    def jetson_cb(self, msg):
+        self.jetson_status = msg.data
 
     '''
         addWorkAMR: add AMR Work to the Task
@@ -87,13 +92,13 @@ class StateMachine():
         executeAMR
     '''
     def executeAMR(self, target_pose, work_name="default", hold_time=0.0):
-        print("AMR Work (target pose = {}) Start !!!".format(target_pose))
+        print("[AMR] AMR Start Moving ... (target pose = {})".format(target_pose))
         work = Action(SYSCON_WAYPOINT, target_pose, self.amr_param)
         self.goal.work.append(work)
         self.goal.work_id = work_name
         self.client.send_goal(self.goal)
         self.client.wait_for_result()
-        print("AMR arrived [{}] !!!".format(target_pose))
+        print("[AMR] Arrived at [{}] !!!".format(target_pose))
         self.goal.work = []
         rospy.sleep(hold_time)
 
@@ -105,9 +110,19 @@ class StateMachine():
         self.pnp_pub.publish(self.dsr_action)
         self.waitforDSR(action_name, hold_time)
     
-    def JetsonComm(self, data):
-        self.jetson_pub.publish(data)
+
+    def JetsonComm(self, action_name, hold_time=1.0):
+        self.jetson_pub.publish(action_name)
         rospy.sleep(2)
+        self.waitforJetson(action_name, hold_time)
+
+    def waitforJetson(self, action_name, hold_time):
+        while(1):
+            print('[Instron] Experiment Running ...')
+            if self.jetson_status == 'done':
+                break
+        print("[Instron] Experiment({}) Completed !!!".format(action_name))
+        rospy.sleep(hold_time)
 
     
 
@@ -129,7 +144,7 @@ class StateMachine():
         while(1):
             if self.dsr_flag == 1 and self.dsr_status == 'done':
                 break
-        print("DSR WORK [{}] Done !!!".format(action_name))
+        print("[Cobot] DSR WORK [{}] Done !!!".format(action_name))
         rospy.sleep(hold_time)
     
 
@@ -141,9 +156,6 @@ class StateMachine():
 '''
 if __name__ == '__main__':
     sm = StateMachine(work_id="IDIM_State_Machine", loop_number=1)
-
-    sm.executeDSR('101')
-    sm.executeDSR('-101')
 
     # # sm.executeAMR(work_name='Instron', target_pose=[3.016, -3.244, -1.622], hold_time=0.0)
     # # sm.executeDSR(TASK_SPECIMEN_PICK)
@@ -192,6 +204,14 @@ if __name__ == '__main__':
     # sm.executeDSR(ACTION_TOOLCHANGE_1_ATTACH)   # 21. Tool-1 장착 (Suction-cup)
     # sm.executeDSR(TASK_3DP_3_BED_IN)            # 22. 3DP 프링팅 베드 이동: 로봇 -> 프린터
     # sm.executeDSR(ACTION_HOME)                  # 23. Home position 이동
+
+    sm.executeDSR(TASK_INSTRON_SEARCH)          # 24. Instron 장비 referencing
+    sm.JetsonComm(10.0)                         # 25. Experiment start
+    sm.executeDSR(TASK_INSTRON_MOVEOUT)         # 26. Gripper open & 실험 장면 촬영
+    # rospy.sleep(10.0)
+    # sm.JetsonComm(20.0)
+
+
     
     '''
     while True:
