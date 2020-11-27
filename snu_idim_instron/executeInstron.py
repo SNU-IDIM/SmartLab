@@ -57,7 +57,7 @@ if __name__=='__main__':
 	print("[DEBUG] Instron Automation Started !!!")
 
 	## Serial communication setting
-	port = 'COM5'
+	port = 'COM6'
 	baud = 115200
 	
 	## Automation program setting

@@ -7,6 +7,7 @@ wait,10,next
 text,specimen_1
 click,1,browse
 click,1,dropdown
+click,1,folder_dir
 find,Autonomous
 click,2,save
 wait,10,start
