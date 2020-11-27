@@ -1,0 +1,2 @@
+click,1,start
+click,0,start,100

@@ -29,16 +29,20 @@ class autoInstron:
 		self.serial_port.write("ok\n".encode())
 
 
-	def execute(self, script='Instron'):
+	def execute(self, scripts=''):
 		data = ""
 		while True:
 			try:
 				if self.serial_port.inWaiting() > 0:
 					data = self.serial_port.readline().decode('utf-8').split('\n')[0]
 					print('[DEBUG] data: {}'.format(data))
-					if data == '1':
-						self.autoRun.execute('{}.txt'.format(script))
+					if data == '0':
+						self.autoRun.execute('{}.txt'.format(scripts[0]))
 						self.write_data()
+					elif data == '1':
+						self.autoRun.execute('{}.txt'.format(scripts[1]))
+						self.write_data()
+
 
 			except KeyboardInterrupt:
 				print('keyboard interrupt')
@@ -62,13 +66,13 @@ if __name__=='__main__':
 	
 	## Automation program setting
 	folder_dir = 'src'
-	script = 'Instron'
+	scripts = ['start_experiment', 'end_experiment']
 
 	## Create an instance (initialize)
 	autoInstron = autoInstron(port=port, baud=baud, folder_dir=folder_dir)
-	autoInstron.execute(script)
 
 	## Start automation
-	autoInstron.execute(script)
+	autoInstron.execute(scripts)
+
 
 
