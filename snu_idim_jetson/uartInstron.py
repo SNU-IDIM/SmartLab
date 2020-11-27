@@ -60,7 +60,7 @@ class JET:
 		
 		if (self.start_flag == 10):
 			print('[DEBUG] Experiment - Start')
-			self.jetson_publisher.publish("started")
+			self.jetson_publisher.publish("start")
 			self.wait_for_complete()
 
 			print('[DEBUG] Experiment - Gripper close')
@@ -74,8 +74,8 @@ class JET:
 			self.uart.read_data()
 
 			print('[DEBUG] Experiment - Finnished')
-			self.jetson_publisher.publish("finnished")
-			GPIO.output(IN1, False)
+			self.jetson_publisher.publish("done")
+			# GPIO.output(IN1, False)
 			time.sleep(5)
 
 
@@ -85,7 +85,7 @@ class JET:
 			#self.jetson_publisher.publish("running")
 			self.wait_for_complete()
 			self.instron_flag = 1
-			GPIO.output(IN1, False)
+			# GPIO.output(IN1, False)
 			time.sleep(5)
 
 		if (self.start_flag == 30):
