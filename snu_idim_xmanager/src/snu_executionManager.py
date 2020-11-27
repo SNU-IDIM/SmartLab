@@ -13,7 +13,8 @@ from geometry_msgs.msg import Pose, Point, Quaternion, Twist
 import os, sys
 sys.dont_write_bytecode = True
 HOME_DIR = os.getenv('HOME')
-sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__),"%s/catkin_ws/src/SNU_SmartLAB/snu_idim_common/imp"%HOME_DIR)) )
+sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../../snu_idim_common/imp")) )
+# sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__),"%s/catkin_ws/src/SNU_SmartLAB/snu_idim_common/imp"%HOME_DIR)) )
 from IDIM_framework import *
 
             

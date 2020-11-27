@@ -1,29 +1,43 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import os, sys
+sys.dont_write_bytecode = True
+HOME_DIR = os.getenv('HOME')
+sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_common/src")) )
+from autoRun import *
 
 import time
 import serial
 import sys
-from autoRun import idim_smart_lab
 
-class UART:
+class autoInstron:
 
-	def __init__(self):
+	def __init__(self, port='COM4', baud=115200, folder_dir='src'):
+		self.serial_port = serial.Serial(port=port,
+										 baudrate=baud,
+										 bytesize=serial.EIGHTBITS,
+										 parity=serial.PARITY_NONE,
+										 stopbits=serial.STOPBITS_ONE,
+										 timeout=0.05)
 		self.flag = 0
 		self.state = 0
-		self.autoRun = idim_smart_lab("testing")
+		self.autoRun = idimAutomation(folder_dir)
+
 
 	def write_data(self):
-		serial_port.write("ok\n".encode())
+		self.serial_port.write("ok\n".encode())
 
-	def read_data(self):
+
+	def execute(self, script='Instron'):
 		data = ""
 		while True:
 			try:
-				if serial_port.inWaiting() > 0:
-					data = serial_port.readline().decode('utf-8').split('\n')[0]
+				if self.serial_port.inWaiting() > 0:
+					data = self.serial_port.readline().decode('utf-8').split('\n')[0]
 					print(data)
 					if data == '1':
-						self.autoRun.execute('testing.txt')
+						self.autoRun.execute('{}.txt'.format(script))
 						self.write_data()
 
 			except KeyboardInterrupt:
@@ -33,25 +47,28 @@ class UART:
 			except serial.serialutil.SerialException:
 				print('error')
 
-				serial_port.close()
+				self.serial_port.close()
 				time.sleep(5)
-				serial_port.open()
+				self.serial_port.open()
 
 
 
 if __name__=='__main__':
-	print("UART TTL communication")
-	print("START")
+	print("[DEBUG] Instron Automation Started !!!")
 
-	serial_port = serial.Serial(
-	port="COM4",
-	baudrate=115200,
-	bytesize=serial.EIGHTBITS,
-	parity=serial.PARITY_NONE,
-	stopbits=serial.STOPBITS_ONE,
-	timeout=0.05
-	)
-	u = UART()
-	u.read_data()
+	## Serial communication setting
+	port = 'COM5'
+	baud = 115200
+	
+	## Automation program setting
+	folder_dir = 'src'
+	script = 'Instron'
+
+	## Create an instance (initialize)
+	autoInstron = autoInstron(port=port, baud=baud, folder_dir=folder_dir)
+	autoInstron.autoRun.execute('{}.txt'.format(script))
+
+	## Start automation
+	autoInstron.execute(script)
 
 

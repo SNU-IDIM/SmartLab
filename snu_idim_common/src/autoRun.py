@@ -25,7 +25,10 @@ else:
 
 
 class idimAutomation():
+
     def __init__(self, namespace):
+        time.sleep(1.0)
+        
         self.type = namespace
         if not os.path.exists(self.type):
             os.mkdir(self.type)
@@ -47,7 +50,7 @@ class idimAutomation():
         return max_loc
 
 
-    def wait_for_image(self, image_name, duration=5.0, precision=0.6):
+    def wait_for_image(self, image_name, duration=5.0, precision=0.8):
         try:
             image_file = os.path.join(self.type, image_name + '.png')
             img = cv2.imread(image_file)
@@ -102,7 +105,7 @@ class idimAutomation():
                 self.move_and_click(x+w/2, y+h/2, click=1)
 
 
-    def move_to_icon(self, image_name, precision=0.6, click=0, sleep=0):
+    def move_to_icon(self, image_name, precision=0.8, click=0, sleep=0):
         try:
             image_file = os.path.join(self.type, image_name + '.png')
             img = cv2.imread(image_file)
@@ -156,14 +159,14 @@ class idimAutomation():
             
             if mode == 'click':
                 n_click, image = int(data[0]), data[1]
-                # self.wait_for_image(image, duration=10.0)
+                self.wait_for_image(image, duration=10.0)
                 print("Click icon")
                 self.move_to_icon(image, click=n_click, sleep=0.5)
 
             elif mode == 'wait':
                 duration = float(data[0])
-                print("Waiting for image({}) (for {} sec)".format(data, duration))
-                self.wait_for_image(data, duration=duration)
+                print("Waiting for image({}) (for {} sec)".format(data[1], duration))
+                self.wait_for_image(data[1], duration=duration)
 
             elif mode == 'find':
                 text = data[0]
@@ -172,8 +175,9 @@ class idimAutomation():
 
             elif mode == 'text':
                 text = data[0]
-                print("Texting")
-                pyautogui.write(data)
+                print("Texting: {}".format(text))
+                pyautogui.write(text)
+                time.sleep(0.5)
 
             elif mode == 'program':
                 program = data[0]
@@ -190,7 +194,7 @@ class idimAutomation():
 
 
 if __name__ == "__main__":
-    namespace = "testing"
+    namespace = "src"
 
-    test = idimAutomation(namespace)
-    test.execute('{}.txt'.format(namespace))
+    test = idimAutomation('src')
+    test.execute('{}.txt'.format('Instron'))
