@@ -35,7 +35,7 @@ class autoInstron:
 			try:
 				if self.serial_port.inWaiting() > 0:
 					data = self.serial_port.readline().decode('utf-8').split('\n')[0]
-					print(data)
+					print('[DEBUG] data: {}'.format(data))
 					if data == '1':
 						self.autoRun.execute('{}.txt'.format(script))
 						self.write_data()
@@ -66,7 +66,7 @@ if __name__=='__main__':
 
 	## Create an instance (initialize)
 	autoInstron = autoInstron(port=port, baud=baud, folder_dir=folder_dir)
-	autoInstron.autoRun.execute('{}.txt'.format(script))
+	autoInstron.execute(script)
 
 	## Start automation
 	autoInstron.execute(script)
