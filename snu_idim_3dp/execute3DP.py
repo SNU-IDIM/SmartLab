@@ -15,10 +15,10 @@ if __name__ == "__main__":
 
     ## Automation program setting
     folder_dir = "src"
-    script1 = '3DP_1_start'
-    script2 = '3DP_1_stop'
-    script3 = '3DP_2_start'
-    script4 = '3DP_2_stop'
+    script1 = '3DP_1_start.txt'
+    script2 = '3DP_1_stop.txt'
+    script3 = '3DP_2_start.txt'
+    script4 = '3DP_2_stop.txt'
 
     time.sleep(1.0)
 
@@ -26,7 +26,7 @@ if __name__ == "__main__":
     auto3dp = idimAutomation(folder_dir)
 
     ## Start automation
-    auto3dp.execute('{}.txt'.format(script1))
-    auto3dp.execute('{}.txt'.format(script2))
-    auto3dp.execute('{}.txt'.format(script3))
-    auto3dp.execute('{}.txt'.format(script4))
+    auto3dp.execute(script1)
+    auto3dp.execute(script2)
+    auto3dp.execute(script3)
+    auto3dp.execute(script4)
