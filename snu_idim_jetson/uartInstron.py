@@ -6,19 +6,16 @@ import rospy
 import Jetson.GPIO as GPIO
 from std_msgs.msg import Float64, String
 
-IN1 = 15
 
 
 
 class UART:
 	def __init__(self, port_="/dev/ttyTHS1", baudrate_=115200):
-		self.serial = serial.Serial(
-									port=port_,
+		self.serial = serial.Serial(port=port_,
 									baudrate=baudrate_,
 									bytesize=serial.EIGHTBITS,
 									parity=serial.PARITY_NONE,
-									stopbits=serial.STOPBITS_ONE,
-									)
+									stopbits=serial.STOPBITS_ONE)
 
 
 	def write_data(self, data):
@@ -38,8 +35,13 @@ class UART:
 
 
 
-class JET:
+class Jetson:
 	def __init__(self):
+		PIN = 15
+
+		GPIO.setmode(GPIO.BOARD)
+		GPIO.setup(PIN, GPIO.OUT, initial=GPIO.LOW)
+
 		rospy.init_node('jetson_node')
 		rospy.Subscriber('instron/command', Float64, self.cmd_instron)
 		self.instron_status_pub = rospy.Publisher("instron/status", String, queue_size=1)
@@ -52,29 +54,30 @@ class JET:
 		print('[DEBUG] Node initialized !!!')
 
 
+	def __del__(self):
+		GPIO.cleanup()
+		print('[DEBUG] Node is terminated !!!')
+
+
 	def pub_status(self, status):
 		status = str(status)
 		self.instron_status_pub.publish(status)
 
 
-	def wait_for_complete(self):
-		rospy.sleep(0.1)
-	
-
 	def cmd_instron(self, msg):
 		self.instron_cmd = int(msg.data)
 		print('[DEBUG] Instron command: {}'.format(cmd))
 		
-		if (self.instron_cmd == 1):
+		if self.instron_cmd == 1:
 			print('[DEBUG] Experiment - Initialization')
 			self.instron_status = 1 # 'start'
 			self.pub_status(self.instron_status)
-			self.wait_for_complete()
+			rospy.sleep(1.0)
 
 			print('[DEBUG] Experiment - Gripper close')
 			self.instron_status = 1 # 'gripper close'
 			self.pub_status(self.instron_status)
-			GPIO.output(IN1, GPIO.HIGH)	
+			GPIO.output(PIN, GPIO.HIGH)	
 
 			print('[DEBUG] Experiment - Setting')
 			self.instron_status = 1 # 'setting'
@@ -88,11 +91,11 @@ class JET:
 			self.pub_status(self.instron_status)
 
 
-		if (self.instron_cmd == 2):
+		if self.instron_cmd == 2:
 			print('[DEBUG] Experiment - Start')
 			self.instron_status = 2 # 'start'
 			self.pub_status(self.instron_status)
-			self.wait_for_complete()
+			rospy.sleep(1.0)
 
 			print('[DEBUG] Experiment - Running')
 			self.instron_status = 2 # 'running'
@@ -101,7 +104,7 @@ class JET:
 			self.uart.read_data()
 
 			print('[DEBUG] Experiment - Gripper open')
-			GPIO.output(IN1, False)
+			GPIO.output(PIN, False)
 			self.instron_status = 2 # 'gripper open'
 			self.pub_status(self.instron_status)
 
@@ -110,28 +113,16 @@ class JET:
 			self.instron_status = 0 # 'done'
 			self.pub_status(self.instron_status)
 
-		if (cmd == 3):
-			rospy.loginfo("Start_flag = %s",self.start_flag)
-			#do something ex) self.open_valve
-			#self.jetson_publisher.publish("finish")
-			self.wait_for_complete()
-			self.instron_flag = 0
-			print("FINISH")
+		if self.instron_cmd == 3:
+			pass
 		
 
 if __name__=='__main__':
 
-	GPIO.setmode(GPIO.BOARD)
-	GPIO.setup(IN1, GPIO.OUT, initial=GPIO.LOW)
-
-
-	j = JET()
-
+	jetson = Jetson()
 
 	while not rospy.is_shutdown():
 		pass
 
-
-	GPIO.cleanup()
 
 
