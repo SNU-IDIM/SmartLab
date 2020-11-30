@@ -70,6 +70,7 @@ if __name__ == "__main__":
     auto3dp = idimAutomation(folder_dir)
 
     ## Start automation
+
     # auto3dp.execute(script1)
     # auto3dp.execute(script2)
     # auto3dp.execute(script3)

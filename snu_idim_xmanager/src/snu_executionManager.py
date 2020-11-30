@@ -39,15 +39,15 @@ class StateMachine():
                           Param('xy_goal_tolerance','float','0.20'),
                           Param('yaw_goal_tolerance','float','0.05')]
 
-        self.jetson_status = None
+        self.instron_status = None
 
         rospy.init_node(ros_node_name, anonymous=True)
         self.client = actionlib.SimpleActionClient('/R_001/WAS', WorkFlowAction)
         self.client.wait_for_server(timeout=rospy.Duration(1))
         self.pnp_pub = rospy.Publisher("/R_001/ur_pnp", String, queue_size=1)
-        self.jetson_pub = rospy.Publisher("/pc_to_jetson", Float64, queue_size=1)
+        self.instron_cmd_pub = rospy.Publisher("/instron/command", String, queue_size=1)
         rospy.Subscriber("/R_001/ur_status", URStatus, self.dsr_status_cb, queue_size=1)
-        rospy.Subscriber("/jetson", String, self.jetson_cb, queue_size=1)
+        rospy.Subscriber("/instron/status", String, self.instron_cb, queue_size=1)
         rospy.sleep(3.0)
 
         print("-------------------------------------")
@@ -69,8 +69,8 @@ class StateMachine():
         else:
             self.dsr_flag = 0
 
-    def jetson_cb(self, msg):
-        self.jetson_status = msg.data
+    def instron_cb(self, msg):
+        self.instron_status = int(msg.data)
 
     '''
         addWorkAMR: add AMR Work to the Task
@@ -112,15 +112,16 @@ class StateMachine():
         self.waitforDSR(action_name, hold_time)
     
 
-    def JetsonComm(self, action_name, hold_time=1.0):
-        self.jetson_pub.publish(action_name)
+    def executeInstron(self, action_name, hold_time=1.0):
+        cmd = str(action_name)
+        self.instron_cmd_pub.publish(cmd)
         rospy.sleep(2)
-        self.waitforJetson(action_name, hold_time)
+        self.waitforInstron(cmd, hold_time)
 
-    def waitforJetson(self, action_name, hold_time):
+    def waitforInstron(self, action_name, hold_time):
         while(1):
             print('[Instron] Experiment Running ...')
-            if self.jetson_status == 'done':
+            if self.instron_status == 0:
                 break
         print("[Instron] Experiment({}) Completed !!!".format(action_name))
         rospy.sleep(hold_time)
@@ -161,11 +162,11 @@ if __name__ == '__main__':
     # # sm.executeAMR(work_name='Instron', target_pose=[3.016, -3.244, -1.622], hold_time=0.0)
     # # sm.executeDSR(TASK_SPECIMEN_PICK)
     # # sm.executeDSR(TASK_INSTRON_SEARCH)
-    # # sm.JetsonComm(10)
+    # # sm.executeInstron(10)
     # # sm.executeDSR(TASK_INSTRON_MOVEOUT, 3)
     # # sm.executeDSR(ACTION_HOME)
-    # # sm.JetsonComm(20)
-    # # sm.JetsonComm(30)
+    # # sm.executeInstron(20)
+    # # sm.executeInstron(30)
 
     # sm.executeDSR(ACTION_TOOLCHANGE_1_DETACH)
     # sm.executeDSR(ACTION_TOOLCHANGE_2_ATTACH)
@@ -206,14 +207,14 @@ if __name__ == '__main__':
     # sm.executeDSR(TASK_3DP_3_BED_IN)            # 22. 3DP 프링팅 베드 이동: 로봇 -> 프린터
     # sm.executeDSR(ACTION_HOME)                  # 23. Home position 이동
 
-    sm.executeDSR(TASK_INSTRON_SEARCH)          # 24. Instron 장비 referencing
-    sm.JetsonComm(10.0)                         # 25. Experiment start
-    rospy.sleep(3.0)
-    sm.executeDSR(TASK_INSTRON_MOVEOUT)         # 26. Gripper open & 실험 장면 촬영
-    sm.JetsonComm(20.0)
-    sm.executeDSR(ACTION_HOME)
+    # sm.executeDSR(TASK_INSTRON_SEARCH)          # 24. Instron 장비 referencing
+    sm.executeInstron(1)                         # 25. Experiment start
+    # rospy.sleep(3.0)
+    # sm.executeDSR(TASK_INSTRON_MOVEOUT)         # 26. Gripper open & 실험 장면 촬영
+    sm.executeInstron(2)
+    # sm.executeDSR(ACTION_HOME)
     # rospy.sleep(10.0)
-    # sm.JetsonComm(20.0)
+    # sm.executeInstron(20.0)
 
 
     
@@ -222,10 +223,10 @@ if __name__ == '__main__':
         ## specimen feeding test
         sm.executeDSR(TASK_PICK_PLACE_RACK_TEST)
         sm.executeDSR(TASK_INSTRON_SEARCH)
-        sm.JetsonComm(10.0)
+        sm.executeInstron(10.0)
         rospy.sleep(5.0)
         sm.executeDSR(TASK_INSTRON_MOVEOUT)
-        sm.JetsonComm(20.0)
+        sm.executeInstron(20.0)
         rospy.sleep(2.0)
     '''
 

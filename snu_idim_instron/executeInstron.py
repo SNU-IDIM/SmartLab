@@ -37,10 +37,10 @@ class autoInstron:
 					data = self.serial_port.readline().decode('utf-8').split('\n')[0]
 					print('[DEBUG] data: {}'.format(data))
 					if data == '0':
-						self.autoRun.execute('{}.txt'.format(scripts[0]))
+						self.autoRun.execute(scripts[0])
 						self.write_data()
 					elif data == '1':
-						self.autoRun.execute('{}.txt'.format(scripts[1]))
+						self.autoRun.execute(scripts[1])
 						self.write_data()
 
 
@@ -66,7 +66,7 @@ if __name__=='__main__':
 	
 	## Automation program setting
 	folder_dir = 'src'
-	scripts = ['start_experiment', 'end_experiment']
+	scripts = ['start_experiment.txt', 'end_experiment.txt']
 
 	## Create an instance (initialize)
 	autoInstron = autoInstron(port=port, baud=baud, folder_dir=folder_dir)
