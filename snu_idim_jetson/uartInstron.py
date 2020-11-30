@@ -4,7 +4,7 @@ import time
 import serial
 import rospy
 import Jetson.GPIO as GPIO
-from std_msgs.msg import Float64, String
+from std_msgs.msg import String
 
 
 
@@ -37,13 +37,13 @@ class UART:
 
 class Jetson:
 	def __init__(self):
-		PIN = 15
+		self.PIN = 15
 
 		GPIO.setmode(GPIO.BOARD)
-		GPIO.setup(PIN, GPIO.OUT, initial=GPIO.LOW)
+		GPIO.setup(self.PIN, GPIO.OUT, initial=GPIO.LOW)
 
 		rospy.init_node('jetson_node')
-		rospy.Subscriber('instron/command', Float64, self.cmd_instron)
+		rospy.Subscriber('instron/command', String, self.cmd_instron)
 		self.instron_status_pub = rospy.Publisher("instron/status", String, queue_size=1)
 
 		self.uart = UART()
@@ -66,7 +66,7 @@ class Jetson:
 
 	def cmd_instron(self, msg):
 		self.instron_cmd = int(msg.data)
-		print('[DEBUG] Instron command: {}'.format(cmd))
+		print('[DEBUG] Instron command: {}'.format(self.instron_cmd))
 		
 		if self.instron_cmd == 1:
 			print('[DEBUG] Experiment - Initialization')
@@ -77,7 +77,7 @@ class Jetson:
 			print('[DEBUG] Experiment - Gripper close')
 			self.instron_status = 1 # 'gripper close'
 			self.pub_status(self.instron_status)
-			GPIO.output(PIN, GPIO.HIGH)	
+			GPIO.output(self.PIN, GPIO.HIGH)	
 
 			print('[DEBUG] Experiment - Setting')
 			self.instron_status = 1 # 'setting'
@@ -104,7 +104,7 @@ class Jetson:
 			self.uart.read_data()
 
 			print('[DEBUG] Experiment - Gripper open')
-			GPIO.output(PIN, False)
+			GPIO.output(self.PIN, False)
 			self.instron_status = 2 # 'gripper open'
 			self.pub_status(self.instron_status)
 
