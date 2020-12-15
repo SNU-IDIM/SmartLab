@@ -34,17 +34,20 @@ from selenium.webdriver.common.by import By
 class Automate3DP:
     def __init__(self, device_name='printer0'):
         ## Common init for all devices
-        self.device_id = str(device_name.split('printer')[1])
+        self.device_id = int(device_name.split('printer')[1])
         self.status = dict()
         self.status['device_id'] = self.device_id
         self.status['connection'] = ''                                                                   
         
         ## Specialized init for the device (in this case, 3D printer)
-        self.driver = webdriver.Chrome(executable_path='chromedriver')
-        self.driver.get('http://0.0.0.0:500{}/?#temp'.format(self.device_id))
-        self.driver.find_element(By.ID, 'login-user').send_keys('wjyun')
-        self.driver.find_element(By.ID, 'login-password').send_keys('idimahn1')
-        self.driver.find_element(By.ID, 'login-button').click()
+        self.driver = webdriver.Chrome(executable_path='./chromedriver')
+        self.driver.get('http://0.0.0.0:500{}/?#temp'.format(self.device_id + 1))
+        try:
+            self.driver.find_element(By.ID, 'login-user').send_keys('smartlab')
+            self.driver.find_element(By.ID, 'login-password').send_keys('idimahn1')
+            self.driver.find_element(By.ID, 'login-button').click()
+        except:
+            pass
 
 
     def __del__(self):
@@ -149,41 +152,47 @@ class Automate3DP:
 
     
     def selectGcodeFile(self, folder_name='Smartlab', file_name=''):
-        self.waitUntilLoaded(by=By.CLASS_NAME, name='gcode_files');     sleep(1.0)
-        folders = self.driver.find_elements(By.XPATH, "//*[@class='gcode_files']/*[@class='scroll-wrapper']//*[@class='title clickable']")
-        for folder in folders:
-            if folder.text == folder_name:
-                folder.click()
-                break
+        self.waitUntilLoaded(by=By.ID, name='files');     sleep(1.0)
+        self.driver.find_element(By.XPATH, "//*[@id='files']//*[@type='search']").send_keys(file_name)
+
+        self.waitUntilLoaded(by=By.CLASS_NAME, name='title clickable');     sleep(1.0)
+        folders = self.driver.find_element(By.XPATH, "//*[@class='gcode_files']/*[@class='scroll-wrapper']//*[@class='title clickable']").click()
         
         self.waitUntilLoaded(by=By.CLASS_NAME, name='gcode_files');     sleep(1.0)
-
         flag = False
-        if flag == False:
-            files = self.driver.find_elements(By.XPATH, "//*[@class='gcode_files']//*[@class='title clickable']")
-            for f in files:
-                if f.text == file_name:
-                    print("[INFO] G-code file '{}' is selected".format(file_name))
-                    f.click()
-                    flag = True
-                    break
-        if flag == False:
-            files = self.driver.find_elements(By.XPATH, "//*[@class='gcode_files']//*[@class='title clickable text-error']")
-            for f in files:
-                if f.text == file_name:
-                    print("[INFO] G-code file '{}' is selected".format(file_name))
-                    f.click()
-                    flag = True
-                    break
-        if flag == False:
-            files = self.driver.find_elements(By.XPATH, "//*[@class='gcode_files']//*[@class='title clickable text-success']")
-            for f in files:
-                if f.text == file_name:
-                    print("[INFO] G-code file '{}' is selected".format(file_name))
-                    f.click()
-                    flag = True
-                    break
-        sleep(1.0)
+        while flag == False:
+            try:
+                self.waitUntilLoaded(by=By.CLASS_NAME, name='title clickable')
+                folders = self.driver.find_element(By.XPATH, "//*[@class='gcode_files']/*[@class='scroll-wrapper']//*[@class='title clickable']").click()
+            except:
+                if flag == False:
+                    files = self.driver.find_elements(By.XPATH, "//*[@class='gcode_files']//*[@class='title clickable']")
+                    for f in files:
+                        if f.text == file_name:
+                            print("[INFO] G-code file '{}' is selected".format(file_name))
+                            f.click()
+                            flag = True
+                            break
+                if flag == False:
+                    files = self.driver.find_elements(By.XPATH, "//*[@class='gcode_files']//*[@class='title clickable text-error']")
+                    for f in files:
+                        if f.text == file_name:
+                            print("[INFO] G-code file '{}' is selected".format(file_name))
+                            f.click()
+                            flag = True
+                            break
+                if flag == False:
+                    files = self.driver.find_elements(By.XPATH, "//*[@class='gcode_files']//*[@class='title clickable text-success']")
+                    for f in files:
+                        if f.text == file_name:
+                            print("[INFO] G-code file '{}' is selected".format(file_name))
+                            f.click()
+                            flag = True
+                            break
+                            
+        self.waitUntilLoaded(by=By.CLASS_NAME, name='search-clear');     sleep(1.0)
+        self.driver.find_element(By.CLASS_NAME, 'search-clear').click()
+        
 
 
     def waitUntilLoaded(self, by=By.ID, name='state', timeout=5.0):
@@ -191,8 +200,11 @@ class Automate3DP:
             element_present = EC.presence_of_element_located((by, name))
             WebDriverWait(self.driver, timeout).until(element_present)
             sleep(1.0)
+            return True
+
         except TimeoutException:
             print("[ERROR] Timed out waiting for page to load")
+            return False
 
 
 
@@ -200,7 +212,7 @@ class Automate3DP:
 
 if __name__ == '__main__':  
 
-    printer = Automate3DP(device_name='printer0')
+    printer = Automate3DP(device_name='printer1')
     
     print("[DEBUG] 1. Connect printer")
     cmd = dict()
@@ -209,7 +221,7 @@ if __name__ == '__main__':
 
     print("[DEBUG] 2. Print start")
     cmd = dict()
-    cmd['print'] = '191220_simple_test.gcode'
+    cmd['print'] = 'AET4_2f_85_link1_l.gcode'
     printer.command(cmd)
 
     print("[DEBUG] 3. Cancel printing")
