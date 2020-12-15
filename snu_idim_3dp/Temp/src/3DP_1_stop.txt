@@ -1,0 +1,4 @@
+program,3
+tab,1
+click,1,cancel
+click,1,cancel_yes
