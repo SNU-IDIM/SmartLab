@@ -75,22 +75,26 @@ class Automate3DP:
                 if data.text.find('Bed') != -1:
                     self.status['bed_temperature'] = float(data.text.split('Bed')[1].split('C')[0][1:-1].encode('utf8'))
 
-            print("\n[INFO] 3D Printer Status (#{})".format(self.device_id))
-            print("\n  * Device:")
-            print("    - Status: {}".format(self.status['connection']))
-            print("    - File: {}".format(self.status['percentage']))
-            print("    - Send ratio: {}".format(self.status['gcode_name']))
-            print("    - Total time: {}".format(self.status['time_total']))
-            print("    - Time elapsed: {}".format(self.status['time_elapsed']))
-            print("    - Time left: {}".format(self.status['time_left']))
-
-            print("\n  * Temperature:")
-            print("    - Nozzle: {}".format(self.status['nozzle_temperature']))
-            print("    - Bed: {}".format(self.status['bed_temperature']))
+            self.printStatus(self.status)
+            
         except:
             print("[ERROR] Status data loaded failed !!!")
         
         return self.status
+    
+    def printStatus(self, status):
+            print("\n[INFO] 3D Printer Status (#{})".format(self.device_id))
+            print("\n  * Device:")
+            print("    - Status: {}".format(status['connection']))
+            print("    - File: {}".format(status['percentage']))
+            print("    - Send ratio: {}".format(status['gcode_name']))
+            print("    - Total time: {}".format(status['time_total']))
+            print("    - Time elapsed: {}".format(status['time_elapsed']))
+            print("    - Time left: {}".format(status['time_left']))
+
+            print("\n  * Temperature:")
+            print("    - Nozzle: {}".format(status['nozzle_temperature']))
+            print("    - Bed: {}".format(status['bed_temperature']))
 
 
     def command(self, cmd_dict):
@@ -152,13 +156,13 @@ class Automate3DP:
 
     
     def selectGcodeFile(self, folder_name='Smartlab', file_name=''):
-        self.waitUntilLoaded(by=By.ID, name='files');     sleep(1.0)
+        self.waitUntilLoaded(by=By.ID, name='files') #;     sleep(1.0)
         self.driver.find_element(By.XPATH, "//*[@id='files']//*[@type='search']").send_keys(file_name)
 
-        self.waitUntilLoaded(by=By.CLASS_NAME, name='title clickable');     sleep(1.0)
+        self.waitUntilLoaded(by=By.CLASS_NAME, name='title clickable') #;     sleep(1.0)
         folders = self.driver.find_element(By.XPATH, "//*[@class='gcode_files']/*[@class='scroll-wrapper']//*[@class='title clickable']").click()
         
-        self.waitUntilLoaded(by=By.CLASS_NAME, name='gcode_files');     sleep(1.0)
+        self.waitUntilLoaded(by=By.CLASS_NAME, name='gcode_files') #;     sleep(1.0)
         flag = False
         while flag == False:
             try:
@@ -189,7 +193,7 @@ class Automate3DP:
                             f.click()
                             flag = True
                             break
-                            
+
         self.waitUntilLoaded(by=By.CLASS_NAME, name='search-clear');     sleep(1.0)
         self.driver.find_element(By.CLASS_NAME, 'search-clear').click()
         
