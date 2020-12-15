@@ -10,4 +10,4 @@ from Automate3DP import Automate3DP
 
 if __name__ == "__main__":
     device_name = 'printer1'
-    printer0_node = DeviceHUB(device_name='device_name', device_class=Automate3DP(device_name))
+    printer0_node = DeviceHUB(device_name=device_name, device_class=Automate3DP(device_name))
