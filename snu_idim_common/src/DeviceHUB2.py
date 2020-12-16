@@ -67,12 +67,12 @@ class DeviceHUB:
         # print("[INFO] Received 'status_dict': \n{}".format(self.device_status))
 
 
-    def sendCommand(self, cmd_dict):
+    def manager_sendCommand(self, cmd_dict):
         cmd_json = json.dumps(cmd_dict)
         self.manager_cmd_publisher.publish(cmd_json)
 
 
-    def getStatus(self):
+    def manager_getStatus(self):
         # print("[INFO] Current 'status_dict': \n{}".format(self.device_status))
         return self.device_status
 

@@ -1,0 +1,154 @@
+*   [33md574ee0[m[33m ([m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m Merge pull request #12 from kyuwhaLee/DOE_KW
+[31m|[m[32m\[m  
+[31m|[m * [33mf96ec4d[m[33m ([m[1;31morigin/DOE_KW[m[33m)[m doe 작업완료 (이규화, 20.12.15)
+[31m|[m[31m/[m  
+*   [33m9505703[m Merge pull request #11 from YWJae/Xmanager
+[33m|[m[34m\[m  
+* [34m\[m   [33m2a33cde[m Merge pull request #10 from YWJae/Xmanager
+[35m|[m[36m\[m [34m\[m  
+[35m|[m * [34m\[m   [33m015cdea[m Merge branch 'master' into Xmanager
+[35m|[m [1;31m|[m[35m\[m [34m\[m  
+[35m|[m [1;31m|[m[35m/[m [34m/[m  
+[35m|[m[35m/[m[1;31m|[m [34m|[m   
+* [1;31m|[m [34m|[m   [33m438edd0[m Merge pull request #9 from YWJae/Jetson
+[1;33m|[m[1;34m\[m [1;31m\[m [34m\[m  
+[1;33m|[m * [1;31m|[m [34m|[m [33m5cc30e7[m Jetson 수정,테스트 완료 (20.11.30)
+* [1;34m|[m [1;31m|[m [34m|[m   [33mc52abae[m Merge pull request #8 from YWJae/3DP
+[1;35m|[m[1;34m\[m [1;34m\[m [1;31m\[m [34m\[m  
+[1;35m|[m [1;34m|[m[1;34m/[m [1;31m/[m [34m/[m  
+[1;35m|[m * [1;31m|[m [34m|[m [33m125f15c[m 3DP, Instron fixed, should be tested before merging (20.11.30)
+[1;35m|[m * [1;31m|[m [34m|[m [33mdd4e9f7[m working... (20.11.30)
+[1;35m|[m[1;35m/[m [1;31m/[m [34m/[m  
+[1;35m|[m [1;31m|[m [34m|[m * [33mbef8f2a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mXmanager[m[33m, [m[1;31morigin/Xmanager[m[33m)[m 오타 수정
+[1;35m|[m [1;31m|[m [34m|[m * [33m1843422[m 3d printer 작업 완료 (20.12.15)
+[1;35m|[m [1;31m|[m [34m|[m * [33m0a62189[m 3DP automation, Device, ROS 노드 클래스 작성중 (20.12.11)
+[1;35m|[m [1;31m|[m [34m|[m[34m/[m  
+[1;35m|[m [1;31m|[m * [33mdd205c6[m 3DP selinium 작업중 (20.12.10)
+[1;35m|[m [1;31m|[m[1;31m/[m  
+[1;35m|[m * [33ma18d932[m Xmanager 수정, 테스트 완료 (20.11.30)
+[1;35m|[m[1;35m/[m  
+*   [33m8892a4f[m Merge pull request #7 from YWJae/Xmanager
+[32m|[m[33m\[m  
+[32m|[m * [33mac052cc[m Xmanager task 테스트 완료 (20.11.27)
+* [33m|[m   [33m2b67c08[m Merge pull request #6 from YWJae/Jetson
+[34m|[m[35m\[m [33m\[m  
+[34m|[m * [33m|[m [33m42801bc[m Jetson tested! (20.11.27)
+[34m|[m * [33m|[m [33mf473755[m serial write encode edited (20.11.27)
+* [35m|[m [33m|[m   [33md655ce0[m Merge pull request #5 from YWJae/Instron
+[36m|[m[1;31m\[m [35m\[m [33m\[m  
+[36m|[m * [35m|[m [33m|[m [33mf3398db[m 실험 테스트 완료 (20.11.27)
+[36m|[m * [35m|[m [33m|[m [33m61558bb[m wait 등 추가 (20.11.27)
+[36m|[m * [35m|[m [33m|[m [33m518859e[m 통신문제 해결, 폴더 사진 추가 (20.11.27)
+[36m|[m[36m/[m [35m/[m [33m/[m  
+* [35m|[m [33m|[m   [33m57b83e1[m Merge pull request #2 from YWJae/Instron
+[1;32m|[m[1;33m\[m [35m\[m [33m\[m  
+[1;32m|[m * [35m|[m [33m|[m [33mdae4eb6[m Instron tested complete (20.11.25)
+[1;32m|[m * [35m|[m [33m|[m [33m6da2ebd[m Working on Instron (should be tested tommorrow (20.11.24)
+* [1;33m|[m [35m|[m [33m|[m [33m6665985[m Update README.md
+* [1;33m|[m [35m|[m [33m|[m [33m8c37cef[m Update README.md
+* [1;33m|[m [35m|[m [33m|[m   [33m06356ff[m Merge pull request #4 from YWJae/Jetson
+[1;34m|[m[35m\[m [1;33m\[m [35m\[m [33m\[m  
+[1;34m|[m [35m|[m [1;33m|[m[35m/[m [33m/[m  
+[1;34m|[m [35m|[m[35m/[m[1;33m|[m [33m|[m   
+[1;34m|[m * [1;33m|[m [33m|[m [33mac5c81e[m change in jetson code (20.11.25)
+* [1;35m|[m [1;33m|[m [33m|[m   [33mb73e338[m Merge pull request #3 from YWJae/Xmanager
+[1;36m|[m[33m\[m [1;35m\[m [1;33m\[m [33m\[m  
+[1;36m|[m [33m|[m [1;35m|[m[33m_[m[1;33m|[m[33m/[m  
+[1;36m|[m [33m|[m[33m/[m[1;35m|[m [1;33m|[m   
+[1;36m|[m * [1;35m|[m [1;33m|[m [33mf435490[m Xmanager 수정 (20.11.27)
+[1;36m|[m[1;36m/[m [1;35m/[m [1;33m/[m  
+* [1;35m|[m [1;33m|[m [33md6bea3c[m[33m ([m[1;32mmaster[m[33m)[m Update README.md
+* [1;35m|[m [1;33m|[m [33m8f156ac[m Create README.md
+[1;33m|[m [1;35m|[m[1;33m/[m  
+[1;33m|[m[1;33m/[m[1;35m|[m   
+* [1;35m|[m [33me9f71e5[m 3D printer done (20.11.24)
+[1;35m|[m[1;35m/[m  
+* [33mc8a886c[m Jetson, 3DP 코드 추가 (수정 필요) (20.11.23)
+* [33m4c8b59d[m Xmanager 소스파일 permission 변경 (20.11.23)
+* [33mf35d910[m[33m ([m[1;31morigin/merged[m[33m)[m Smart Lab 모든 코드 통합 (20.11.23)
+* [33m643839d[m[33m ([m[1;31morigin/RobotArm_PC[m[33m)[m Printer, Instron handling 완료 (20.11.22)
+* [33m5e83268[m Instron 까지 작업 완료 (20.11.20)
+*   [33m073cb32[m Merge pull request #1 from YWJae/RobotArm_PC_ARtag_work
+[32m|[m[33m\[m  
+[32m|[m * [33m2ea6989[m AR Tag 정리 완료 (20.11.16)
+[32m|[m [33m|[m * [33m35792a7[m[33m ([m[1;31morigin/RobotArm_PC_201116[m[33m)[m DRL Interface 코드 정리중 (20.11.16)
+[32m|[m [33m|[m[33m/[m  
+[32m|[m * [33m9c8c39d[m AR Tag 버그 해결 (20.11.10)
+[32m|[m * [33m77132e9[m AR Tag 수정전 백업(20.11.04)
+[32m|[m * [33m06e0885[m compliance mode 해결 (20.08.17)
+[32m|[m * [33mc4523e7[m minor 수정
+[32m|[m * [33m1dd69af[m 20.09.16
+[32m|[m * [33m856d0a2[m 20.09.15
+[32m|[m * [33mf70df6f[m 규화씨 코드 개발 완료 (20.09.11)
+[32m|[m * [33m4190b6e[m Task 통합중 (20.09.04)
+[32m|[m * [33m0ce1735[m Color sensor 작업중 (20.09.04)
+[32m|[m * [33mfc0ee7c[m AR target 대폭수정 (20.08.31)
+[32m|[m[32m/[m  
+* [33m20d50c9[m 3DP handling 완성 (20.08.28)
+* [33m7c41c29[m 3dp handling 테스트 완료 (20.08.26)
+*   [33m98dca64[m Merge branch 'RobotArm_PC' of https://github.com/YWJae/SNU_IDIM_ASMR into RobotArm_PC_200723
+[35m|[m[36m\[m  
+[35m|[m *   [33m5f65ee7[m 현재까지 개발된 코드 정리 완료 (20.08.11)
+[35m|[m [1;31m|[m[1;32m\[m  
+[35m|[m [1;31m|[m * [33md5e1a00[m IDIM_framework: AMR 통합 (20.07.20)
+* [1;31m|[m [1;32m|[m [33m6c47761[m Tool Changer 위치 수정
+[1;31m|[m[1;31m/[m [1;32m/[m  
+* [1;32m|[m [33m795805b[m 이규화 Vision 작업중 (20.08.10)
+* [1;32m|[m [33md6b48ce[m Tool Changer 완성 (20.08.06)
+* [1;32m|[m [33mdbf2215[m 20.08.06
+* [1;32m|[m [33m303b9a2[m ToolChanger 완성 (20.08.04)
+* [1;32m|[m [33mc551622[m 코드 정리중 - toolchanging 부분 추가 수정 필요 (20.08.03)
+* [1;32m|[m [33m99ed692[m 20.08.03 Demo 완성 (10007, 10010)
+* [1;32m|[m [33m039817c[m temp
+[1;32m|[m[1;32m/[m  
+* [33mb34c526[m 이전 작업파일 따로 보관, Joystick control 수정필요 (20.07.17)
+* [33m22e9d95[m I/O interface 내용 -
+* [33m152e4d1[m Instron Complete (책상 옮기기 전)
+* [33m824dfab[m IDIM Action -> string to int (20.07.08
+* [33mdd40335[m OK
+* [33m4a0f573[m IDIM Framework 정리 (20.07.06)
+* [33m9807cdf[m 임시 commit (20.07.06)
+* [33me679f4f[m SNU DEMO
+* [33m5e27bd9[m 3DP Completedgit add --a! (20.03.12)
+* [33m4913291[m 3d printer 작업중 (20.02.25)
+* [33m8264a9d[m DRL 작업중2 (19.02.24)
+* [33m72e43f4[m DRL Interface 작업중 (20.02.19)
+* [33mb8aa5f4[m snu_moveit_commander.py -> demo.launch에서 빼고 initialize.launch에만 넣음 // 파일 이름 수정 (19.12.18)
+* [33m3ad6032[m launch파일 삭제/수정/정리, 초기화 시 demo.launch 실행 추가 (19.12.18)
+* [33m3ab5fb4[m launch 파일 정리, snu_object_tracker.py 수정(default parameters) (19.12.18)
+* [33ma509d7c[m doosan-robot 1.0 업데이트 이후 발생한 문제 해결(로봇 모드 관련) (19.12.06)
+* [33m432a04c[m 3D Printer 실험 완료 (19.12.04)
+* [33mc02844e[m 3D printer workpiece pick 개발중 (19.12.04)
+* [33m0ab78ac[m Multiple AR Markers 테스트중 // snu_object_tracker.py: 튜닝 가능하도록 parameter 뚫어놓음 // DSR API 사용 고려중 (19.12.03)
+* [33md4cd32f[m Joystick: Compressor, Toolchanger 추가 (19.12.02)
+* [33m0c8524e[m DSR 1.0 적용 테스트 완료 (중간중간 e-stop 되는 현상 발생) (19.11.29)
+* [33m9030f07[m Flange Control까지 완료 (Service에 변경사항이 있었음) (19.11.29)
+* [33m921c88f[m launch file -> single camera로 변경 (19.11.29)
+* [33m779ae42[m snu_object_tracker.py 마이너 수정 (코드정리) (19.11.27)
+* [33mdac30fe[m 위치정밀도 실험중... (19.11.22)
+* [33m0d5f532[m snu_object_tracker.py 개발중(버그 수정) (19.11.22)
+* [33m5f4227a[m 개발 파일 권한 수정
+* [33m731ebf1[m find_2d_object 실험을 위한 작업 진행중 (19.11.22)
+* [33me00ea4d[m Update README.md
+* [33mbe44fed[m Update README.md
+* [33m1322ba5[m Update README.md
+* [33m137fcc6[m Create README.md
+* [33mf705df6[m single/bundle ar-tag 분리 (19.11.13)
+* [33m36bf6a1[m Multiple AR Tag 실험중 (19.11.13)
+* [33m5d81922[m 두산로봇 wait for complete motion 추가 (19.11.04)
+* [33mdfc6e35[m Demo Ver.1 (time delay) (19.10.28)
+* [33mbc7787c[m ARtag->25mm 변경, Demo 작업중, reference(base_0->link6) 바꿔서 테스트 필요 (19.10.14)
+* [33mc90092e[m AR Tracking 개발중 (tag 별 tracking 개발 필요) (19.10.02)
+* [33mcf1d570[m 에러 수정(19.10.02)
+* [33mf08be20[m ar tracker working (cmd_moveit_cb ...)
+* [33m1c43afd[m gripper, namespace work (19.09.23)
+* [33m04f736e[m working on: ar_tracker -> dsr moveit (19.09.16)
+* [33mcbcc4c9[m first commit (19.09.10)
+* [33m1a90cdd[m[33m ([m[1;31morigin/External_PC[m[33m)[m Instron 완성 후 commit (20.07.13)
+* [33m8efa231[m 20.07.09
+* [33m372eeb3[m amr initialize @ rosbridge (19.11.04)
+* [33m730b1bb[m 배터리 값 모니터링 추가 (19.09.20)
+* [33m5a2d927[m 조이스틱 -> AMR, 두산로봇 통합중
+* [33m7018d4f[m first commit (19.09.03)
+* [33md4054e1[m[33m ([m[1;31morigin/snu_dsr_interface[m[33m)[m backup (20.01.08)
+* [33m9a88116[m first commit (19.12.18)
