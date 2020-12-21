@@ -31,19 +31,24 @@ from selenium.webdriver.common.by import By
 '''
 
 
-class Automate3DP:
+class DeviceClass_3DP:
     def __init__(self, device_name='printer0'):
         ## Common init for all devices
         self.device_id = int(device_name.split('printer')[1])
         self.status = dict()
-        self.status['device_id'] = self.device_id
-        self.status['connection'] = ''                                                                   
+        self.status['device_name'] = device_name
+        self.status['connection'] = ''
+        self.status['subject_name'] = ''
+        self.status['process'] = ''
+        self.status['recent_work'] = ''
         
         ## Specialized init for the device (in this case, 3D printer)
-        self.driver = webdriver.Chrome(executable_path='./chromedriver')
-        self.driver.get('http://0.0.0.0:500{}/?#temp'.format(self.device_id + 1))
+        executable_path = os.path.join('../snu_idim_3dp', 'chromedriver_81.0.4044.92')
+        print(executable_path)
+        self.driver = webdriver.Chrome(executable_path=executable_path)
+        self.driver.get('http://0.0.0.0:500{}/?#temp'.format(self.device_id))
         try:
-            self.driver.find_element(By.ID, 'login-user').send_keys('smartlab')
+            self.driver.find_element(By.ID, 'login-user').send_keys('wjyun')
             self.driver.find_element(By.ID, 'login-password').send_keys('idimahn1')
             self.driver.find_element(By.ID, 'login-button').click()
         except:
@@ -160,8 +165,8 @@ class Automate3DP:
         self.waitUntilLoaded(by=By.ID, name='files') #;     sleep(1.0)
         self.driver.find_element(By.XPATH, "//*[@id='files']//*[@type='search']").send_keys(file_name)
 
-        self.waitUntilLoaded(by=By.CLASS_NAME, name='title clickable') #;     sleep(1.0)
-        folders = self.driver.find_element(By.XPATH, "//*[@class='gcode_files']/*[@class='scroll-wrapper']//*[@class='title clickable']").click()
+        # self.waitUntilLoaded(by=By.CLASS_NAME, name='title clickable') #;     sleep(1.0)
+        # folders = self.driver.find_element(By.XPATH, "//*[@class='gcode_files']/*[@class='scroll-wrapper']//*[@class='title clickable']").click()
         
         self.waitUntilLoaded(by=By.CLASS_NAME, name='gcode_files') #;     sleep(1.0)
         flag = False
@@ -217,7 +222,7 @@ class Automate3DP:
 
 if __name__ == '__main__':  
 
-    printer = Automate3DP(device_name='printer1')
+    printer = DeviceClass_3DP(device_name='printer0')
     
     print("[DEBUG] 1. Connect printer")
     cmd = dict()
@@ -226,7 +231,7 @@ if __name__ == '__main__':
 
     print("[DEBUG] 2. Print start")
     cmd = dict()
-    cmd['print'] = 'AET4_2f_85_link1_l.gcode'
+    cmd['print'] = '191220_simple_test.gcode'
     printer.command(cmd)
 
     print("[DEBUG] 3. Cancel printing")
