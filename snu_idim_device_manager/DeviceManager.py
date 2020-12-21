@@ -34,36 +34,49 @@ def printStatus3DP(device_list):
             print("[ERROR]")
 
 
+def printingManager(device_list):
+    n_printer = 0
+    printer_idx = []
+    for i in range(len(device_list)):
+        n_printer += 1 if device_list[i].getStatus()['device_type'] == '3D Printer' else n_printer
+    print("[DEBUG] # of 3D Printers: {}".format(n_printer))
+
+
+def addDevice(device_dict, device_name):
+    device_dict[device_name] = DevicePluginToROS(device_name=device_name, device_class=None)
+
 
 if __name__ == '__main__':
 
     rospy.init_node('DeviceHUB')
-
+    print_queue = []
     device_list = []
+    device_dict = dict()
 
-    device0 = DevicePluginToROS(device_name='printer0', device_class=None);    device_list.append(device0)
-    device1 = DevicePluginToROS(device_name='printer1', device_class=None);    device_list.append(device1)
-    device2 = DevicePluginToROS(device_name='printer2', device_class=None);    device_list.append(device2)
-    # device_3 = DevicePluginToROS(device_name='printer3', device_class=None);    device_list.append(device_3)
-
+    addDevice(device_dict, 'printer0')
+    # addDevice(device_dict, 'printer1')
+    # addDevice(device_dict, 'printer2')
+    # addDevice(device_dict, 'printer3')
+    rospy.sleep(5.0)
     
 
-    device_name_list = []
-    for device in device_list:
-        device_name_list.append(device.device_name)
 
-    print("[INFO - DeviceHUB] # of connected device: {}".format(len(device_list)))
-    print("[INFO - DeviceHUB] Device list: {}".format(device_name_list))
+    print("[INFO - DeviceHUB] # of connected device: {}".format(len(device_dict)))
+    print("[INFO - DeviceHUB] Device list: {}".format(device_dict.keys()))
+
+    n_printer = 0
+    printer_idx = []
+    for i in range(len(device_dict)):
+        n_printer += 1 if device_dict[device_dict.keys()[i]].getStatus()['device_type'] == '3D Printer' else n_printer
+    print("[INFO - DeviceHUB] # of 3D Printers: {}".format(n_printer))
+
     
-    rospy.sleep(5.0)
-    device0.sendCommand({'connection': True})
-    device1.sendCommand({'connection': True})
-    device2.sendCommand({'connection': True})
+    device_dict['printer0'].sendCommand({'connection': True})
+
 
     rospy.sleep(5.0)
-    device0.sendCommand({'print': 'connection_test.gcode'})
-    device1.sendCommand({'print': 'connection_test.gcode'})
-    device2.sendCommand({'print': 'connection_test.gcode'})
+    device_dict['printer0'].sendCommand({'print': '201122_feedrate_test'})
+
 
     while True:
         # device_list[0].sendCommand({'connection': True})

@@ -36,10 +36,11 @@ class DeviceClass_3DP:
         ## Common init for all devices
         self.device_id = int(device_name.split('printer')[1])
         self.status = dict()
+        self.status['device_type'] = '3D Printer'
         self.status['device_name'] = device_name
         self.status['connection'] = ''
         self.status['subject_name'] = ''
-        self.status['process'] = ''
+        self.status['status'] = ''
         self.status['recent_work'] = ''
         
         ## Specialized init for the device (in this case, 3D printer)
@@ -67,6 +68,20 @@ class DeviceClass_3DP:
         temperature_table   = self.driver.find_element(By.XPATH, "//*[@id='temperature-table']/tbody").find_elements(By.TAG_NAME, "tr")
 
         try:
+            ## 'status' : '' -> 'Idle'
+            self.status['status'] = 'Idle' if self.status['status'] == '' and self.status['connection'] == 'Operational'  else self.status['status']
+
+            ## 'status' : 'Idle' -> 'Printing {subject_name}'
+            if self.status['connection'].find('Printing') != -1 and self.status['status'].find('Printing') == -1:
+                self.status['recent_work'] = self.status['subject_name']
+                self.status['subject_name'] = self.status['gcode_name']
+                self.status['status'] = "Printing {}".format(self.status['subject_name'])
+                print("[DEBUG] Status: {}".format(self.status['status']))
+        
+            ## 'status' : 'Printing {subject_name}' -> 'Done {subject_name}'
+            if self.status['status'].find('Printing') != -1 and self.status['connection'] == 'Operational':
+                self.status['status'] = 'Done {}'.format(self.status['subject_name'])
+
             self.status['connection']   = device_status_table[0].text
             self.status['percentage']   = device_status_table[1].text
             self.status['gcode_name']   = device_status_table[2].text
@@ -79,8 +94,15 @@ class DeviceClass_3DP:
                     self.status['nozzle_temperature'] = float(data.text.split('Tool')[1].split('C')[0][1:-1].encode('utf8'))
                 if data.text.find('Bed') != -1:
                     self.status['bed_temperature'] = float(data.text.split('Bed')[1].split('C')[0][1:-1].encode('utf8'))
-
-            self.printStatus(self.status)
+            
+            print("\n==============================================================")
+            print("[DEBUG] Device type: {}".format(self.status['device_type']))
+            print("[DEBUG] Device name: {}".format(self.status['device_name']))
+            print("[DEBUG] Connection: {}".format(self.status['connection']))
+            print("[DEBUG] Status: {}".format(self.status['status']))
+            print("[DEBUG] Subject name: {}".format(self.status['subject_name']))
+            print("[DEBUG] Recent work: {}".format(self.status['recent_work']))
+            # self.printStatus(self.status)
             
         except:
             print("[ERROR] Status data loaded failed !!!")
@@ -162,6 +184,7 @@ class DeviceClass_3DP:
 
     
     def selectGcodeFile(self, folder_name='Smartlab', file_name=''):
+        file_name = '{}.gcode'.format(file_name)
         self.waitUntilLoaded(by=By.ID, name='files') #;     sleep(1.0)
         self.driver.find_element(By.XPATH, "//*[@id='files']//*[@type='search']").send_keys(file_name)
 
@@ -222,25 +245,21 @@ class DeviceClass_3DP:
 
 if __name__ == '__main__':  
 
-    printer = DeviceClass_3DP(device_name='printer0')
+    printer = DeviceClass_3DP(device_name='3DP-0')
     
     print("[DEBUG] 1. Connect printer")
-    cmd = dict()
-    cmd['connection'] = True
-    printer.command(cmd)
+    printer.command({'connection': True})
 
     print("[DEBUG] 2. Print start")
-    cmd = dict()
-    cmd['print'] = '191220_simple_test.gcode'
-    printer.command(cmd)
+    printer.command({'print': '201122_feedrate_test'})
 
-    print("[DEBUG] 3. Cancel printing")
-    cmd = dict()
-    cmd['cancel'] = True
-    printer.command(cmd)
+    while True:
+        printer.updateStatus()
+        sleep(1.0)
 
-    print("[DEBUG] 4. Disconnect printer")
-    cmd = dict()
-    cmd['connection'] = False
-    printer.command(cmd)
+    # print("[DEBUG] 3. Cancel printing")
+    # printer.command({'cancel': True})
+
+    # print("[DEBUG] 4. Disconnect printer")
+    # printer.command({'connection': False})
 
