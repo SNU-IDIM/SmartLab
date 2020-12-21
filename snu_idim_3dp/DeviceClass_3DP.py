@@ -4,6 +4,7 @@
 import os
 from time import sleep
 import json
+from threading import Thread
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -42,6 +43,8 @@ class DeviceClass_3DP:
         self.status['subject_name'] = ''
         self.status['status'] = ''
         self.status['recent_work'] = ''
+
+        self.status['gcode_file'] = ''
         
         ## Specialized init for the device (in this case, 3D printer)
         executable_path = os.path.join('../snu_idim_3dp', 'chromedriver_81.0.4044.92')
@@ -55,6 +58,10 @@ class DeviceClass_3DP:
         except:
             pass
 
+        thread_1 = Thread(target=self.updateStatus)
+        thread_1.start()
+        # thread_1.join()
+
 
     def __del__(self):
         ## Specialized del for the device (in this case, 3D printer)
@@ -62,59 +69,60 @@ class DeviceClass_3DP:
 
 
     def updateStatus(self):
-        self.waitUntilLoaded(By.ID, 'state')
-        device_status_table = self.driver.find_element(By.ID, 'state').find_elements(By.TAG_NAME, 'strong')
-        self.waitUntilLoaded(By.ID, 'temperature-table')
-        temperature_table   = self.driver.find_element(By.XPATH, "//*[@id='temperature-table']/tbody").find_elements(By.TAG_NAME, "tr")
+        while True:
+            self.waitUntilLoaded(By.ID, 'state')
+            device_status_table = self.driver.find_element(By.ID, 'state').find_elements(By.TAG_NAME, 'strong')
+            self.waitUntilLoaded(By.ID, 'temperature-table')
+            temperature_table   = self.driver.find_element(By.XPATH, "//*[@id='temperature-table']/tbody").find_elements(By.TAG_NAME, "tr")
 
-        try:
-            ## 'status' : '' -> 'Idle'
-            self.status['status'] = 'Idle' if self.status['status'] == '' and self.status['connection'] == 'Operational'  else self.status['status']
+            try:
+                ## 'status' : '' -> 'Idle'
+                self.status['status'] = 'Idle' if self.status['status'] == '' and self.status['connection'] == 'Operational'  else self.status['status']
 
-            ## 'status' : 'Idle' -> 'Printing {subject_name}'
-            if self.status['connection'].find('Printing') != -1 and self.status['status'].find('Printing') == -1:
-                self.status['recent_work'] = self.status['subject_name']
-                self.status['subject_name'] = self.status['gcode_name']
-                self.status['status'] = "Printing {}".format(self.status['subject_name'])
+                ## 'status' : 'Idle' -> 'Printing {subject_name}'
+                if self.status['connection'].find('Printing') != -1 and self.status['status'].find('Printing') == -1:
+                    self.status['recent_work'] = self.status['subject_name']
+                    self.status['subject_name'] = self.status['gcode_file']
+                    self.status['status'] = "Printing {}".format(self.status['subject_name'])
+                    print("[DEBUG] Status: {}".format(self.status['status']))
+            
+                ## 'status' : 'Printing {subject_name}' -> 'Done {subject_name}'
+                if self.status['status'].find('Printing') != -1 and self.status['connection'] == 'Operational':
+                    self.status['status'] = 'Done {}'.format(self.status['subject_name'])
+
+                self.status['connection']   = device_status_table[0].text
+                self.status['percentage']   = device_status_table[1].text
+                self.status['gcode_file']   = device_status_table[2].text
+                self.status['time_total']   = device_status_table[7].text
+                self.status['time_elapsed'] = device_status_table[8].text
+                self.status['time_left']    = device_status_table[9].text
+
+                for data in temperature_table:
+                    if data.text.find('Tool') != -1:
+                        self.status['nozzle_temperature'] = float(data.text.split('Tool')[1].split('C')[0][1:-1].encode('utf8'))
+                    if data.text.find('Bed') != -1:
+                        self.status['bed_temperature'] = float(data.text.split('Bed')[1].split('C')[0][1:-1].encode('utf8'))
+                
+                print("\n==============================================================")
+                print("[DEBUG] Device type: {}".format(self.status['device_type']))
+                print("[DEBUG] Device name: {}".format(self.status['device_name']))
+                print("[DEBUG] Connection: {}".format(self.status['connection']))
                 print("[DEBUG] Status: {}".format(self.status['status']))
+                print("[DEBUG] Subject name: {}".format(self.status['subject_name']))
+                print("[DEBUG] Recent work: {}".format(self.status['recent_work']))
+                # self.printStatus(self.status)
+                
+            except:
+                print("[ERROR] Status data loaded failed !!!")
         
-            ## 'status' : 'Printing {subject_name}' -> 'Done {subject_name}'
-            if self.status['status'].find('Printing') != -1 and self.status['connection'] == 'Operational':
-                self.status['status'] = 'Done {}'.format(self.status['subject_name'])
-
-            self.status['connection']   = device_status_table[0].text
-            self.status['percentage']   = device_status_table[1].text
-            self.status['gcode_name']   = device_status_table[2].text
-            self.status['time_total']   = device_status_table[7].text
-            self.status['time_elapsed'] = device_status_table[8].text
-            self.status['time_left']    = device_status_table[9].text
-
-            for data in temperature_table:
-                if data.text.find('Tool') != -1:
-                    self.status['nozzle_temperature'] = float(data.text.split('Tool')[1].split('C')[0][1:-1].encode('utf8'))
-                if data.text.find('Bed') != -1:
-                    self.status['bed_temperature'] = float(data.text.split('Bed')[1].split('C')[0][1:-1].encode('utf8'))
-            
-            print("\n==============================================================")
-            print("[DEBUG] Device type: {}".format(self.status['device_type']))
-            print("[DEBUG] Device name: {}".format(self.status['device_name']))
-            print("[DEBUG] Connection: {}".format(self.status['connection']))
-            print("[DEBUG] Status: {}".format(self.status['status']))
-            print("[DEBUG] Subject name: {}".format(self.status['subject_name']))
-            print("[DEBUG] Recent work: {}".format(self.status['recent_work']))
-            # self.printStatus(self.status)
-            
-        except:
-            print("[ERROR] Status data loaded failed !!!")
-        
-        return self.status
+        # return self.status
     
     def printStatus(self, status):
             print("\n[INFO] 3D Printer Status (#{})".format(self.device_id))
             print("\n  * Device:")
             print("    - Status: {}".format(status['connection']))
             print("    - File: {}".format(status['percentage']))
-            print("    - Send ratio: {}".format(status['gcode_name']))
+            print("    - Send ratio: {}".format(status['gcode_file']))
             print("    - Total time: {}".format(status['time_total']))
             print("    - Time elapsed: {}".format(status['time_elapsed']))
             print("    - Time left: {}".format(status['time_left']))
@@ -125,7 +133,7 @@ class DeviceClass_3DP:
 
 
     def command(self, cmd_dict):
-        self.updateStatus()
+        # self.updateStatus()
         cmd_keys = cmd_dict.keys()
         cmd_values = cmd_dict.values()
 
@@ -136,7 +144,7 @@ class DeviceClass_3DP:
                 elif cmd_values[i] == False and self.status['connection'].find('Offline') == -1: # disconnect printer
                     self.disconnectDevice()
             elif cmd_keys[i] == 'print': # start printing
-                if self.status['gcode_name'] != cmd_values[i]:
+                if self.status['gcode_file'] != cmd_values[i]:
                     self.selectGcodeFile(file_name=cmd_values[i])
                 self.startPrinting()
             elif cmd_keys[i] == 'cancel': # cancel printing
@@ -232,7 +240,7 @@ class DeviceClass_3DP:
         try:
             element_present = EC.presence_of_element_located((by, name))
             WebDriverWait(self.driver, timeout).until(element_present)
-            sleep(1.0)
+            sleep(0.1)
             return True
 
         except TimeoutException:
@@ -245,7 +253,7 @@ class DeviceClass_3DP:
 
 if __name__ == '__main__':  
 
-    printer = DeviceClass_3DP(device_name='3DP-0')
+    printer = DeviceClass_3DP(device_name='printer0')
     
     print("[DEBUG] 1. Connect printer")
     printer.command({'connection': True})
@@ -253,13 +261,9 @@ if __name__ == '__main__':
     print("[DEBUG] 2. Print start")
     printer.command({'print': '201122_feedrate_test'})
 
-    while True:
-        printer.updateStatus()
-        sleep(1.0)
+    print("[DEBUG] 3. Cancel printing")
+    printer.command({'cancel': True})
 
-    # print("[DEBUG] 3. Cancel printing")
-    # printer.command({'cancel': True})
-
-    # print("[DEBUG] 4. Disconnect printer")
-    # printer.command({'connection': False})
+    print("[DEBUG] 4. Disconnect printer")
+    printer.command({'connection': False})
 

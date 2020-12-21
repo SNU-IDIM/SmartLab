@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os, sys
+from threading import Thread
 from time import sleep
 import json
 
@@ -35,7 +36,9 @@ class DevicePluginToROS:
             rospy.Subscriber('{}/command'.format(self.device_name), String, self.device_cmd_cb, queue_size=1)
             print("[INFO] ROS initialized for device ({})".format(self.device_name))
             
-            self.device_runNode()
+            thread_1 = Thread(target=self.device_runNode)
+            thread_1.start()
+            # self.device_runNode()
         
         ## Node for execution manager
         else:
@@ -45,7 +48,9 @@ class DevicePluginToROS:
 
 
     def device_publishStatus(self):
-        self.device_status = self.device_class.updateStatus()
+        # self.device_status = self.device_class.updateStatus()
+        self.device_status = self.device_class.status
+        print('test', self.device_status)
         msg_json = json.dumps(self.device_status)
         self.device_status_publisher.publish(msg_json)
     
@@ -89,8 +94,7 @@ if __name__ == '__main__':
         from DeviceClass_3DP import DeviceClass_3DP
 
         device_name = 'printer0'
-        device_class = DeviceClass_3DP(device_name)
-        hub_device_part = DevicePluginToROS(device_name=device_name, device_class=device_class)
+        hub_device_part = DevicePluginToROS(device_name=device_name, device_class=DeviceClass_3DP(device_name))
     
     elif mode == 'manager':
         device_name = 'printer0'
