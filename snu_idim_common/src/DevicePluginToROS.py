@@ -10,9 +10,9 @@ from std_msgs.msg import String
 
 
 
-class DeviceHUB:
+class DevicePluginToROS:
     '''
-    Class: DeviceHUB
+    Class: DevicePluginToROS
 
     Descriptions:
         1. ROS node for a single device
@@ -67,12 +67,12 @@ class DeviceHUB:
         # print("[INFO] Received 'status_dict': \n{}".format(self.device_status))
 
 
-    def manager_sendCommand(self, cmd_dict):
+    def sendCommand(self, cmd_dict):
         cmd_json = json.dumps(cmd_dict)
         self.manager_cmd_publisher.publish(cmd_json)
 
 
-    def manager_getStatus(self):
+    def getStatus(self):
         # print("[INFO] Current 'status_dict': \n{}".format(self.device_status))
         return self.device_status
 
@@ -90,17 +90,17 @@ if __name__ == '__main__':
 
         device_name = 'printer0'
         device_class = Automate3DP(device_name)
-        hub_device_part = DeviceHUB(device_name=device_name, device_class=Automate3DP(device_name))
+        hub_device_part = DevicePluginToROS(device_name=device_name, device_class=Automate3DP(device_name))
     
     elif mode == 'manager':
         device_name = 'printer0'
         device_class = None
 
         rospy.init_node('this_node_is_not_necessary_for_real_implementation')
-        hub_manager_part = DeviceHUB(device_name=device_name, device_class=None);   sleep(3)
+        hub_manager_part = DevicePluginToROS(device_name=device_name, device_class=None);     sleep(3)
 
         cmd_dict = {'connection': True}
-        hub_manager_part.manager_sendCommand(cmd_dict);                             sleep(10)
+        hub_manager_part.sendCommand(cmd_dict);     sleep(10)
 
-        status = hub_manager_part.manager_getStatus()
+        status = hub_manager_part.getStatus()
         print("[INFO] Current 'status_dict': \n{}".format(status))
