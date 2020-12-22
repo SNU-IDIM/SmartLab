@@ -103,13 +103,7 @@ class DeviceClass_3DP:
                     if data.text.find('Bed') != -1:
                         self.status['bed_temperature'] = float(data.text.split('Bed')[1].split('C')[0][1:-1].encode('utf8'))
                 
-                print("\n==============================================================")
-                print("[DEBUG] Device type: {}".format(self.status['device_type']))
-                print("[DEBUG] Device name: {}".format(self.status['device_name']))
-                print("[DEBUG] Connection: {}".format(self.status['connection']))
-                print("[DEBUG] Status: {}".format(self.status['status']))
-                print("[DEBUG] Subject name: {}".format(self.status['subject_name']))
-                print("[DEBUG] Recent work: {}".format(self.status['recent_work']))
+
                 # self.printStatus(self.status)
                 
             except:
@@ -118,6 +112,14 @@ class DeviceClass_3DP:
         # return self.status
     
     def printStatus(self, status):
+            print("\n==============================================================")
+            print("[DEBUG] Device type: {}".format(self.status['device_type']))
+            print("[DEBUG] Device name: {}".format(self.status['device_name']))
+            print("[DEBUG] Connection: {}".format(self.status['connection']))
+            print("[DEBUG] Status: {}".format(self.status['status']))
+            print("[DEBUG] Subject name: {}".format(self.status['subject_name']))
+            print("[DEBUG] Recent work: {}".format(self.status['recent_work']))
+            
             print("\n[INFO] 3D Printer Status (#{})".format(self.device_id))
             print("\n  * Device:")
             print("    - Status: {}".format(status['connection']))
@@ -138,6 +140,8 @@ class DeviceClass_3DP:
         cmd_values = cmd_dict.values()
 
         for i in range(len(cmd_keys)):
+            if cmd_keys[i] == 'status':
+                self.status['status'] = cmd_values[i]
             if cmd_keys[i] == 'connection':
                 if cmd_values[i] == True and self.status['connection'].find('Offline') != -1: # connect printer
                     self.connectDevice()

@@ -31,8 +31,9 @@ class DevicePluginToROS:
         if device_class != None:
             self.device_class = device_class
 
-            rospy.init_node(self.device_name)
+            # rospy.init_node(self.device_name)
             self.device_status_publisher = rospy.Publisher("{}/status".format(self.device_name), String, queue_size=1)
+            self.manager_cmd_publisher = rospy.Publisher("{}/command".format(self.device_name), String, queue_size=1)
             rospy.Subscriber('{}/command'.format(self.device_name), String, self.device_cmd_cb, queue_size=1)
             print("[INFO] ROS initialized for device ({})".format(self.device_name))
             
@@ -50,7 +51,7 @@ class DevicePluginToROS:
     def device_publishStatus(self):
         # self.device_status = self.device_class.updateStatus()
         self.device_status = self.device_class.status
-        print('test', self.device_status)
+        # print('test', self.device_status)
         msg_json = json.dumps(self.device_status)
         self.device_status_publisher.publish(msg_json)
     
