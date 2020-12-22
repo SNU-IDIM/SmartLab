@@ -19,6 +19,7 @@ class DeviceHUB():
     def __init__(self):
         self.device_dict = dict()
         self.printer_list_idle     = []
+        self.printer_list_initializing = []
         self.printer_list_printing = []
         self.printer_list_finished = []
         self.printer_list_robot_done = []
@@ -41,6 +42,7 @@ class DeviceHUB():
         while True:
             n_printer = 0
             id_list_idle = []
+            id_list_initializing= []
             id_list_printing = []
             id_list_finished = []
             
@@ -53,12 +55,15 @@ class DeviceHUB():
 
                     if printer_status.find('Idle') != -1:
                         id_list_idle.append(printer_id)
+                    elif printer_status.find('Initializing') != -1:
+                        id_list_initializing.append(printer_id)
                     elif printer_status.find('Printing') != -1:
                         id_list_printing.append(printer_id)
                     elif printer_status.find('Done') != -1:
                         id_list_finished.append(printer_id)
 
             self.printer_list_idle = id_list_idle
+            self.printer_list_initializing = id_list_initializing
             self.printer_list_printing = id_list_printing
             self.printer_list_finished = id_list_finished
 
@@ -73,10 +78,11 @@ class DeviceHUB():
 
 
             print("[INFO - DeviceHUB] # of 3D Printers: {}".format(n_printer))
-            print("[INFO - DeviceHUB] # of 3D Printers in Idle: {}".format(len(self.printer_list_idle)))
-            print("[INFO - DeviceHUB] # of 3D Printers in Printing: {}".format(len(self.printer_list_printing)))
-            print("[INFO - DeviceHUB] # of 3D Printers in Finished: {}".format(self.printer_list_finished))
-            print("[INFO - DeviceHUB] # of 3D Printers in Robot Job Done: {}".format(self.printer_list_robot_done))
+            print("[INFO - DeviceHUB] # of 3D Printers in Idle: {}".format(len(self.printer_list_idle)), self.printer_list_idle)
+            print("[INFO - DeviceHUB] # of 3D Printers in Initializing: {}".format(len(self.printer_list_initializing)), self.printer_list_initializing)
+            print("[INFO - DeviceHUB] # of 3D Printers in Printing: {}".format(len(self.printer_list_printing)), self.printer_list_printing)
+            print("[INFO - DeviceHUB] # of 3D Printers in Finished: {}".format(len(self.printer_list_finished)), self.printer_list_finished)
+            print("[INFO - DeviceHUB] # of 3D Printers in Robot Job Done: {}".format(len(self.printer_list_robot_done)), self.printer_list_robot_done)
 
 
 
@@ -96,5 +102,5 @@ if __name__ == '__main__':
         sleep(30.0)
         hub.printer_list_robot_done.append('printer0')
         sleep(10.0)
-        
-        hub.device_dict['printer0'].sendCommand({'print': '201122_feedrate_test'})
+        if hub.device_dict['printer0'].device_status['status'].find('Idle') != -1:
+            hub.device_dict['printer0'].sendCommand({'print': '201122_feedrate_test'})

@@ -148,6 +148,7 @@ class DeviceClass_3DP:
                 elif cmd_values[i] == False and self.status['connection'].find('Offline') == -1: # disconnect printer
                     self.disconnectDevice()
             elif cmd_keys[i] == 'print': # start printing
+                self.status['status'] = 'Initializing'
                 if self.status['gcode_file'] != cmd_values[i]:
                     self.selectGcodeFile(file_name=cmd_values[i])
                 self.startPrinting()
