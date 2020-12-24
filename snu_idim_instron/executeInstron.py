@@ -33,7 +33,8 @@ class autoInstron:
 		self.message = dict()
 		self.message['subject_name'] = 'NONE'
 		self.message['message'] = ''
-		self.subject_name  = 'dd'
+		self.subject_name  = 'NONE'
+		self.checklist = ['online','start','setting','experiment_start','running','finnish']
 
 
 	def write_data(self, msg):
@@ -57,7 +58,6 @@ class autoInstron:
 				if self.serial_port.inWaiting() > 0:
 					data = self.serial_port.readline().decode('utf-8').split('\n')[0]
 					self.message = json.loads(data)
-					# self.s_name(self.message['subject_name'])
 
 					time.sleep(0.1)
 
@@ -90,6 +90,9 @@ class autoInstron:
 
 						self.message['subject_name'] = 'NONE'
 
+					elif self.message['message'] not in self.checklist:
+						self.status['status'] = 'Serial_error'
+
 					
 
 					print('[DEBUG] sent data: {}'.format(self.status))
@@ -108,6 +111,12 @@ class autoInstron:
 				self.serial_port.close()
 				time.sleep(5)
 				self.serial_port.open()
+
+			except :
+				self.status['status'] = 'Serial_error'
+				self.write_data(self.status)
+				self.write_data(self.status)
+				self.write_data(self.status)
 
 
 
