@@ -6,7 +6,9 @@ import rospy
 import Jetson.GPIO as GPIO
 from std_msgs.msg import String
 import numpy as np
-import timeit
+import json
+import threading
+
 
 
 
@@ -17,47 +19,64 @@ class UART:
 									bytesize=serial.EIGHTBITS,
 									parity=serial.PARITY_NONE,
 									stopbits=serial.STOPBITS_ONE)
-		# print('serial ready')
-		dictionary = ['connection','progress']
 		self.serial.flushInput()
-		self.continue_flag = 1
+		self.continue_flag = -1
+		self.goal_status = ''
 
+		self.status = dict()
+		self.status['subject_name'] = 'None'
+		self.status['connection'] = 'offline'
+		self.status['status'] = 'waiting'
+
+		self.newstatus = dict()
+		
+
+	def changeflag(self,var):
+		
+		if self.status['status'] == var :
+			self.continue_flag = 1
+
+		else:
+			self.continue_flag = -1
 
 
 	def write_data(self, data):
+		data = json.dumps(data)
 		self.serial.write(data.encode())
-		self.serial.flush()
 
-	def read_data(self):
-		start_time = timeit.default_timer()
-		# print('ready to read data')
+
+	def updateStatus(self):
 		while True:
-			# run_time = timeit.default_timer()
-			# if run_time - start_time <30:
+			print(self.status)
 
-			if self.serial.inWaiting() > 0 and self.continue_flag == 1 :
+			if self.serial.inWaiting() > 0:
 				self.serial.flushInput()
-				time.sleep(0.1)
-				self.data = self.serial.readline().decode('utf-8',errors = 'replace')
+				time.sleep(0.2)
+
+				self.data = self.serial.readline().split('\n')#.decode('utf-8',errors = 'replace')
 				self.data = self.serial.readline().decode('utf-8',errors = 'replace').split('\n')[0]
-				print(self.data)
-
-				# print('[DEBUG] Serial - Read')
-				self.continue_flag = -1
-
-				break
+				self.newstatus = json.loads(self.data)
+				self.status.update(self.newstatus)
+				# print("1")
 
 			else:
-				# print('Not receiving Serial \n')
+				# print('Waiting for Serial \n')
 				continue
 
-			# else:
-			# 	self.data = 'progress no_respond!!!!!!!!!!!!!!!'
-			# 	break
 
 
-		return 1
+	def waitStatus(self):
+		while True:
+			self.changeflag(self.goal_status)
+			# print(self.status)
+			if self.continue_flag == 1:
+				self.continue_flag = -1
+				print('[Status] {}'.format(self.status))
 
+				break
+			else:
+				# print("Waiting for the next step\n")
+				continue
 
 
 class Jetson:
@@ -71,28 +90,55 @@ class Jetson:
 
 		rospy.init_node('jetson_node')
 		rospy.Subscriber('instron/command', String, self.cmd_instron)
+
 		self.instron_status_pub = rospy.Publisher("instron/status", String, queue_size=1)
 
 		self.uart = UART()
+		thread = threading.Thread(target = self.uart.updateStatus)
+		thread.daemon=True
+		thread.start()
 
-		self.instron_status = 0
-		self.instron_cmd    = 0
+		self.command = dict()
+		self.command['setup'] = ''                                     # command from server (setup/execute)
+		self.command['execute'] = ''
+
+		self.message = dict()												# message from Jetson to Instron
+		self.message['message'] = 'online'
+		self.message['subject_name'] = ''
+
 		data = ""
 
-		self.status = dict()
-		self.command = dict()
-
-
-		self.status['connection'] = 'offline'								# connection (online/offline)			
-		self.status['progress'] = 'waiting'                                 # progress initial value 'waiting'
-		self.command['experiment'] = ''                                     # command from server (setup/execute)
-		self.uart.write_data("online\n")                                    # check online to Instron
+		self.uart.write_data(self.message)                                    # check online to Instron
 		time.sleep(1)
-		self.updateStatus()										#debuging
-		# print('[DEBUG] Node initialized !!!')
+		self.uart.goal_status = 'Idle'										# wait until status = Idle
+		# print(self.uart.status)
+		self.uart.waitStatus()											# status : Idle
 
+	#----------------------------------------------Debugging!!!-----------------------------------
+		rospy.Subscriber('debugging_cmd', String, self.Debugging)
+		self.pub = rospy.Publisher('instron/command',String,queue_size =1)
 
+		self.debug_cmd = dict()
+		self.debug_cmd['setup'] = 'specimen_dh'
+		self.debug_cmd2 = dict()
+		self.debug_cmd2['execute'] = 'specimen_dh'
+		# self.debug_cmd = self.debug_cmd2
+		# print(self.debug_cmd)
 
+	def Debugging(self, msg):
+		if str(msg.data) == '1':
+			self.debug_cmd = json.dumps(self.debug_cmd)
+			time.sleep(0.5)
+			print(self.debug_cmd)
+			self.pub.publish(self.debug_cmd)
+		elif str(msg.data) == '2':
+			self.debug_cmd2 = json.dumps(self.debug_cmd2)
+			time.sleep(0.5)
+			print(self.debug_cmd2)
+			self.pub.publish(self.debug_cmd2)
+	#------------------------------------------------------------------------------------------------
+
+	
 	def __del__(self):
 		GPIO.cleanup()
 		print('[DEBUG] Node is terminated !!!')
@@ -102,117 +148,61 @@ class Jetson:
 		status = str(status)
 		self.instron_status_pub.publish(status)
 
-	def updateStatus(self):
-		self.uart.read_data()                                               # get string data from Instron
-		dic_name = str(self.uart.data.split(' ')[0])                                   # dic name (connection/progress/etc)
-		dic_data = str(self.uart.data.split(' ')[1])                                   # dic data (setup/gripper_close/etc)
-
-		try:
-			if dic_name == 'connection':
-				self.status['connection'] = dic_data                        # connection data (online/offline)
-				# print('[DEBUG] connection - updated')
-
-			elif dic_name == 'progress':
-				self.status['progress'] = dic_data							# progress data (setup, gripper_close, setting, etc..)
-				
-				# print('[DEBUG] progress - updated')							
-
-
-		except:
-			print("[ERROR] Status data loaded failed !!!")
-		print('[DEBUG] {}'.format(self.status))
-
-		return self.status
-
-	def changeflag(self,var1,var2):
-		if(self.status[var1] == var2):
-			self.uart.continue_flag = 1
 
 	def cmd_instron(self, msg):
-		self.uart.serial.flushInput()
 		self.instron_cmd = str(msg.data)
-		#self.command['experiment'] = json.loads(self.instron_cmd)           # get command from server as 'string'
-		self.command['experiment'] = self.instron_cmd
+		self.command = json.loads(self.instron_cmd)
+		time.sleep(0.5)
+		print(self.command)
+		self.cmd_keys = self.command.keys()
+		self.cmd_values = self.command.values()
 
-		print('[DEBUG] Instron command: {}'.format(self.command['experiment']))
-		
-		if self.command['experiment'] == "setup":                           # experiment setup trigger
-			# print('[DEBUG] Experiment - Initialization')
-			self.changeflag('connection','online')
-			# print(self.uart.continue_flag)
-			self.uart.write_data("start\n")                                 # ask instron status 'start'
-			# self.uart.read_data()                                           # get 'start' response from Instron
-			self.updateStatus()										#debuging
-			# print(self.uart.continue_flag)
+		print('[DEBUG] Instron command: {}'.format(self.command))
+		for i in range(len(self.cmd_keys)):
+			if self.cmd_keys[i] == "setup":                         			# experiment setup trigger
+				self.uart.status['subject_name'] = self.cmd_values[i]
+				self.message['subject_name'] = self.cmd_values[i]
+				self.message['message'] = 'start'
+				self.uart.write_data(self.message)                              # send instron 'start'
+																				# connection : online / status : Idle
+				self.uart.goal_status = 'Initializing'							# wait until status = Initializing
+				self.uart.waitStatus()											# status : Initializing
+			
+				self.message['message'] = 'setting'
+				self.uart.write_data(self.message)								# for update status
+				
+				GPIO.output(self.PIN, GPIO.HIGH)
+				time.sleep(5)													# wait for gripper close
 
-			self.changeflag('progress','setup_start')
-		
-			# print('[DEBUG] Experiment - Gripper close')
-			self.uart.write_data("gripper_close\n")                         # ask instron status 'gripper_close'
-			self.uart.serial.flushInput()
-			GPIO.output(self.PIN, GPIO.HIGH)
-			# self.uart.read_data()                                           # get 'gripper_close' response from Instron
-			self.updateStatus()										#debuging
-
-			self.changeflag('progress','gripper_close')
-
-			# print('[DEBUG] Experiment - Setting')
-			self.uart.write_data("setting\n")
-			# self.uart.read_data()
-			self.uart.serial.flushInput()
-			time.sleep(0.1)
-			self.updateStatus()										#debuging
-			time.sleep(5.0)
-
-			self.changeflag('progress','setting')
-
-			# print('[DEBUG] Experiment - Setting done')
-			self.uart.write_data("ready\n")
-			self.uart.serial.flushInput()
-			# self.uart.reasssd_data()
-			self.updateStatus()										#debuging
+				self.uart.goal_status = 'Ready'									# wait until status = Ready
+				self.uart.waitStatus()											# status : Ready
 
 
+			if self.cmd_keys[i] == "execute":                         # experiment execute trigger
 
+				self.uart.goal_status = 'Ready'									# check status : Ready
+				self.uart.waitStatus()											# Status Ready
 
+				self.message['message'] = 'experiment_start'
+				self.uart.write_data(self.message)			                    # send instron 'experiment_start'
+				self.uart.goal_status = 'Testing'								# wait until status = Testing
+				self.uart.waitStatus()											# status : Testing
 
-		if self.command['experiment'] == "execute":                         # experiment execute trigger
-			# print('[DEBUG] Experiment - execute')
-			self.changeflag('progress','ready')
-			self.uart.write_data("experiment_start\n")                      # ask instron status 'experiment_start'
-			# self.uart.read_data()                                           # get 'experiment_start' response from Instron
-			self.uart.serial.flushInput()
-			self.updateStatus()										#debuging
+				self.message['message'] = 'running'
+				self.uart.write_data(self.message)                              # for update status
 
-			self.changeflag('progress','experiment_start')
+				self.uart.goal_status = 'Done'									# wait until status = Done 
+				self.uart.waitStatus()											# status : Done
+				
+				GPIO.output(self.PIN, False)
+				time.sleep(5)													# wait for gripper open
+				
+				self.message['message'] = 'finish'
+				self.uart.write_data(self.message)                              # tell Instron 'gripper closed'
+				
+				self.uart.goal_status = 'Idle'									# wait until status = Idle
+				self.uart.waitStatus()											# status : Idle
 
-			# print('[DEBUG] Experiment - Running')
-			self.uart.write_data("running\n")                               # ask instron status 'running'
-			# self.uart.read_data()                                           # get 'running' response from Instron
-			self.uart.serial.flushInput()
-			self.updateStatus()										#debuging
-
-			self.changeflag('progress','running')
-
-			# print('[DEBUG] Experiment - Gripper open')
-			self.uart.write_data("gripper_open\n")                          # ask instron status 'gripper_open'
-			GPIO.output(self.PIN, False)
-			# self.uart.read_data()                                           # get 'gripper_open' response from Instron
-			self.uart.serial.flushInput()
-			self.updateStatus()										#debuging
-
-			self.changeflag('progress','gripper_open')
-
-			# print('[DEBUG] Experiment - Finished')
-			time.sleep(5)
-			self.uart.write_data("done\n")                                  # ask instron status 'done'
-			# self.uart.read_data()                                           # get 'doen' response from Instron
-			self.uart.serial.flushInput()
-			self.updateStatus()										#debuging
-
-
-		if self.command['experiment'] == "status":
-			print('connection : {}, progress : {}'.format(self.status['connection'],self.status['progress']))
 		
 
 if __name__=='__main__':
