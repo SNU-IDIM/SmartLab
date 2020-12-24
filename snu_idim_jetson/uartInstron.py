@@ -28,6 +28,10 @@ class UART:
 		self.status['connection'] = 'offline'
 		self.status['status'] = 'waiting'
 
+		self.message = dict()												# message from Jetson to Instron
+		self.message['message'] = 'online'
+		self.message['subject_name'] = ''
+		
 		self.newstatus = dict()
 		
 
@@ -35,6 +39,9 @@ class UART:
 		
 		if self.status['status'] == var :
 			self.continue_flag = 1
+
+		elif self.status['status'] == 'Serial_error':
+			self.continue_flag = 0
 
 		else:
 			self.continue_flag = -1
@@ -74,6 +81,10 @@ class UART:
 				print('[Status] {}'.format(self.status))
 
 				break
+			elif self.continue_flag == 0:
+				print(self.message)
+				self.write_data(self.message)
+				time.sleep(1)
 			else:
 				# print("Waiting for the next step\n")
 				continue
@@ -99,20 +110,18 @@ class Jetson:
 		thread.start()
 
 		self.command = dict()
-		self.command['setup'] = ''                                     # command from server (setup/execute)
+		self.command['setup'] = ''                                    		# command from server (setup/execute)
 		self.command['execute'] = ''
 
-		self.message = dict()												# message from Jetson to Instron
-		self.message['message'] = 'online'
-		self.message['subject_name'] = ''
+
 
 		data = ""
 
-		self.uart.write_data(self.message)                                    # check online to Instron
+		self.uart.write_data(self.uart.message)                             # check online to Instron
 		time.sleep(1)
 		self.uart.goal_status = 'Idle'										# wait until status = Idle
 		# print(self.uart.status)
-		self.uart.waitStatus()											# status : Idle
+		self.uart.waitStatus()												# status : Idle
 
 	#----------------------------------------------Debugging!!!-----------------------------------
 		rospy.Subscriber('debugging_cmd', String, self.Debugging)
@@ -161,15 +170,15 @@ class Jetson:
 		for i in range(len(self.cmd_keys)):
 			if self.cmd_keys[i] == "setup":                         			# experiment setup trigger
 				self.uart.status['subject_name'] = self.cmd_values[i]
-				self.message['subject_name'] = self.cmd_values[i]
-				self.message['message'] = 'start'
-				self.uart.write_data(self.message)                              # send instron 'start'
+				self.uart.message['subject_name'] = self.cmd_values[i]
+				self.uart.message['message'] = 'start'
+				self.uart.write_data(self.uart.message)                         # send instron 'start'
 																				# connection : online / status : Idle
 				self.uart.goal_status = 'Initializing'							# wait until status = Initializing
 				self.uart.waitStatus()											# status : Initializing
 			
-				self.message['message'] = 'setting'
-				self.uart.write_data(self.message)								# for update status
+				self.uart.message['message'] = 'setting'
+				self.uart.write_data(self.uart.message)								# for update status
 				
 				GPIO.output(self.PIN, GPIO.HIGH)
 				time.sleep(5)													# wait for gripper close
@@ -183,13 +192,13 @@ class Jetson:
 				self.uart.goal_status = 'Ready'									# check status : Ready
 				self.uart.waitStatus()											# Status Ready
 
-				self.message['message'] = 'experiment_start'
-				self.uart.write_data(self.message)			                    # send instron 'experiment_start'
+				self.uart.message['message'] = 'experiment_start'
+				self.uart.write_data(self.uart.message)			                # send instron 'experiment_start'
 				self.uart.goal_status = 'Testing'								# wait until status = Testing
 				self.uart.waitStatus()											# status : Testing
 
-				self.message['message'] = 'running'
-				self.uart.write_data(self.message)                              # for update status
+				self.uart.message['message'] = 'running'
+				self.uart.write_data(self.uart.message)                         # for update status
 
 				self.uart.goal_status = 'Done'									# wait until status = Done 
 				self.uart.waitStatus()											# status : Done
@@ -197,8 +206,8 @@ class Jetson:
 				GPIO.output(self.PIN, False)
 				time.sleep(5)													# wait for gripper open
 				
-				self.message['message'] = 'finish'
-				self.uart.write_data(self.message)                              # tell Instron 'gripper closed'
+				self.uart.message['message'] = 'finish'
+				self.uart.write_data(self.uart.message)                         # tell Instron 'gripper closed'
 				
 				self.uart.goal_status = 'Idle'									# wait until status = Idle
 				self.uart.waitStatus()											# status : Idle
