@@ -2,13 +2,15 @@
 # -*- coding: utf-8 -*-
 
 import platform;   os_ = platform.system();   print('OS: {}'.format(os_))
-import os
+import os, sys
 import time
 import cv2
 import numpy as np
 import pytesseract
 import pyautogui
-
+import re
+# sys.path.append(r'C:\Users\IDIM-Instron\Desktop\SNU_SmartLAB\snu_idim_instron')
+# from executeInstron import subject_name
 
 if os_ == 'Windows':
     from win32api import GetSystemMetrics
@@ -144,11 +146,31 @@ class idimAutomation():
         print(ocr_result[6:12])
         print(ocr_result[12:18])
         print(ocr_result[18:24])
-        
-        
+    
+
+    def changeTXT(self, cmd_file, name):
+        with open(os.path.join(self.type, cmd_file), "r+") as J:
+            data = J.read()
+            data = re.sub('subject_name',name, data)
+            J.seek(0)
+            J.write(data)
+            J.truncate()
+
+    def returnTXT(self, cmd_file, name):
+        with open(os.path.join(self.type, cmd_file), "r+") as J:
+            data = J.read()
+            data = re.sub(name,'subject_name', data)
+            J.seek(0)
+            J.write(data)
+            J.truncate()
+
+
+  
     def execute(self, cmd_file):
+
         File = open(os.path.join(self.type, cmd_file), "r")
         print(File)
+
         while True:
             data = File.readline().split("\n")[0]
             if data == "":
@@ -193,7 +215,8 @@ class idimAutomation():
                 tab = data[0]
                 pyautogui.hotkey('alt', tab)
                 time.sleep(0.5)
-            
+        
+        
         File.close()
 
 
@@ -202,3 +225,4 @@ if __name__ == "__main__":
 
     test = idimAutomation('src')
     test.execute('{}.txt'.format('Instron'))
+    # test.execute('start_experiment.txt')
