@@ -12,7 +12,6 @@ import serial
 import sys
 import json
 
-CONNECTION_ONLINE = 1
 
 
 class autoInstron:
@@ -29,11 +28,24 @@ class autoInstron:
 		self.autoRun = idimAutomation(folder_dir)
 
 		self.status = dict()
-		self.status = 'connection offline\n'
+		self.status['connection'] = 'offline'
+		self.status['status'] = 'waiting'
+		self.message = dict()
+		self.message['subject_name'] = 'NONE'
+		self.message['message'] = ''
+		self.subject_name  = 'dd'
 
 
 	def write_data(self, msg):
-		self.serial_port.write(msg.encode('utf-8'))
+		msg = json.dumps(msg)+str('\n')
+		msg = msg.encode('utf-8')
+		self.serial_port.write(msg)
+
+	# def s_name(self,data):
+	# 	self.subject_name = data
+	# 	print("debug!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	# 	print(self.subject_name)
+	# 	return self.subject_name
 
 
 	def execute(self, scripts=''):
@@ -44,47 +56,48 @@ class autoInstron:
 
 				if self.serial_port.inWaiting() > 0:
 					data = self.serial_port.readline().decode('utf-8').split('\n')[0]
+					self.message = json.loads(data)
+					# self.s_name(self.message['subject_name'])
+
 					time.sleep(0.1)
 
-					print('[DEBUG] received data: {}'.format(data))
+					print('[DEBUG] received data: {}'.format(self.message))
 					
-					if data == 'online':						# connection online
-						self.status = 'connection online\n'
-						self.write_data(self.status)
+					if self.message['message'] == 'online':						# connection : online / status : Idle
+						self.status['connection'] = 'online'
+						self.status['status'] = 'Idle'
 
-					elif data == 'start':						# setup_start
-						self.status = 'progress setup_start\n'
 
-					elif data == 'gripper_close':				# gripper_close
-						self.status = 'progress gripper_close\n'
+					elif self.message['message'] == 'start':						
+						self.status['status'] = 'Initializing'	# status : Initializing
+						self.autoRun.changeTXT(scripts[0], self.message['subject_name'])
+						print(self.message['subject_name'])
 
-					elif data == 'setting':						# setting
+					elif self.message['message'] == 'setting':						
 						self.autoRun.execute(scripts[0])
-						self.status = 'progress setting\n'
+						self.status['status'] = 'Ready'			# status : Ready
+						self.autoRun.returnTXT(scripts[0], self.message['subject_name'])
 
-					elif data == 'ready':						# ready
-						self.status = 'progress ready\n'
+					elif self.message['message'] == 'experiment_start':			
+						self.status['status'] = 'Testing'			# status : Testing
 
-					elif data == 'experiment_start':			# experiment_start
-						self.status = 'progress experiment_start\n'
-
-					elif data == 'running':						# running
+					elif self.message['message'] == 'running':						
 						self.autoRun.execute(scripts[1])
-						self.status = 'progress running\n'
+						self.status['status'] = 'Done'			# status : Done
 
-					elif data == 'gripper_open':				# gripper_open
-						self.status = 'progerss gripper_open\n'
+					elif self.message['message'] == 'finish':						
+						self.status['status']= 'Idle'			# status : Idle
 
-					elif data == 'done':						# done
-						self.status= 'progress done\n'
+						self.message['subject_name'] = 'NONE'
+
+					
 
 					print('[DEBUG] sent data: {}'.format(self.status))
 
 				self.write_data(self.status)
 
 			except KeyboardInterrupt:
-				print('keyboard interrupt')
-				self.status = 'connection offline'
+				self.status['connection'] = 'offline'
 				self.write_data(self.status)
 
 				sys.exit()
@@ -95,10 +108,6 @@ class autoInstron:
 				self.serial_port.close()
 				time.sleep(5)
 				self.serial_port.open()
-
-			except:
-				self.status = 'connection offline'
-				self.write_data(self.status)
 
 
 
