@@ -15,14 +15,18 @@ sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu
 from DeviceClass_3DP import DeviceClass_3DP
 
 
-class DeviceHUB():
+class DeviceManager():
     def __init__(self):
         self.device_dict = dict()
         self.printer_list_idle     = []
         self.printer_list_initializing = []
         self.printer_list_printing = []
-        self.printer_list_finished = []
+        self.printer_list_finished = []  ## ***
         self.printer_list_robot_done = []
+
+        self.specimen_ready_list = []  ## ***
+
+        self.test_ready_list = []  ## ***
         
         thread_1 = Thread(target=self.manager3DP)
         thread_1.start()
@@ -34,11 +38,11 @@ class DeviceHUB():
 
     def addDevice(self, device_name, device_class=None):
         self.device_dict[device_name] = DevicePluginToROS(device_name=device_name, device_class=device_class)
-        print("[DEBUG] '{}' is added to DeviceHUB".format(device_name))
+        print("[DEBUG] '{}' is added to DeviceManager".format(device_name))
     
 
-
     def manager3DP(self):
+        printing_queue = ['test1', 'test2', 'test3']
         while True:
             n_printer = 0
             id_list_idle = []
@@ -76,14 +80,22 @@ class DeviceHUB():
                 self.device_dict[printer_id].sendCommand({'status': 'Idle'})
 
 
+            print("[INFO - DeviceManager] # of 3D Printers: {}".format(n_printer))
+            print("[INFO - DeviceManager] # of 3D Printers in Idle: {}".format(len(self.printer_list_idle)), self.printer_list_idle)
+            print("[INFO - DeviceManager] # of 3D Printers in Initializing: {}".format(len(self.printer_list_initializing)), self.printer_list_initializing)
+            print("[INFO - DeviceManager] # of 3D Printers in Printing: {}".format(len(self.printer_list_printing)), self.printer_list_printing)
+            print("[INFO - DeviceManager] # of 3D Printers in Finished: {}".format(len(self.printer_list_finished)), self.printer_list_finished)
+            print("[INFO - DeviceManager] # of 3D Printers in Robot Job Done: {}".format(len(self.printer_list_robot_done)), self.printer_list_robot_done)
 
-            print("[INFO - DeviceHUB] # of 3D Printers: {}".format(n_printer))
-            print("[INFO - DeviceHUB] # of 3D Printers in Idle: {}".format(len(self.printer_list_idle)), self.printer_list_idle)
-            print("[INFO - DeviceHUB] # of 3D Printers in Initializing: {}".format(len(self.printer_list_initializing)), self.printer_list_initializing)
-            print("[INFO - DeviceHUB] # of 3D Printers in Printing: {}".format(len(self.printer_list_printing)), self.printer_list_printing)
-            print("[INFO - DeviceHUB] # of 3D Printers in Finished: {}".format(len(self.printer_list_finished)), self.printer_list_finished)
-            print("[INFO - DeviceHUB] # of 3D Printers in Robot Job Done: {}".format(len(self.printer_list_robot_done)), self.printer_list_robot_done)
 
+            print("[INFO - DeviceManager] Printing queue: {}".format(printing_queue))
+            for printer_in_idle in self.printer_list_idle:
+                try:
+                    print_next = printing_queue.pop(0)
+                    self.device_dict[printer_in_idle].sendCommand({'print': print_next})
+                except:
+                    print("[INFO - DeviceManager] Printing queue: empty !!!")
+            
 
 
             sleep(3.0)
@@ -91,16 +103,16 @@ class DeviceHUB():
 
 if __name__ == '__main__':
 
-    rospy.init_node('DeviceHUB')
+    rospy.init_node('DeviceManager')
 
-    hub = DeviceHUB()
+    hub = DeviceManager()
     hub.addDevice('printer0', DeviceClass_3DP('printer0'))
 
     while True:
-        # print(hub.device_dict)
-        # print("gi\n\n")
-        sleep(30.0)
-        hub.printer_list_robot_done.append('printer0')
-        sleep(10.0)
-        if hub.device_dict['printer0'].device_status['status'].find('Idle') != -1:
-            hub.device_dict['printer0'].sendCommand({'print': '201122_feedrate_test'})
+        sleep(3.0)
+        if len(hub.printer_list_finished) != 0:
+            print("[DEBUG] Robot Working................")
+            sleep(10.0)
+            hub.printer_list_robot_done.append('printer0')
+        # if hub.device_dict['printer0'].device_status['status'].find('Idle') != -1:
+        #     hub.device_dict['printer0'].sendCommand({'print': '201122_feedrate_test'})

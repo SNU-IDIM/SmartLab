@@ -159,8 +159,9 @@ class DeviceClass_3DP:
 
 
     def startPrinting(self):
-        self.waitUntilLoaded(By.ID, 'job_print')
-        self.driver.find_element(By.ID, 'job_print').click()
+        while self.status['status'].find('Printing') == -1:
+            self.waitUntilLoaded(By.ID, 'job_print')
+            self.driver.find_element(By.ID, 'job_print').click()
     
 
     def pausePrinting(self):
