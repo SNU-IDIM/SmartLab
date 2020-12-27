@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 import os, sys
+import json
+from threading import Thread
 sys.dont_write_bytecode = True
 HOME_DIR = os.getenv('HOME')
 sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../../snu_idim_common/imp")) )
-# sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__),"%s/catkin_ws/src/SNU_SmartLAB/snu_idim_common/imp"%HOME_DIR)) )
 from IDIM_header import *
 from IDIM_framework import *
-from pytesseract import *
 
 def all_close(goal, actual, tolerance):
   all_equal = True
@@ -24,20 +24,48 @@ def all_close(goal, actual, tolerance):
   return True
 
 
-class DRLInterface():
-    def __init__(self, ros_node_name="snu_drl_commander"):
-        self.dsr_flag = None
-        self.joints_state = None
-        self.robot_status = "waiting"
+class DeviceClass_Cobot():
+    def __init__(self, device_name="cobot"):
+        rospy.init_node(device_name, anonymous=True)
+        
+        self.listener = tf.TransformListener()
+        rospy.Subscriber("cobot/command", String, self.pnp_cb, queue_size=1)
+        rospy.Subscriber("dsr/state", RobotState, self.dsr_state_cb, queue_size=1)
+        
+        self.status_pub = rospy.Publisher("cobot/status", String, queue_size=1)
+        self.image_sub = rospy.Subscriber("/R_001/camera/color/image_raw",Image,self.vision_cb)
+        self.vision_pub = rospy.Publisher("vision_2d_flag",Int32, queue_size=1)
+        self.gripper_pub = rospy.Publisher("PC_to_GRIPPER", String, queue_size=1)
+
+        self.status = dict()
+        self.status['device_type'] = 'Collaborative Robot'
+        self.status['device_name'] = device_name
+        self.status['status'] = None
+        self.status['current_work'] = None
+        self.status['recent_work'] = None
+
+        self.status['posj'] = None
+        self.status['posx'] = None
+        self.status['torque'] = None
+        self.status['force'] = None
+
+        self.status['gripper_type'] = None
+        self.status['gripper_angle'] = -45
+        self.status['gripper_state_mech'] = 'Open'
+        self.status['gripper_state_suction'] = 'On'
+        
+        self.status['compressor'] = 'Off'
+        self.status['tool_changer'] = 'Open'
+        self.status['universal_jig_x'] = 'Open'
+        self.status['universal_jig_y'] = 'Open'
+
+
         self.target_pose = Pose()
         self.drl_pose = Q_TOP_PLATE
         self.eulerZYZ = np.zeros(3)
         self.cmd_protocol = ACTION_HOME
-        
-        self.eef = EEF_NONE
-        self.eef_angle = -45
 
-        self.toolforce          = []
+
         self.toolforce_max      = 0.0
         self.toolforce_max_flag = False
         
@@ -60,65 +88,49 @@ class DRLInterface():
         self.imagewindowflag =0
         self.bridge = CvBridge()
         
-        rospy.init_node(ros_node_name, anonymous=True)
-        self.listener = tf.TransformListener()
-        rospy.Subscriber("ur_pnp", String, self.pnp_cb, queue_size=1)
-        rospy.Subscriber("dsr/state", RobotState, self.dsr_state_cb, queue_size=1)
-        rospy.Subscriber("dsr/joint_states", JointState, self.current_status_cb, queue_size=1)
-        
-        self.image_sub = rospy.Subscriber("/R_001/camera/color/image_raw",Image,self.vision_cb)
-        self.pnp_pub    = rospy.Publisher("ur_pnp", String, queue_size=1)
-        self.status_pub = rospy.Publisher("ur_status", URStatus, queue_size=1)
-        self.vision_pub = rospy.Publisher("vision_2d_flag",Int32, queue_size=1)
-        self.gripper_pub = rospy.Publisher("PC_to_GRIPPER", String, queue_size=1)
+        set_robot_mode(ROBOT_MODE_AUTONOMOUS);    rospy.sleep(1)
 
-        set_robot_mode(ROBOT_MODE_AUTONOMOUS)
-        rospy.sleep(1)
-        self.robot_status = "working"
-        self.status_pub.publish(URStatus(status=self.robot_status, arm_status = self.joints_state))
-        # movej(Q_TOP_PLATE, 50, 50)
-        self.robot_status = "done"
-        self.status_pub.publish(URStatus(status=self.robot_status, arm_status = self.joints_state))
+        thread_1 = Thread(target=self.publishStatus)
+        thread_1.start()
 
-        
+
+    def publishStatus(self):
+        while True:
+            msg_json = json.dumps(self.status)
+            self.status_pub(self.status)
+            rospy.sleep(0.5)
+
+
     '''
-        dsr_state_cb: "~/dsr/state" topic callback function (update dsr_flag)
+        dsr_state_cb: "~/dsr/state" topic callback function (update dsr_status)
     '''
     def dsr_state_cb(self, msg):
-        self.dsr_flag = msg.robot_state
-        self.current_posx = msg.current_posx
-        self.current_posj = msg.current_posj
-        self.toolforce = msg.actual_ett
-        # print(self.toolforce[0], self.toolforce[1], self.toolforce[2])
-        # print(self.current_posx)
+        if msg.robot_state == 2:
+            self.status['status'] = "Running {}".format(self.status['current_work'])
+        else:
+            self.status['status'] = "Idle"
+
+        self.status['posx'] = msg.current_posx
+        self.status['posj'] = msg.current_posj
+        self.status['force'] = msg.actual_ett
 
         ## Initialize Maximum tool force
         if not self.toolforce_max_flag:
-            self.toolforce_max = self.toolforce[2]
+            self.toolforce_max = self.status['force'][2]
             self.toolforce_max_flag = True
         
         ## Capture Maximum tool force
-        if self.toolforce_max < self.toolforce[2]:
-            self.toolforce_max = self.toolforce[2]
+        if self.toolforce_max < self.status['force'][2]:
+            self.toolforce_max = self.status['force'][2]
             # print(self.toolforce_max)
-        
-
-    '''
-        current_status_cb: update "~/ur_status" from "~/dsr/joint_state"
-    '''
-    def current_status_cb(self, data):
-        self.joints_state = data
-
-    def setEEF(self, eef): ## 나중에 Tool weight 받아서 tool 있는지 확인하는 코드 추가할 것
-        self.eef = eef
-        rospy.set_param('/R_001/dsr/eef', self.eef)
+    
     
     def calcRelMove(self, waypoint, eef_flag):
         # for i in range(len(waypoint)):
         #     waypoint[i] += self.drl_pose[i]
         if eef_flag == True:
-            eef_angle = -DEG2RAD(self.eef_angle)
-            print(self.eef_angle)
+            eef_angle = -DEG2RAD(self.status['gripper_angle'])
+            print(self.status['gripper_angle'])
             if abs(eef_angle) > EPSILON:
                 dx = deepcopy(waypoint[0])
                 dy = deepcopy(waypoint[1])
@@ -459,7 +471,7 @@ class DRLInterface():
         for i in range(1, 16+1):
             set_digital_output(i, 0)
         rospy.sleep(0.5)
-
+        
     def compressor_on(self):
         pin = ACTION_IO_COMPRESSOR
         if get_digital_output(pin) == 0:
@@ -500,7 +512,6 @@ class DRLInterface():
         pin = ACTION_IO_SUCTIONCUP
         if get_digital_output(pin) == 1:
             set_digital_output(pin,0)
-
     def rotate_on(self):
         pin = 9
         if get_digital_output(pin) == 0:
@@ -536,9 +547,9 @@ class DRLInterface():
         self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
         if self.ARsearchFromEEF(bed_number) == True:
             self.ARsetReference(bed_number, 5)
-            self.eef_angle = 225
+            self.status['gripper_angle'] = 225
 
-            waypoint_1 = self.calcRelMove([50, 0, -100, 0, 0, self.eef_angle], False)
+            waypoint_1 = self.calcRelMove([50, 0, -100, 0, 0, self.status['gripper_angle']], False)
             waypoint_2 = self.calcRelMove([-210, 0, 172, 0, 0, 0], True)
             waypoint_3 = self.calcRelMove([0, 0, 43, 0, 0, 0], True)
             waypoint_4 = self.calcRelMove([0, 0, -80, 0, 0, 0], True)
@@ -561,29 +572,6 @@ class DRLInterface():
             movej(Q_TOP_PLATE)
             self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0)
 
-        # self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
-        # if self.ARsearchFromEEF(bed_number) == True:
-        #     self.ARsetReference(bed_number, 4)
-        #     P_UNIVERSALJIG_3DP_BED = [-461.6261901855469, 51.8516845703125, 272.7024841308594, 91.4110336303711, 175.78863525390625, -131.13372802734375]
-        #     self.ARupdateParam(0.0, 0.0, 0.3, rz=-45.0);  rospy.sleep(1);  self.ARsearchFromBase(bed_number);  waypoint_0 = deepcopy(self.drl_pose)
-        #     waypoint_1 = deepcopy(waypoint_0);     waypoint_1[1] -= 120
-        #     waypoint_2 = deepcopy(waypoint_0);     waypoint_2[1] += 40;     waypoint_2[2] -= 110
-        #     waypoint_3 = deepcopy(waypoint_2);     waypoint_3[2] -= 45
-        #     waypoint_4 = P_UNIVERSALJIG_3DP_BED;   waypoint_4[2] += 100
-        #     waypoint_5 = deepcopy(waypoint_4);     waypoint_5[2] -= 120
-        #     movel(waypoint_1, ref=DR_BASE, mod=DR_MV_MOD_ABS)
-        #     movel(waypoint_2)
-        #     movel(waypoint_3)
-        #     self.suction_cup_on()
-        #     movel(waypoint_2)
-        #     movel(waypoint_1)
-        #     movel(waypoint_4)
-        #     movel(waypoint_5)
-        #     self.suction_cup_off();  rospy.sleep(1)
-        #     self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
-        #     movel(waypoint_4)
-        #     movej(Q_HOME)
-        #     self.ARupdateParam(0.0, -0.12, 0.20, rx=180.0, ry=0.0, rz=180.0)
 
     def getBedFromJigToPrinter(self, printer_number):
         bed_number = printer_number + 4
@@ -604,8 +592,8 @@ class DRLInterface():
 
             if self.ARsearchFromEEF(printer_number) == True:
                 self.ARsetReference(printer_number, 4)
-                self.eef_angle = 223
-                waypoint_1 = self.calcRelMove([0, 90, 0, 0, 0, self.eef_angle], False)
+                self.status['gripper_angle'] = 223
+                waypoint_1 = self.calcRelMove([0, 90, 0, 0, 0, self.status['gripper_angle']], False)
                 waypoint_2 = self.calcRelMove([-110, -7, 80, 0, 0, 0], True)
                 waypoint_3 = self.calcRelMove([0, 0, 20, 0, 0, 0], True)
                 waypoint_4 = self.calcRelMove([0, 0, -50, 0, 0, 0], True)
@@ -620,34 +608,6 @@ class DRLInterface():
                 movej(Q_TOP_PLATE)
                 self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0)
             
-
-
-
-
-
-        # if self.ARsearchFromEEF(bed_number) == True: ## when AR tag is detected, execute the following codes
-        #     movej(Q_SEARCH_3DP_PLATE)
-        #     self.movel_z(100)
-        #     self.suction_cup_on();  rospy.sleep(1)
-        #     self.jig_x_open();  self.jig_y_open(); rospy.sleep(1)
-        #     self.movel_z(-100)
-        #     movej(Q_SEARCH_3DP_RIGHT)
-        #     self.ARsetReference(printer_number, 4)
-        #     self.ARupdateParam(-0.047, -0.310, 0.38, rz=135.0);  rospy.sleep(1);  self.ARsearchFromBase(printer_number)
-        #     waypoint_1 = self.drl_pose;           waypoint_1[0] -= 35
-        #     waypoint_2 = deepcopy(waypoint_1);    waypoint_2[2] -= 90
-        #     waypoint_3 = deepcopy(waypoint_2);    waypoint_3[1] += 295
-        #     waypoint_4 = deepcopy(waypoint_3);    waypoint_4[2] -= 120
-        #     movel(waypoint_1, vel=[130,50], acc=[100,50])
-        #     movel(waypoint_2, vel=[130,50], acc=[100,50])
-        #     movel(waypoint_3, vel=[130,50], acc=[100,50])
-        #     movel(waypoint_4, vel=[130,50], acc=[100,50])
-        #     self.suction_cup_off()
-        #     movel(waypoint_3, vel=[130,50], acc=[100,50])
-        #     movel(waypoint_2, vel=[130,50], acc=[100,50])
-        #     movel(waypoint_1, vel=[130,50], acc=[100,50])
-        #     # movej(Q_SEARCH_3DP_PLATE)
-        #     self.ARupdateParam(0.0, -0.12, 0.20, rx=180.0, ry=0.0, rz=180.0)
 
     def specimenAlign(self):
         movel([-405.0, 8.0, 280.0, 90.0, -180.0, 0.0])
@@ -677,11 +637,13 @@ class DRLInterface():
     def pnp_cb(self, msg):
         set_robot_mode(ROBOT_MODE_AUTONOMOUS)
         release_compliance_ctrl()
-        self.robot_status = "running"
         self.setVelAcc(50, 50, [150,50], [150,50])
-        self.status_pub.publish(URStatus(status=self.robot_status, arm_status = self.joints_state))
+        
+        
         self.cmd_protocol = int(float(msg.data))
         print(self.cmd_protocol)
+        
+        self.status['current_work'] = self.cmd_protocol
 
         ########################################################################################################################################################
         # ACTION [0]: Home position
@@ -928,7 +890,7 @@ class DRLInterface():
             if self.ARsearchFromEEF(ar_tag) == True: 
                 self.ARsetReference(ar_tag, 4)
                 self.movel_xyz(-178, -90, -180)
-                movej([self.current_posj[0], self.current_posj[1], self.current_posj[2], self.current_posj[3], self.current_posj[4], self.current_posj[5] - 180])
+                movej([self.status['posj'][0], self.status['posj'][1], self.status['posj'][2], self.status['posj'][3], self.status['posj'][4], self.status['posj'][5] - 180])
                 self.movel_xyz(0, 0, 298)
                 # self.ARsetReference(ar_tag, 1); rospy.sleep(0.5)
                 # self.ARsetReference(ar_tag, 1); rospy.sleep(0.5)
@@ -945,8 +907,8 @@ class DRLInterface():
             self.movel_z(-100)
             self.movel_xyz(100, -200, -100)
             # movel([0,0,-200,0,0,90], mod = 1, ref = 1)
-            # viewpoint = deepcopy(self.current_posx);    viewpoint[4] -= 20
-            viewpoint = [self.current_posx[0],self.current_posx[1],self.current_posx[2],self.current_posx[3],self.current_posx[4]-20,self.current_posx[5]]
+            # viewpoint = deepcopy(self.status['posx']);    viewpoint[4] -= 20
+            viewpoint = [self.status['posx'][0],self.status['posx'][1],self.status['posx'][2],self.status['posx'][3],self.status['posx'][4]-20,self.status['posx'][5]]
             movel(viewpoint)
 
         # Task [10004]: Testing compliance mode using scale -> (F = -kx // k=10;10;100 , x=10;10;100)
@@ -961,14 +923,14 @@ class DRLInterface():
             x = 10
             g = 9.81
             
-            eef_weight = self.toolforce[2]
+            eef_weight = self.status['force'][2]
             task_compliance_ctrl([100, 100, 10, 1000, 1000, 1000])
 
 
             ##contact point 정의 필요 movel할 것
             while(True):
-                if self.toolforce[2] == 0.0:  #set force in N
-                    contact_posx = posx(self.current_posx[0], self.current_posx[1], self.current_posx[2]+5, 180, 180, 0)
+                if self.status['force'][2] == 0.0:  #set force in N
+                    contact_posx = posx(self.status['posx'][0], self.status['posx'][1], self.status['posx'][2]+5, 180, 180, 0)
                     release_compliance_ctrl()
                     print("Z position: {}".format(contact_posx[2]))
                     break
@@ -1031,7 +993,7 @@ class DRLInterface():
                     self.movel_z(102, [100, 100], [100, 100]) #go down 94 for debug T4 -> 103mm
                     while True:
                         self.specimen_shaking()
-                        if self.toolforce[1] > 30:
+                        if self.status['force'][1] > 30:
                             self.gripper_open()
                             self.movel_x_base(-50)
                             continue
@@ -1358,15 +1320,15 @@ class DRLInterface():
             k = 100
             g = 9.81
             
-            eef_weight = self.toolforce[2]
-            print(self.toolforce)
+            eef_weight = self.status['force'][2]
+            print(self.status['force'])
             print(task_compliance_ctrl([3000, 3000, 2000, 2000, 2000, 2000]))
             print 'comliance working'
 
             while(True):
-                print(self.toolforce[2])
-                if self.toolforce[2] > 7:  #set force in N
-                    contact_posx = posx(self.current_posx[0], self.current_posx[1], self.current_posx[2]+5, 180, 180, 0)
+                print(self.status['force'][2])
+                if self.status['force'][2] > 7:  #set force in N
+                    contact_posx = posx(self.status['posx'][0], self.status['posx'][1], self.status['posx'][2]+5, 180, 180, 0)
                     release_compliance_ctrl()
                     print("Z position: {}".format(contact_posx[2]))
                     break
@@ -1587,9 +1549,10 @@ class DRLInterface():
 
         ########################################################################################################################################################
         set_robot_mode(ROBOT_MODE_MANUAL)
-        release_compliance_ctrl()  
-        self.robot_status = "done"
-        self.status_pub.publish(URStatus(status=self.robot_status, arm_status = self.joints_state))
+        release_compliance_ctrl()
+
+        self.status['recent_work'] = self.status['current_work']
+        self.status['current_work'] = None
     
         
 
@@ -1598,9 +1561,9 @@ if __name__=='__main__':
     
     while not rospy.is_shutdown():
         pass
-        if(idim.dsr_flag == 2):
+        if(idim.dsr_status == 2):
             idim.robot_status = "running"
-        #elif(idim.dsr_flag == 1 and idim.robot_status == "running"):
+        #elif(idim.dsr_status == 1 and idim.robot_status == "running"):
         #    idim.robot_status = "done"
         #else:
         #    idim.robot_status = "waiting"
