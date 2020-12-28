@@ -25,6 +25,8 @@ class DeviceClass_Cobot():
         self.vision_pub = rospy.Publisher("vision_2d_flag",Int32, queue_size=1)
         self.gripper_pub = rospy.Publisher("PC_to_GRIPPER", String, queue_size=1)
 
+        self.status_overwrite = None
+
         self.status = dict()
         self.status['device_type'] = 'Collaborative Robot'
         self.status['device_name'] = device_name
@@ -120,6 +122,7 @@ class DeviceClass_Cobot():
     '''
     def dsr_state_cb(self, msg):
         self.status['status'] = self.enum_robot_state[str(msg.robot_state)]
+        self.status['status'] = "Moving" if self.status_overwrite == "Moving" else self.status['status']
 
         self.status['posx'] = msg.current_posx
         self.status['posj'] = msg.current_posj
@@ -663,6 +666,7 @@ class DeviceClass_Cobot():
 
         print(self.cmd_protocol)
         self.status['current_work'] = self.cmd_protocol
+        self.status_overwrite = "Moving"
 
         set_robot_mode(ROBOT_MODE_AUTONOMOUS)
         release_compliance_ctrl()
@@ -1490,6 +1494,7 @@ class DeviceClass_Cobot():
         set_robot_mode(ROBOT_MODE_MANUAL)
         release_compliance_ctrl()
 
+        self.status_overwrite = "Standby"
         self.status['recent_work'] = self.status['current_work']
         self.status['current_work'] = None
     
@@ -1510,5 +1515,6 @@ if __name__=='__main__':
     #     #    idim.robot_status = "waiting"
     #     # idim.status_pub.publish(URStatus(status=idim.robot_status, arm_status = idim.joints_state))
     #     rospy.sleep(0.1)
+
     # set_robot_mode(ROBOT_MODE_MANUAL)
     
