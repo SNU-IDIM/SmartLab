@@ -4,24 +4,12 @@
 import os, sys
 import json
 from threading import Thread
+from time import sleep
 sys.dont_write_bytecode = True
 HOME_DIR = os.getenv('HOME')
 sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../../snu_idim_common/imp")) )
 from IDIM_header import *
 from IDIM_framework import *
-
-def all_close(goal, actual, tolerance):
-  all_equal = True
-  if type(goal) is list:
-    for index in range(len(goal)):
-      if abs(actual[index] - goal[index]) > tolerance:
-        return False
-  elif type(goal) is geometry_msgs.msg.PoseStamped:
-    return all_close(goal.pose, actual.pose, tolerance)
-
-  elif type(goal) is geometry_msgs.msg.Pose:
-    return all_close(pose_to_list(goal), pose_to_list(actual), tolerance)
-  return True
 
 
 class DeviceClass_Cobot():
@@ -36,6 +24,8 @@ class DeviceClass_Cobot():
         self.image_sub = rospy.Subscriber("/R_001/camera/color/image_raw",Image,self.vision_cb)
         self.vision_pub = rospy.Publisher("vision_2d_flag",Int32, queue_size=1)
         self.gripper_pub = rospy.Publisher("PC_to_GRIPPER", String, queue_size=1)
+
+        self.status_overwrite = None
 
         self.status = dict()
         self.status['device_type'] = 'Collaborative Robot'
@@ -55,16 +45,27 @@ class DeviceClass_Cobot():
         self.status['gripper_state_suction'] = 'On'
         
         self.status['compressor'] = 'Off'
-        self.status['tool_changer'] = 'Open'
+        self.status['toolchanger'] = 'Attach'
         self.status['universal_jig_x'] = 'Open'
         self.status['universal_jig_y'] = 'Open'
 
+        self.enum_robot_state = dict()
+        self.enum_robot_state['0']  = 'Initializing'
+        self.enum_robot_state['1']  = 'Standby'
+        self.enum_robot_state['2']  = 'Moving'
+        self.enum_robot_state['3']  = 'Safe Off'
+        self.enum_robot_state['4']  = 'Teaching'
+        self.enum_robot_state['5']  = 'Safe Stop'
+        self.enum_robot_state['6']  = 'Emergency Stop'
+        self.enum_robot_state['7']  = 'Homming'
+        self.enum_robot_state['8']  = 'Recovery'
+        self.enum_robot_state['9']  = 'Safe Stop 2'
+        self.enum_robot_state['10'] = 'Safe Off 2'
 
         self.target_pose = Pose()
         self.drl_pose = Q_TOP_PLATE
         self.eulerZYZ = np.zeros(3)
         self.cmd_protocol = ACTION_HOME
-
 
         self.toolforce_max      = 0.0
         self.toolforce_max_flag = False
@@ -90,29 +91,53 @@ class DeviceClass_Cobot():
         
         set_robot_mode(ROBOT_MODE_AUTONOMOUS);    rospy.sleep(1)
 
-        thread_1 = Thread(target=self.publishStatus)
-        thread_1.start()
-
+        # self.thread_1 = Thread(target=self.publishStatus)
+        # self.thread_1.start()
+        
 
     def publishStatus(self):
-        while True:
-            msg_json = json.dumps(self.status)
-            self.status_pub(self.status)
-            rospy.sleep(0.5)
+        msg_json = json.dumps(self.status)
+        self.status_pub.publish(msg_json)
+        print("\n==============================================================")
+        print("[DEBUG] device_type: {}".format(self.status['device_type']))
+        print("[DEBUG] device_name: {}".format(self.status['device_name']))
+        print("[DEBUG] status: {}".format(self.status['status']))
+        print("[DEBUG] current_work: {}".format(self.status['current_work']))
+        print("[DEBUG] recent_work: {}".format(self.status['recent_work']))
+        print("[DEBUG] posj: {}".format(self.status['posj']))
+        print("[DEBUG] posx: {}".format(self.status['posx']))
+        print("[DEBUG] force: {}".format(self.status['force']))
+        print("[DEBUG] torque: {}".format(self.status['torque']))
+        print("[DEBUG] compressor: {}".format(self.status['compressor']))
+        print("[DEBUG] toolchanger: {}".format(self.status['toolchanger']))
+        print("[DEBUG] universal_jig_x: {}".format(self.status['universal_jig_x']))
+        print("[DEBUG] universal_jig_y: {}".format(self.status['universal_jig_y']))
+        print("[DEBUG] gripper_type: {}".format(self.status['gripper_type']))
+        print("[DEBUG] gripper_state_suction: {}".format(self.status['gripper_state_suction']))
+        print("[DEBUG] gripper_state_mech: {}".format(self.status['gripper_state_mech']))
 
 
     '''
         dsr_state_cb: "~/dsr/state" topic callback function (update dsr_status)
     '''
     def dsr_state_cb(self, msg):
-        if msg.robot_state == 2:
-            self.status['status'] = "Running {}".format(self.status['current_work'])
-        else:
-            self.status['status'] = "Idle"
+        self.status['status'] = self.enum_robot_state[str(msg.robot_state)]
+        self.status['status'] = "Moving" if self.status_overwrite == "Moving" else self.status['status']
 
         self.status['posx'] = msg.current_posx
         self.status['posj'] = msg.current_posj
         self.status['force'] = msg.actual_ett
+        self.status['torque'] = msg.actual_ejt
+
+        io_ctrlbox_status = msg.ctrlbox_digital_output
+        self.status['compressor'] = 'On' if io_ctrlbox_status[0] == 1 else 'Off'
+        self.status['toolchanger'] = 'Detach' if io_ctrlbox_status[1] == 1 else 'Attach'
+        self.status['universal_jig_x'] = 'Close' if io_ctrlbox_status[4] == 1 else 'Open'
+        self.status['universal_jig_y'] = 'Close' if io_ctrlbox_status[5] == 1 else 'Open'
+        self.status['gripper_state_suction'] = 'On' if io_ctrlbox_status[7] == 1 else 'Off'
+
+        io_flange_status = msg.flange_digital_output
+        self.status['gripper_state_mech'] = 'Close' if io_flange_status[1] == 1 else 'Open'
 
         ## Initialize Maximum tool force
         if not self.toolforce_max_flag:
@@ -264,7 +289,6 @@ class DeviceClass_Cobot():
                 angle_error -= 360.0
 
             print(angle_error)
-
             
             # math.sin(DEG2RAD(angle_error)) < 0 + tol and math.sin(DEG2RAD(angle_error)) > 0 - tol ## 0 deg
             # math.sin(DEG2RAD(angle_error)) > 1 - tol ## 90 deg
@@ -537,12 +561,12 @@ class DeviceClass_Cobot():
         if get_tool_digital_output(2) == 0:
             set_tool_digital_output(2, 1)
 
+
     def getBedFromPrinterToJig(self, printer_number):
         bed_number = printer_number + 4
         self.setVelAcc(50, 50, [100,50], [100,50])
         self.jig_x_open();  self.jig_y_open();  rospy.sleep(1)
         movej(Q_SEARCH_3DP_RIGHT)
-
 
         self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
         if self.ARsearchFromEEF(bed_number) == True:
@@ -556,7 +580,6 @@ class DeviceClass_Cobot():
             waypoint_5 = self.calcRelMove([300, 0, 0, 0, 0, 0], True)
             waypoint_6 = P_UNIVERSALJIG_3DP_BED;   waypoint_6[2] += 100
             waypoint_7 = deepcopy(waypoint_6);     waypoint_7[2] -= 135
-
 
             movel(waypoint_1, ref=DR_TOOL, mod=DR_MV_MOD_REL)
             movel(waypoint_2, ref=DR_TOOL, mod=DR_MV_MOD_REL)
@@ -635,16 +658,20 @@ class DeviceClass_Cobot():
             @ TASK_[이름 정의(대문자)]   : 10001  ~ 20000
     '''
     def pnp_cb(self, msg):
+        try:
+            cmd_dict = json.load(msg.data)
+            self.cmd_protocol = cmd_dict['command']
+        except:
+            self.cmd_protocol = int(float(msg.data))
+
+        print(self.cmd_protocol)
+        self.status['current_work'] = self.cmd_protocol
+        self.status_overwrite = "Moving"
+
         set_robot_mode(ROBOT_MODE_AUTONOMOUS)
         release_compliance_ctrl()
         self.setVelAcc(50, 50, [150,50], [150,50])
         
-        
-        self.cmd_protocol = int(float(msg.data))
-        print(self.cmd_protocol)
-        
-        self.status['current_work'] = self.cmd_protocol
-
         ########################################################################################################################################################
         # ACTION [0]: Home position
         if(self.cmd_protocol   == ACTION_HOME):         
@@ -711,6 +738,7 @@ class DeviceClass_Cobot():
         elif(self.cmd_protocol == ACTION_IO_GRIPPER_CLOSE):
             self.gripper_close()
 
+
         # ACTION [301]: Tool Changer - Get Tool1 from Toolchanger1
         elif(self.cmd_protocol == ACTION_TOOLCHANGE_1_ATTACH):
             self.toolchanger_detach()
@@ -737,6 +765,10 @@ class DeviceClass_Cobot():
             self.toolchanger_attach();  rospy.sleep(1)
             movel(p_tool1_step4)
             movel(p_tool1_step5)
+
+            self.status['gripper_type'] = 'Mechanical'
+            
+
         # ACTION [-301]: Tool Changer - Place Tool1 to the Toolchanger1
         elif(self.cmd_protocol == ACTION_TOOLCHANGE_1_DETACH):
             # P_TOOLCHANGE_1 = [-436.074462890625, -346.8432312011719, 69.4855728149414, 101.02711486816406, 179.40762329101562, 22.690649032592773]
@@ -768,7 +800,10 @@ class DeviceClass_Cobot():
 
             self.setVelAcc(200, 200, [400,100], [400,100])
             movel(p_tool1_step7)
+
+            self.status['gripper_type'] = None
             
+
         # ACTION [302]: Tool Changer - Get Tool2 from Toolchanger2
         elif(self.cmd_protocol == ACTION_TOOLCHANGE_2_ATTACH):
             self.toolchanger_detach()
@@ -796,15 +831,7 @@ class DeviceClass_Cobot():
             movel(p_tool2_step4)
             movel(p_tool2_step5)
 
-        # ACTION [20010]: test
-        elif(self.cmd_protocol == 20010):
-            movej(Q_HOME)
-            task_compliance_ctrl([5000, 5000, 100, 5000, 5000, 5000])
-            print "1"
-            self.movel_z(20)
-            print "2"
-            release_compliance_ctrl()
-            print "3"
+            self.status['gripper_type'] = 'Suction'
 
 
         # ACTION [-302]: Tool Changer - Place Tool2 to the Toolchanger2
@@ -839,6 +866,8 @@ class DeviceClass_Cobot():
             movel(p_tool2_step7)
             self.setVelAcc(50, 50, [50,100], [50,100])
 
+            self.status['gripper_type'] = None
+
 
         # ACTION [1000 ~ 1999]: Trans X (relative move)
         elif(abs(self.cmd_protocol) >= ACTION_TRANS_X and abs(self.cmd_protocol) < ACTION_TRANS_Y):
@@ -853,6 +882,7 @@ class DeviceClass_Cobot():
             sign = self.cmd_protocol / abs(self.cmd_protocol)
             self.movel_z(sign * (abs(self.cmd_protocol) - ACTION_TRANS_Z))
         
+
         # Task [10001]: Pick a tensile test specimen
         elif(self.cmd_protocol == TASK_SPECIMEN_PICK):
             self.gripper_open()
@@ -874,6 +904,7 @@ class DeviceClass_Cobot():
             movel(backup)
             
             movej(Q_TOP_PLATE, 50, 50)
+
 
         # Task [10002]: Search AR_Marker attached to the upper gripper of Instron
         elif(self.cmd_protocol == TASK_INSTRON_SEARCH):
@@ -911,6 +942,7 @@ class DeviceClass_Cobot():
             viewpoint = [self.status['posx'][0],self.status['posx'][1],self.status['posx'][2],self.status['posx'][3],self.status['posx'][4]-20,self.status['posx'][5]]
             movel(viewpoint)
 
+
         # Task [10004]: Testing compliance mode using scale -> (F = -kx // k=10;10;100 , x=10;10;100)
         elif(self.cmd_protocol == TASK_TEST_COMPLIANCE):
             self.setVelAcc(50, 50, [50,100], [50,100])
@@ -925,7 +957,6 @@ class DeviceClass_Cobot():
             
             eef_weight = self.status['force'][2]
             task_compliance_ctrl([100, 100, 10, 1000, 1000, 1000])
-
 
             ##contact point 정의 필요 movel할 것
             while(True):
@@ -948,8 +979,6 @@ class DeviceClass_Cobot():
                     release_compliance_ctrl()
                     movel(contact_posx, vel=[20,20], acc=[100,50])
                     self.toolforce_max = 0.0
-
-
 
 
         # Task [10006]: SEARCH AND APPROACH TO ''MULTIPLE'' SPECIMENS AND DETACH TO THE BED
@@ -1061,7 +1090,7 @@ class DeviceClass_Cobot():
             movej(Q_MULSPECIMEN_SEARCH)
                 
 
-        # Task [10008]: AfTER ATTACHING SENSOR PICK SPECIMEN AND PLACE ON RACK
+        # Task [10008]: AFTER ATTACHING SENSOR PICK SPECIMEN AND PLACE ON RACK
         elif(self.cmd_protocol == TASK_PICK_PLACE_RACK):
             self.gripper_open()
             self.setVelAcc(30, 30, [30, 30], [30, 30])
@@ -1092,6 +1121,7 @@ class DeviceClass_Cobot():
 
             movej(Q_MULSPECIMEN_SEARCH)
 
+
         # Task [10009]: Specimen pick and place at rack TEST
         elif(self.cmd_protocol == TASK_PICK_PLACE_RACK_TEST):
             self.gripper_open()
@@ -1103,96 +1133,6 @@ class DeviceClass_Cobot():
             self.move_lack_pick()
             movej(Q_MULSPECIMEN_SEARCH)
 
-
-            # self.gripper_open()
-            # # rospy.sleep(5)
-            # # self.gripper_close()
-            
-            # self.setVelAcc(30, 30, [50,50], [50,50])
-            # # movel([-357.0, 165.0, 322.0, -181.3, -180.0, 0.0])
-            # movej(Q_MULSPECIMEN_SEARCH)
-
-            # # self.gripper_open()
-            # # self.jig_x_open();  self.jig_y_open();  rospy.sleep(2)
-            # # self.jig_x_close(); self.jig_y_close(); rospy.sleep(2)
-
-            # object_count=1
-            
-            # ## Publish Flag to 'snu_2d_vision.py' node
-            # self.vision_pub.publish(30002)
-            # rospy.sleep(30) #In order to change previous specimen TF
-
-            # while True:
-            #     try:
-            #         target_frame_name = 'specimen_table_' + str(object_count)
-            #         reference_frame_name = 'base_0'
-            #         print "Searching specimen ..."
-            #         print("Target frame: "    + target_frame_name)
-            #         print("Reference frame: " + reference_frame_name)
-            #         print "Trying to search the specimen: %s ..."%target_frame_name
-            #         self.listener.waitForTransform(reference_frame_name, target_frame_name, rospy.Time(), rospy.Duration(5.0))
-            #         (trans,rot) = self.listener.lookupTransform(reference_frame_name, target_frame_name, rospy.Time(0))
-            #         self.update_target_pose(trans, rot)
-            #         self.updateEulZYZ()
-            #         self.drl_pose = deepcopy(posx(self.target_pose.position.x, self.target_pose.position.y, 332 , -181.3, -180, -self.eulerZYZ[2]-self.eulerZYZ[0]))
-            #         print('Target DRL Pose: ' , self.drl_pose)
-            #         print('search complete')
-
-            #         movel(self.drl_pose)
-            #         self.movel_z(104, [100, 100], [100, 100]) #go down 95 for development
-            #         self.gripper_close()
-            #         self.movel_z(-104,[100, 100], [100, 100]) #go up
-            #         movej(Q_MULSPECIMEN_SEARCH)
-                    
-            #         # self.setVelAcc(100, 100, [150,100], [150,100])
-            #         self.setVelAcc(30, 30, [30,30], [30,30])
-
-            #         movej(Q_PLACE_INITIAL)
-            #         movel(P_PLACE_INCLINE)
-                    
-            #         if object_count == 1:
-            #             movel(P_PLACE_RACK_1)
-            #         elif object_count == 2:
-            #             movel(P_PLACE_RACK_2)
-            #         elif object_count == 3:
-            #             movel(P_PLACE_RACK_3)
-            #         elif object_count == 4:
-            #             movel(P_PLACE_RACK_4)
-
-            #         self.move_lack_place()
-
-            #         movej(Q_MULSPECIMEN_SEARCH)
-
-            #         object_count = object_count+1
-
-            #     except (Exception):
-            #         print "[ERROR]: The Target(TF) is not Detected !!!"
-            #         print("Specimen count :{}".format(object_count-1))
-            #         break
-
-            # self.specimenAlign()
-
-            # movej(Q_MULSPECIMEN_SEARCH)
-            # movel(P_PICK_INITIAL)
-            # movel(P_PICK_INCLINE)
-            # movel(P_PICK_RACK_1)
-            # self.move_lack_pick()
-
-            # movej(Q_MULSPECIMEN_SEARCH)
-            # self.gripper_open()
-            # movel(P_PICK_INITIAL)
-            # movel(P_PICK_INCLINE)
-            # movel(P_PICK_RACK_2)
-            # self.move_lack_pick()
-
-            # movej(Q_MULSPECIMEN_SEARCH)
-            # self.gripper_open()
-            # movel(P_PICK_INITIAL)
-            # movel(P_PICK_INCLINE)
-            # movel(P_PICK_RACK_3)
-            # self.move_lack_pick()
-
-            # # self.jig_x_open();  self.jig_y_open()
 
         # Task [10010]: Alignment task
         elif(self.cmd_protocol == TASK_RACK_ALIGN):
@@ -1226,6 +1166,7 @@ class DeviceClass_Cobot():
         elif(self.cmd_protocol == TASK_3DP_4_BED_OUT):
             self.getBedFromPrinterToJig(4)
 
+
         # Task [10020]: "DEMO_COLOR_SENSOR_HANDLE" - Color sensor handling demo
         elif(self.cmd_protocol == TASK_ATTACH_SENSOR):
             movej(Q_HOME)
@@ -1239,6 +1180,7 @@ class DeviceClass_Cobot():
             self.getColorSensor(8); movej(Q_COLOR_SENSOR_TRAY_RETRACT); movel(P_COLOR_SENSOR_TRAY_RIGHT); movel(P_COLOR_SENSOR_8); self.movel_z(5); self.suction_cup_off(); self.movel_z(-5)
             movej(Q_HOME)
         
+
         # ACTION [10021 ~ 10030]: Attach sensor (1~8) to the specimen
         elif(abs(self.cmd_protocol) >= TASK_ATTACH_SENSOR and abs(self.cmd_protocol) < TASK_ATTACH_SENSOR+10):
             Q_SPECIMEN_RETRACT = [35.044342041015625, 9.633670806884766, -137.1417694091797, -0.0, -52.49190902709961, 35.044342041015625]
@@ -1279,6 +1221,8 @@ class DeviceClass_Cobot():
             # release_compliance_ctrl()
             self.gripper_open()
             movel(waypoint_1)
+
+
         # Task [-10031]: Adhesive saver out
         elif(self.cmd_protocol == TASK_ADHESIVE_SAVER_OUT):
             init_posj = [33.17411804199219, 4.681657791137695, -134.74765014648438, 0.07327302545309067, -50.032894134521484, -56.88725280761719]
@@ -1304,6 +1248,7 @@ class DeviceClass_Cobot():
             # release_compliance_ctrl()
             self.gripper_open()
             self.movel_z(-100)
+
 
         # Task [10032]: Drop adhesive
         elif(self.cmd_protocol == TASK_ADHESIVE_DROP):
@@ -1335,6 +1280,7 @@ class DeviceClass_Cobot():
                 self.movel_z_base(-0.2)
             movej(init_posj,50,50)
 
+
         # Task [10033]: Move specimen t o the center of the working table
         elif(self.cmd_protocol == TASK_SEPCIMEN_TO_CENTER):
             self.setVelAcc(50, 50, [150,50], [150,50])
@@ -1358,8 +1304,6 @@ class DeviceClass_Cobot():
             self.movel_y_base(-20)
             release_compliance_ctrl()
             self.gripper_open();    rospy.sleep(1)
-
-
 
             self.movel_z(-50)
             movej(Q_SPECIMEN_RETRACT)
@@ -1413,7 +1357,6 @@ class DeviceClass_Cobot():
             # waypoint_11 = deepcopy(P_SPECIMEN_SENSOR_SUCTION)
             # waypoint_12 = deepcopy(waypoint_1);              waypoint_12[0] -= 15
 
-
             movej(Q_SPECIMEN_RETRACT)
             movel(waypoint_1)
             movel(waypoint_2)
@@ -1445,21 +1388,10 @@ class DeviceClass_Cobot():
             movej(Q_SPECIMEN_RETRACT)
 
 
-
-
         # TEST: Color sensor handling [20004]
         elif(self.cmd_protocol == 20004):
             # movel([-292.6132507324219, 113.29225158691406, 186.91656494140625, 180, -180, 90])
             self.getColorSensor(1)
-            
-
-
-                        
-                        
-
-            
-
-
             # movej(Q_COLOR_SENSOR_TRAY_RETRACT)
             # movel(P_COLOR_SENSOR_TRAY)
             # movel(P_COLOR_SENSOR_1)
@@ -1484,15 +1416,27 @@ class DeviceClass_Cobot():
             # movel(P_COLOR_SENSOR_TRAY)
             # movej(Q_COLOR_SENSOR_TRAY_RETRACT)
 
+
         # TEST: AR tag [20005]
         elif(self.cmd_protocol == 20005):
             self.setVelAcc(100, 100, [100,50], [100,50])
 
-            movej([-94.16948699951172, 13.094762802124023, -139.440673828125, 4.467286109924316, -30.818634033203125, -185.12245178222656])
+            movej(Q_HOME)
             # movej(Q_SEARCH_3DP_RIGHT)
-            ar_tag_number = 7
-            self.ARupdateParam(-0.12, 0.0, 0.26, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
+            ar_tag_number = 6
+            self.ARupdateParam(-0.12, 0.0, 0.30, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
             self.ARsetReference(ar_tag_number, 5)
+
+
+        # ACTION [20010]: test
+        elif(self.cmd_protocol == 20010):
+            movej(Q_HOME)
+            task_compliance_ctrl([5000, 5000, 100, 5000, 5000, 5000])
+            print "1"
+            self.movel_z(20)
+            print "2"
+            release_compliance_ctrl()
+            print "3"
 
 
         ## 기계시스템설계2 최영진 학생 코드   `
@@ -1512,7 +1456,6 @@ class DeviceClass_Cobot():
                 release_compliance_ctrl()
                 # release_compliance_ctrl()
 
-
                 self.movel_x(120, ref = DR_BASE)
                 task_compliance_ctrl([100, 100, 1000, 100, 100, 100])
                 self.rotate_on()
@@ -1522,7 +1465,6 @@ class DeviceClass_Cobot():
                 self.movel_y(-100, ref = DR_BASE)
                 release_compliance_ctrl()
                 self.rotate_off()
-
                 
                 ## Action 2. move to the target spot
                 ## self.setVelAcc(100, 100, [400, 100], [400, 100])
@@ -1531,6 +1473,7 @@ class DeviceClass_Cobot():
                 ## ar_tag_target = 6
                 ## self.ARupdateParam(-0.12, 0.0, 0.20, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
                 ## self.ARsetReference(ar_tag_target, 4)
+
 
         ##CONTROL IDIM_GRIPPER (30000)
         elif(self.cmd_protocol == IDIM_CONTROL_TEST):
@@ -1551,23 +1494,27 @@ class DeviceClass_Cobot():
         set_robot_mode(ROBOT_MODE_MANUAL)
         release_compliance_ctrl()
 
+        self.status_overwrite = "Standby"
         self.status['recent_work'] = self.status['current_work']
         self.status['current_work'] = None
     
         
 
 if __name__=='__main__':
-    idim = DRLInterface("snu_drl_commander")
+    cobot = DeviceClass_Cobot(device_name="cobot")
     
     while not rospy.is_shutdown():
+        cobot.publishStatus()
+        sleep(0.5)
         pass
-        if(idim.dsr_status == 2):
-            idim.robot_status = "running"
-        #elif(idim.dsr_status == 1 and idim.robot_status == "running"):
-        #    idim.robot_status = "done"
-        #else:
-        #    idim.robot_status = "waiting"
-        idim.status_pub.publish(URStatus(status=idim.robot_status, arm_status = idim.joints_state))
-        rospy.sleep(0.1)
+    #     # if(idim.dsr_status == 2):
+    #     #     idim.robot_status = "running"
+    #     #elif(idim.dsr_status == 1 and idim.robot_status == "running"):
+    #     #    idim.robot_status = "done"
+    #     #else:
+    #     #    idim.robot_status = "waiting"
+    #     # idim.status_pub.publish(URStatus(status=idim.robot_status, arm_status = idim.joints_state))
+    #     rospy.sleep(0.1)
+
     # set_robot_mode(ROBOT_MODE_MANUAL)
     

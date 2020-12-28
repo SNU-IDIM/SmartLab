@@ -362,12 +362,12 @@ class snu_vision_2d():
 
         # VISION [30002] : SEARCH SPECIMEN (CANNY -> CONTOUR)
         elif self.vision_protocol == TASK_JOG_DEVEL :
-            location = '/home/syscon/catkin_ws/src/SNU_IDIM_ASMR/specimen_image/specimen.png'   
+            location = '/home/syscon/catkin_ws/src/SNU_SmartLAB/snu_idim_cobot/specimen_image/specimen.png'   
             cv2.imwrite(location, self.specimen_image)
             rospy.sleep(1)    
             os.system('python3 /home/syscon/test2.py')
             rospy.sleep(1)
-            specimen_info = pd.read_csv('/home/syscon/catkin_ws/src/SNU_IDIM_ASMR/specimen_image/specimen.csv')
+            specimen_info = pd.read_csv('/home/syscon/catkin_ws/src/SNU_SmartLAB/snu_idim_cobot/specimen_image/specimen.csv')
             specimen_np = specimen_info.to_numpy()
             # print(specimen_np)
             size = np.shape(specimen_np)
