@@ -41,7 +41,7 @@ class DevicePluginToROS:
             thread_1.start()
             # self.device_runNode()
         
-        ## Node for execution manager
+        ## Node for device manager
         else:
             self.manager_cmd_publisher = rospy.Publisher("{}/command".format(self.device_name), String, queue_size=1)
             rospy.Subscriber('{}/status'.format(self.device_name), String, self.manager_status_cb, queue_size=1)

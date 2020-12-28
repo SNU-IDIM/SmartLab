@@ -659,8 +659,8 @@ class DeviceClass_Cobot():
     '''
     def pnp_cb(self, msg):
         try:
-            cmd_dict = json.load(msg.data)
-            self.cmd_protocol = cmd_dict['command']
+            cmd_dict = json.loads(msg.data)
+            self.cmd_protocol = int(cmd_dict['command'])
         except:
             self.cmd_protocol = int(float(msg.data))
 
@@ -981,7 +981,7 @@ class DeviceClass_Cobot():
                     self.toolforce_max = 0.0
 
 
-        # Task [10006]: SEARCH AND APPROACH TO ''MULTIPLE'' SPECIMENS AND DETACH TO THE BED
+        # Task [10005]: SEARCH AND APPROACH TO ''MULTIPLE'' SPECIMENS AND DETACH TO THE BED
         elif(self.cmd_protocol == TASK_DETACH_SPECIMEN):
             # self.setVelAcc(50, 50, [150,100], [150,100])
             self.setVelAcc(30, 30, [30,30], [30,30])
@@ -1049,7 +1049,7 @@ class DeviceClass_Cobot():
             # self.jig_x_open();  self.jig_y_open()
 
 
-        # Task [10007]: SEARCH ONE SPECIMEN AND PICK UP
+        # Task [10006]: SEARCH ONE SPECIMEN AND PICK UP
         elif(self.cmd_protocol == TASK_SEARCH_PICK_SPECIMEN):
             self.gripper_open()
             # rospy.sleep(5)
@@ -1090,7 +1090,7 @@ class DeviceClass_Cobot():
             movej(Q_MULSPECIMEN_SEARCH)
                 
 
-        # Task [10008]: AFTER ATTACHING SENSOR PICK SPECIMEN AND PLACE ON RACK
+        # Task [10007]: AFTER ATTACHING SENSOR PICK SPECIMEN AND PLACE ON RACK
         elif(self.cmd_protocol == TASK_PICK_PLACE_RACK):
             self.gripper_open()
             self.setVelAcc(30, 30, [30, 30], [30, 30])
@@ -1122,7 +1122,7 @@ class DeviceClass_Cobot():
             movej(Q_MULSPECIMEN_SEARCH)
 
 
-        # Task [10009]: Specimen pick and place at rack TEST
+        # Task [10008]: Specimen pick and place at rack TEST
         elif(self.cmd_protocol == TASK_PICK_PLACE_RACK_TEST):
             self.gripper_open()
             self.setVelAcc(70, 70, [50,50], [50,50])
@@ -1134,7 +1134,7 @@ class DeviceClass_Cobot():
             movej(Q_MULSPECIMEN_SEARCH)
 
 
-        # Task [10010]: Alignment task
+        # Task [10009]: Alignment task
         elif(self.cmd_protocol == TASK_RACK_ALIGN):
             self.specimenAlign()            
 
