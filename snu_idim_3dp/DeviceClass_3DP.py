@@ -33,10 +33,14 @@ from selenium.webdriver.common.by import By
 
 
 class DeviceClass_3DP:
-    def __init__(self, device_name='printer0'):
+    def __init__(self, device_name='printer0', ip_=None, port_=None):
         ## Common init for all devices
         self.device_id = int(device_name.split('printer')[1])
+        self.ip = '0.0.0.0' if ip_ == None else ip_
+        self.port = 5000 + self.device_id if port_ == None else int(port_)
+
         self.status = dict()
+        self.status['ip_port'] = 'http://{}:{}/?#temp'.format(self.ip, self.port)
         self.status['device_type'] = '3D Printer'
         self.status['device_name'] = device_name
         self.status['connection'] = ''
@@ -50,9 +54,9 @@ class DeviceClass_3DP:
         executable_path = os.path.join('../snu_idim_3dp', 'chromedriver_81.0.4044.92')
         print(executable_path)
         self.driver = webdriver.Chrome(executable_path=executable_path)
-        self.driver.get('http://0.0.0.0:500{}/?#temp'.format(self.device_id))
+        self.driver.get(self.status['ip_port'])
         try:
-            self.driver.find_element(By.ID, 'login-user').send_keys('wjyun')
+            self.driver.find_element(By.ID, 'login-user').send_keys('smartlab')
             self.driver.find_element(By.ID, 'login-password').send_keys('idimahn1')
             self.driver.find_element(By.ID, 'login-button').click()
         except:

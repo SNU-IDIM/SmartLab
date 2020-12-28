@@ -10,4 +10,4 @@ from DeviceClass_3DP import DeviceClass_3DP
 
 if __name__ == "__main__":
     device_name = 'printer0'
-    printer0_node = DevicePluginToROS(device_name=device_name, device_class=DeviceClass_3DP(device_name))
+    printer0_node = DevicePluginToROS(device_name=device_name, device_class=DeviceClass_3DP(device_name, ip_='192.168.60.101', port_='5001'))

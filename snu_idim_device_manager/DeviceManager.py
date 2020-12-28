@@ -42,7 +42,7 @@ class DeviceManager():
     
 
     def manager3DP(self):
-        printing_queue = ['test1', 'test2', 'test3']
+        printing_queue = ['test1', 'test2', 'test3', 'test1', 'test2', 'test3']
         while True:
             n_printer = 0
             id_list_idle = []
@@ -105,14 +105,20 @@ if __name__ == '__main__':
 
     rospy.init_node('DeviceManager')
 
-    hub = DeviceManager()
-    hub.addDevice('printer0', DeviceClass_3DP('printer0'))
+    manager = DeviceManager()
+    manager.addDevice('printer0', DeviceClass_3DP(device_name='printer0', ip_='192.168.60.101', port_='5001'))
+    manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', ip_='192.168.60.101', port_='5002'))
+    manager.addDevice('printer2', DeviceClass_3DP(device_name='printer2', ip_='192.168.60.101', port_='5003'))
 
+    sleep(15.0)
+
+    for i in range(3):
+        manager.device_dict['printer{}'.format(i)].sendCommand({"connection": True})
     while True:
         sleep(3.0)
-        if len(hub.printer_list_finished) != 0:
+        if len(manager.printer_list_finished) != 0:
             print("[DEBUG] Robot Working................")
             sleep(10.0)
-            hub.printer_list_robot_done.append('printer0')
-        # if hub.device_dict['printer0'].device_status['status'].find('Idle') != -1:
-        #     hub.device_dict['printer0'].sendCommand({'print': '201122_feedrate_test'})
+            manager.printer_list_robot_done.append(manager.printer_list_finished[0])
+        # if manager.device_dict['printer0'].device_status['status'].find('Idle') != -1:
+        #     hmanagerub.device_dict['printer0'].sendCommand({'print': '201122_feedrate_test'})
