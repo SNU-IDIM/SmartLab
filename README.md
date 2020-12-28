@@ -3,53 +3,53 @@
 ### Descriptions
 - **snu_idim_common** : framework of the project and some commonly used codes
     - imp
-        - IDIM_framework.py
-        - IDIM_header.py
+        - **IDIM_framework.py** : global variables, parameters and protocols
+        - **IDIM_header.py** : commonly used libraries
     - src
-        - autoRun.py
-        - cropIcon.py
+        - **cropIcon.py** : icon, image, text cropping tool for 'autoRun.py'
+        - **autoRun.py** : automation program for both Windows & Linux
 - **snu_idim_cobot** : codes for Doosan collaborative robot
     - src
-        - snu_drl_interface.py
-        - snu_object_tracker.py
-        - snu_vision_2d.py
-        - snu_dsr_joy.py
-        - snu_moveit_commander.py
-        - unet_mini.weights
-        - vgg_unet.weight
+        - **snu_drl_interface.py** : pre-defined actions and tasks for cobot
+        - **snu_object_tracker.py** : calculate 'ar_target' frames from 'ar_marker' frames using TF
+        - **snu_vision_2d.py** : image processing for specimen detection
+        - **snu_dsr_joy.py** : joystick controller
+        - **snu_moveit_commander.py** : ROS MoveIt! interface (currently not in use)
+        - **unet_mini.weights** : weight file for specimen detection (light version)
+        - **vgg_unet.weight** : weight file for specimen detection
     - launch
-        - dsr_description_m1013.launch.xml
-        - dsr_moveit.launch
-        - realsense_setup.launch.xml
-        - ar_tracker_single.launch.xml
-        - ar_tracker_bundle.launch.xml (not in use)
-        - rtabmap.launch.xml (not in use)
-        - test.launch
-        - demo.launch
+        - **dsr_description_m1013.launch.xml** : cobot description (CAD etc.)
+        - **dsr_moveit.launch** : interface between ROS and cobot
+        - **realsense_setup.launch.xml** : realsense camera driver, ROS interface
+        - **ar_tracker_single.launch.xml** : ar_tracker for individual markers
+        - **ar_tracker_bundle.launch.xml** : ar_tracker for grouped markers (currently not in use)
+        - **rtabmap.launch.xml** : 3d mapping ... (currently not in use)
+        - **test.launch** : launch file for debugging
+        - **demo.launch** : launch file for demo
 - **snu_idim_cobot_upstart** : upstarting cobot ($ sudo service upstart restart)
-    - ViSCoRE
-    - viscore_upstart.launch
-    - initialize.launch
+    - **ViSCoRE** : automatically start cobot interface when starting the computer (upstart)
+    - **viscore_upstart.launch** : launch file of VisCoRE node
+    - **initialize.launch** : launch files specified in this file will be executed with upstart
 - **snu_idim_xmanager** : codes for external PC (execution manager)
     - src
-        - snu_executionManager.py
-        - amr_initializer.py
-        - snu_joy.py
+        - **snu_executionManager.py** : execution manager node for smart lab
+        - **amr_initializer.py** : initialize amr when the external-PC connects to the AMR-PC
+        - **snu_joy.py** : joystick controller for AMR and cobot (split commands)
     - launch
-        - bridge.launch
-        - rviz.launch
+        - **bridge.launch** : connects external-PC and AMR-PC via ROS multimaster
+        - **rviz.launch** : visualization of the integrated robot state
     - spcore_client
-        - spcore_simple.py
-        - spcore_simple.ui
+        - **spcore_simple.py** : gui tool for amr (SYSCON)
+        - **spcore_simple.ui** : definition of gui using QT
 - **snu_idim_3dp** : codes, images, command scripts for automation
-    - execute3DP.py
+    - **execute3DP.py** : automatically control 3d printers (ROS node)
     - src
         - some icon images ...
         - some command scripts ...
 - **snu_idim_instron** : codes, images, command scripts for automation
-    - executeInstron.py
+    - **executeInstron.py** : automatically control Instron (serial comm. node included)
     - src
         - some icon images ...
         - some command scripts ...
 - **snu_idim_jetson** : serial communication between Jetson nano and Instron
-    - uartInstron.py
+    - **uartInstron.py** : connects between ROS and Instron-PC (merging rostopic and serial comm.)

@@ -1,0 +1,13 @@
+program,3
+wait,10,instron_logo
+click,1,home,3
+click,1,test
+click,1,next
+wait,10,next
+text,specimen_1
+click,1,browse
+click,1,dropdown
+click,1,folder_dir
+click,2,save
+wait,10,start
+click,1,balance_all
