@@ -1,10 +1,11 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os, sys, json
+import os, sys, json, time
 from time import sleep
 from copy import deepcopy
 from threading import Thread
+import zmq
 
 
 import rospy, actionlib
@@ -21,18 +22,31 @@ from DeviceClass_3DP import DeviceClass_3DP
 
 
 class DeviceManager():
-    def __init__(self):
-        self.device_dict = dict()
-        self.printer_list_idle     = []
-        self.printer_list_initializing = []
-        self.printer_list_printing = []
-        self.printer_list_finished = []  ## ***
-        self.printer_list_robot_done = []
 
-        self.specimen_ready_list = []  ## ***
+    def __init__(self, port_=5555):
+        ## ZMQ: ROS(server) <-> Python(client)
+        self.context = zmq.Context()
+        self.socket = self.context.socket(zmq.REP)
+        self.socket.bind("tcp://*:{}".format(port_))
 
-        self.test_ready_list = []  ## ***
+        ## Device dict (list of devices to handle with ID)
+        self.device_dict = dict() # for device manager
+        self.device_info = dict() # to send data to client via ZMQ
+        
+        ## for 3DP Manager
+        self.printer_list_idle         = list()
+        self.printer_list_initializing = list()
+        self.printer_list_printing     = list()
+        self.printer_list_finished     = list()  ## ***
+        self.printer_list_robot_done   = list()
 
+        self.specimen_ready_list = list()  ## ***
+        self.test_ready_list     = list()  ## ***
+
+        ## for Cobot Manager
+        self.cobot_task_queue = list()
+
+        ## for AMR Manager
         self.client = actionlib.SimpleActionClient('/R_001/WAS', WorkFlowAction)
         self.client.wait_for_server(timeout=rospy.Duration(1))
         self.amr = WorkFlowGoal()
@@ -41,32 +55,79 @@ class DeviceManager():
                           Param('xy_goal_tolerance','float','0.20'),
                           Param('yaw_goal_tolerance','float','0.05')]
         self.amr.work = []
-        self.amr.work_id = 'amr' # default: "snu_state_machine"
-        self.amr.loop_flag = 1     # default: 1 (no repeat)
+        self.amr.work_id = 'amr'
+        self.amr.loop_flag = 1  # default: 1 (no repeat)
         
+        ## 3DP Manager thread
         self.thread_1 = Thread(target=self.manager3DP)
         self.thread_1.start()
 
+        ## Cobot Manager thread
         self.thread_2 = Thread(target=self.managerCobot)
         self.thread_2.start()
+
+        ## Refreshing 'device_info' thread (for Client)
+        self.thread_3 = Thread(target=self.refreshDeviceInfo)
+        self.thread_3.start()
+
+        ## ZMQ Server thread
+        self.thread_4 = Thread(target=self.zmq_server)
+        self.thread_4.start()
+
 
 
     def __del__(self):
         self.thread_1.terminate()
         self.thread_2.terminate()
+        self.thread_3.terminate()
+        self.thread_4.terminate()
         pass
+
+    
+
+    def refreshDeviceInfo(self):
+        while True:
+            self.device_info = dict()
+
+            keys = self.device_dict.keys()
+            values = self.device_dict.values()
+
+            for i in range(len(keys)):
+                self.device_info[keys[i]] = self.device_dict[keys[i]].getStatus()
+
+            print("[DEBUG] Device information updated !!! (Devices: {})".format(self.device_info.keys()))
+            sleep(1.0)
+
+    
+
+    def zmq_server(self):
+        while True:
+            request = json.loads(self.socket.recv())
+            try:
+                print("[DEBUG] Client requested status of devices ({})".format(request['status']))
+                self.socket.send_string(json.dumps(self.device_info))
+            except:
+                pass
+
+            sleep(1.0)
+
 
 
     def addDevice(self, device_name, device_class=None):
         self.device_dict[device_name] = DevicePluginToROS(device_name=device_name, device_class=device_class)
         print("[DEBUG] '{}' is added to DeviceManager".format(device_name))
 
+
+
     def printStatus(self, status_dict):
         key_list = status_dict.keys()
         value_list = status_dict.values()
+
         print("\n=======================================================")
         for i in range(len(key_list)):
             print("[DEBUG - {}] {}: {}".format(status_dict['device_name'], key_list[i], value_list[i]))
+
+
 
     def moveAMR(self, target_pose, spot_name="default", hold_time=0.0):
         print("[AMR] AMR Start Moving ... (target pose = {})".format(target_pose))
@@ -78,6 +139,8 @@ class DeviceManager():
         print("[AMR] Arrived at [{}] !!!".format(target_pose))
         self.amr.work = []
         rospy.sleep(hold_time)
+
+
 
     def managerCobot(self):
         printer_number = 1
@@ -95,7 +158,6 @@ class DeviceManager():
         test_task = []
         robot_task_queue = [3050, -3050, 3050, -3050]
 
-
         while True:
             try:
                 # self.printStatus(self.device_dict['R_001/cobot'].getStatus())
@@ -109,6 +171,7 @@ class DeviceManager():
                 print("[ERROR] Collaborative Robot is not connected yet !!!")
 
             sleep(3.0)
+
 
 
     def manager3DP(self):
@@ -150,14 +213,12 @@ class DeviceManager():
                 self.printer_list_robot_done.remove(printer_id)
                 self.device_dict[printer_id].sendCommand({'status': 'Idle'})
 
-
             # print("[INFO - DeviceManager] # of 3D Printers: {}".format(n_printer))
             # print("[INFO - DeviceManager] # of 3D Printers in Idle: {}".format(len(self.printer_list_idle)), self.printer_list_idle)
             # print("[INFO - DeviceManager] # of 3D Printers in Initializing: {}".format(len(self.printer_list_initializing)), self.printer_list_initializing)
             # print("[INFO - DeviceManager] # of 3D Printers in Printing: {}".format(len(self.printer_list_printing)), self.printer_list_printing)
             # print("[INFO - DeviceManager] # of 3D Printers in Finished: {}".format(len(self.printer_list_finished)), self.printer_list_finished)
             # print("[INFO - DeviceManager] # of 3D Printers in Robot Job Done: {}".format(len(self.printer_list_robot_done)), self.printer_list_robot_done)
-
 
             # print("[INFO - DeviceManager] Printing queue: {}".format(printing_queue))
             for printer_in_idle in self.printer_list_idle:
@@ -167,10 +228,9 @@ class DeviceManager():
                 except:
                     # print("[INFO - DeviceManager] Printing queue: empty !!!")
                     pass
-            
-
 
             sleep(3.0)
+
 
 
 if __name__ == '__main__':
@@ -178,15 +238,15 @@ if __name__ == '__main__':
     rospy.init_node('DeviceManager')
 
     manager = DeviceManager()
+    manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', port_='5000'))
     # manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', ip_='192.168.60.101', port_='5001'))
     # manager.addDevice('printer2', DeviceClass_3DP(device_name='printer2', ip_='192.168.60.101', port_='5002'))
     # manager.addDevice('printer3', DeviceClass_3DP(device_name='printer3', ip_='192.168.60.101', port_='5003'))
     # manager.addDevice('printer4', DeviceClass_3DP(device_name='printer4', ip_='192.168.60.101', port_='5004'))
-    manager.addDevice('R_001/cobot', device_class=None)
+    # manager.addDevice('R_001/cobot', device_class=None)
 
-    sleep(5.0)
-
-    manager.moveAMR(spot_name='Instron', target_pose=[3.016, -3.244, -1.622], hold_time=0.0)
+    # sleep(5.0)
+    # manager.moveAMR(spot_name='Instron', target_pose=[3.016, -3.244, -1.622], hold_time=0.0)
 
     # # sleep(5.0)
     # # manager.device_dict['R_001/cobot'].sendCommand({"command": '0'})
