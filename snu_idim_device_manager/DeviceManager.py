@@ -20,6 +20,9 @@ from DevicePluginToROS import DevicePluginToROS
 sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_3dp")) )
 from DeviceClass_3DP import DeviceClass_3DP
 
+sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_instron")) )
+from DeviceClass_Instron import DeviceClass_Instron
+
 
 class DeviceManager():
 
@@ -140,6 +143,8 @@ class DeviceManager():
         self.amr.work = []
         rospy.sleep(hold_time)
     
+
+
     def executeCobot(self, robot_task_queue, mode='real'):
         if mode == 'real':
             while len(robot_task_queue) != 0:
@@ -153,6 +158,14 @@ class DeviceManager():
                 next_task = robot_task_queue.pop(0)
                 print("[DEBUG] Robot task queue: {}".format(robot_task_queue))
                 sleep(0.2)
+
+
+    
+    def executeInstron(self, subject_name):
+        cmd_dict = dict()
+        cmd_dict['setup'] = subject_name
+        cmd_dict['execute'] = subject_name
+        self.device_dict['instron'].sendCommand(cmd_dict)
 
 
 
@@ -192,7 +205,7 @@ class DeviceManager():
                 ## 3. 인장시험 수행 (subject_id)
                 subject_id = self.device_info[printer_id]['subject_name']
                 print("[DEBUG] Experiment start !!! (subject: {})".format(subject_id))
-                sleep(10.0)
+                self.executeInstron(subject_id)
 
             except:
                 print("[ERROR] Collaborative Robot is not connected yet !!!")
@@ -254,60 +267,6 @@ class DeviceManager():
 
 
 
-            # n_printer = 0
-            # id_list_idle = []
-            # id_list_initializing= []
-            # id_list_printing = []
-            # id_list_finished = []
-            
-            # for i in range(len(self.device_dict)):
-            #     n_printer += 1 if self.device_dict[self.device_dict.keys()[i]].getStatus()['device_type'] == '3D Printer' else n_printer
-
-            #     if self.device_dict[self.device_dict.keys()[i]].getStatus()['device_type'] == '3D Printer':
-            #         printer_id = self.device_dict[self.device_dict.keys()[i]].getStatus()['device_name']
-            #         printer_status = self.device_dict[self.device_dict.keys()[i]].getStatus()['status']
-
-            #         if printer_status.find('Idle') != -1:
-            #             id_list_idle.append(printer_id)
-            #         elif printer_status.find('Initializing') != -1:
-            #             id_list_initializing.append(printer_id)
-            #         elif printer_status.find('Printing') != -1:
-            #             id_list_printing.append(printer_id)
-            #         elif printer_status.find('Done') != -1:
-            #             id_list_finished.append(printer_id)
-
-            # self.printer_list_idle = id_list_idle
-            # self.printer_list_initializing = id_list_initializing
-            # self.printer_list_printing = id_list_printing
-            # self.printer_list_finished = id_list_finished
-
-            # printer_list_robot_done = self.printer_list_robot_done
-            # for printer_id in printer_list_robot_done:
-            #     # print(printer_id)
-            #     self.printer_list_finished.remove(printer_id)
-            #     self.printer_list_idle.append(printer_id)
-            #     self.printer_list_robot_done.remove(printer_id)
-            #     self.device_dict[printer_id].sendCommand({'status': 'Idle'})
-
-            # # print("[INFO - DeviceManager] # of 3D Printers: {}".format(n_printer))
-            # # print("[INFO - DeviceManager] # of 3D Printers in Idle: {}".format(len(self.printer_list_idle)), self.printer_list_idle)
-            # # print("[INFO - DeviceManager] # of 3D Printers in Initializing: {}".format(len(self.printer_list_initializing)), self.printer_list_initializing)
-            # # print("[INFO - DeviceManager] # of 3D Printers in Printing: {}".format(len(self.printer_list_printing)), self.printer_list_printing)
-            # # print("[INFO - DeviceManager] # of 3D Printers in Finished: {}".format(len(self.printer_list_finished)), self.printer_list_finished)
-            # # print("[INFO - DeviceManager] # of 3D Printers in Robot Job Done: {}".format(len(self.printer_list_robot_done)), self.printer_list_robot_done)
-
-            # # print("[INFO - DeviceManager] Printing queue: {}".format(printing_queue))
-            # for printer_in_idle in self.printer_list_idle:
-            #     try:
-            #         print_next = printing_queue.pop(0)
-            #         self.device_dict[printer_in_idle].sendCommand({'print': print_next})
-            #     except:
-            #         # print("[INFO - DeviceManager] Printing queue: empty !!!")
-            #         pass
-
-            # sleep(3.0)
-
-
 
 if __name__ == '__main__':
 
@@ -315,10 +274,9 @@ if __name__ == '__main__':
 
     manager = DeviceManager()
     manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', port_='5000'))
+    manager.addDevice('instron')
     
-    # while True:
-    #     sleep(25)
-    #     manager.printer_list_robot_done.append('printer1')
+
     # manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', ip_='192.168.60.101', port_='5001'))
     # manager.addDevice('printer2', DeviceClass_3DP(device_name='printer2', ip_='192.168.60.101', port_='5002'))
     # manager.addDevice('printer3', DeviceClass_3DP(device_name='printer3', ip_='192.168.60.101', port_='5003'))
