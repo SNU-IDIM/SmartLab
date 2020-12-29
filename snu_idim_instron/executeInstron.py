@@ -28,12 +28,12 @@ class autoInstron:
 		self.autoRun = idimAutomation(folder_dir)
 
 		self.status = dict()
-		self.status['connection'] = 'offline'
-		self.status['status'] = 'waiting'
+		self.status['connection'] = 'Offline'
+		self.status['status'] = None
 		self.message = dict()
-		self.message['subject_name'] = 'NONE'
+		self.message['subject_name'] = None
 		self.message['message'] = ''
-		self.subject_name  = 'NONE'
+		self.subject_name  = None
 		self.checklist = ['online','start','setting','experiment_start','running','finnish']
 
 
@@ -64,7 +64,7 @@ class autoInstron:
 					print('[DEBUG] received data: {}'.format(self.message))
 					
 					if self.message['message'] == 'online':						# connection : online / status : Idle
-						self.status['connection'] = 'online'
+						self.status['connection'] = 'Online'
 						self.status['status'] = 'Idle'
 
 
@@ -100,7 +100,7 @@ class autoInstron:
 				self.write_data(self.status)
 
 			except KeyboardInterrupt:
-				self.status['connection'] = 'offline'
+				self.status['connection'] = 'Offline'
 				self.write_data(self.status)
 
 				sys.exit()

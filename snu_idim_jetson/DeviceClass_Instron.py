@@ -2,17 +2,14 @@
 
 import time
 import serial
-import rospy
 import Jetson.GPIO as GPIO
-from std_msgs.msg import String
 import numpy as np
 import json
 import threading
 
 
-
-
 class UART:
+
 	def __init__(self, port_="/dev/ttyTHS1", baudrate_=115200):
 		self.serial = serial.Serial(port=port_,
 									baudrate=baudrate_,
@@ -24,20 +21,27 @@ class UART:
 		self.goal_status = ''
 
 		self.status = dict()
-		self.status['subject_name'] = 'None'
-		self.status['connection'] = 'offline'
-		self.status['status'] = 'waiting'
+		self.status['subject_name'] = None
+		self.status['connection'] = 'Offline'
+		self.status['status'] = None
 
-		self.message = dict()												# message from Jetson to Instron
+		self.message = dict()  # message from Jetson to Instron
 		self.message['message'] = 'online'
 		self.message['subject_name'] = ''
 		
 		self.newstatus = dict()
-		
 
-	def changeflag(self,var):
-		
-		if self.status['status'] == var :
+		self.thread_1 = threading.Thread(target=self.updateStatus)
+		self.thread_1.daemon = True
+		self.thread_1.start()
+	
+
+	def __del__(self):
+		self.thread_1.terminate()
+
+
+	def changeflag(self, var):
+		if self.status['status'] == var:
 			self.continue_flag = 1
 
 		elif self.status['status'] == 'Serial_error':
@@ -61,15 +65,13 @@ class UART:
 				time.sleep(0.2)
 
 				self.data = self.serial.readline().split('\n')#.decode('utf-8',errors = 'replace')
-				self.data = self.serial.readline().decode('utf-8',errors = 'replace').split('\n')[0]
+				self.data = self.serial.readline().decode('utf-8', errors='replace').split('\n')[0]
 				self.newstatus = json.loads(self.data)
 				self.status.update(self.newstatus)
 				# print("1")
-
 			else:
 				# print('Waiting for Serial \n')
 				continue
-
 
 
 	def waitStatus(self):
@@ -90,87 +92,59 @@ class UART:
 				continue
 
 
-class Jetson:
-	def __init__(self):
+
+class DeviceClass_Instron:
+
+	def __init__(self, device_name='instron'):
+		## Common init for all devices
+		self.status = dict()
+		self.status['device_type'] = 'Universal Testing Machine'
+		self.status['device_name'] = device_name
+		self.status['connection'] = ''
+		self.status['subject_name'] = ''
+		self.status['status'] = ''
+		self.status['recent_work'] = ''
+
+		## Jetson nano board setting for digital I/O
 		self.PIN = 15
-		
 		GPIO.setmode(GPIO.BOARD)
 		GPIO.setup(self.PIN, GPIO.OUT, initial=GPIO.LOW)
-
 		GPIO.setwarnings(False)
 
-		rospy.init_node('jetson_node')
-		rospy.Subscriber('instron/command', String, self.cmd_instron)
-
-		self.instron_status_pub = rospy.Publisher("instron/status", String, queue_size=1)
-
+		## UART communication with Instron PC
 		self.uart = UART()
-		thread = threading.Thread(target = self.uart.updateStatus)
-		thread.daemon=True
-		thread.start()
-
-		self.command = dict()
-		self.command['setup'] = ''                                    		# command from server (setup/execute)
-		self.command['execute'] = ''
-
-
-
-		data = ""
-
-		self.uart.write_data(self.uart.message)                             # check online to Instron
+		self.uart.write_data(self.uart.message)  # Connection check (Instron PC)
 		time.sleep(1)
-		self.uart.goal_status = 'Idle'										# wait until status = Idle
+		self.uart.goal_status = 'Idle'  # wait until status = 'Idle'
 		# print(self.uart.status)
-		self.uart.waitStatus()												# status : Idle
+		self.uart.waitStatus()  # status : 'Idle'
 
-	#----------------------------------------------Debugging!!!-----------------------------------
-		rospy.Subscriber('debugging_cmd', String, self.Debugging)
-		self.pub = rospy.Publisher('instron/command',String,queue_size =1)
-
-		self.debug_cmd = dict()
-		self.debug_cmd['setup'] = 'specimen_dh'
-		self.debug_cmd2 = dict()
-		self.debug_cmd2['execute'] = 'specimen_dh'
-		# self.debug_cmd = self.debug_cmd2
-		# print(self.debug_cmd)
-
-	def Debugging(self, msg):
-		if str(msg.data) == '1':
-			self.debug_cmd = json.dumps(self.debug_cmd)
-			time.sleep(0.5)
-			print(self.debug_cmd)
-			self.pub.publish(self.debug_cmd)
-		elif str(msg.data) == '2':
-			self.debug_cmd2 = json.dumps(self.debug_cmd2)
-			time.sleep(0.5)
-			print(self.debug_cmd2)
-			self.pub.publish(self.debug_cmd2)
-	#------------------------------------------------------------------------------------------------
+		self.thread_1 = Thread(target=self.updateStatus)
+		self.thread_1.start()
 
 	
 	def __del__(self):
 		GPIO.cleanup()
+		self.thread_1.terminate()
 		print('[DEBUG] Node is terminated !!!')
 
+	
+	def updateStatus(self):
+		while True:
+			self.status.update(self.uart.status)
+			time.sleep(0.1)
 
-	def pub_status(self, status):
-		status = str(status)
-		self.instron_status_pub.publish(status)
 
+	def command(self, cmd_dict):
+		cmd_keys = cmd_dict.keys()
+		cmd_values = cmd_dict.values()
 
-	def cmd_instron(self, msg):
-		self.instron_cmd = str(msg.data)
-		self.command = json.loads(self.instron_cmd)
-		time.sleep(0.5)
-		print(self.command)
-		self.cmd_keys = self.command.keys()
-		self.cmd_values = self.command.values()
+		print('[DEBUG] Instron command: {}'.format(cmd_dict))
+		for i in range(len(cmd_keys)):
 
-		print('[DEBUG] Instron command: {}'.format(self.command))
-		for i in range(len(self.cmd_keys)):
-			if self.cmd_keys[i] == "setup":                         			# experiment setup trigger
-				self.uart.status['subject_name'] = self.cmd_values[i]
-				self.uart.message['subject_name'] = self.cmd_values[i]
+			if cmd_keys[i] == "setup":                         			# experiment setup trigger
+				self.uart.status['subject_name'] = cmd_values[i]
+				self.uart.message['subject_name'] = cmd_values[i]
 				self.uart.message['message'] = 'start'
 				self.uart.write_data(self.uart.message)                         # send instron 'start'
 																				# connection : online / status : Idle
@@ -186,9 +160,7 @@ class Jetson:
 				self.uart.goal_status = 'Ready'									# wait until status = Ready
 				self.uart.waitStatus()											# status : Ready
 
-
-			if self.cmd_keys[i] == "execute":                         # experiment execute trigger
-
+			if cmd_keys[i] == "execute":                         # experiment execute trigger
 				self.uart.goal_status = 'Ready'									# check status : Ready
 				self.uart.waitStatus()											# Status Ready
 
@@ -216,9 +188,10 @@ class Jetson:
 
 if __name__=='__main__':
 
-	jetson = Jetson()
+	instron = DeviceClass_Instron()
 
-	while not rospy.is_shutdown():
+	while True:
+		time.sleep(1.0)
 		pass
 
 
