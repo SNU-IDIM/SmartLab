@@ -28,14 +28,13 @@ class autoInstron:
 		self.autoRun = idimAutomation(folder_dir)
 
 		self.status = dict()
-		self.status['connection'] = 'offline'
-		self.status['status'] = 'waiting'
+		self.status['connection'] = 'Offline'
+		self.status['status'] = None
 		self.message = dict()
-		self.message['subject_name'] = 'NONE'
+		self.message['subject_name'] = None
 		self.message['message'] = ''
-		self.subject_name  = 'NONE'
-		self.result = []
-		self.checklist = ['online','start','setting','experiment_start','running','finnish','send_data','data_saved']
+		self.subject_name  = None
+		self.checklist = ['online','start','setting','experiment_start','running','finnish']
 
 
 	def write_data(self, msg):
@@ -85,19 +84,20 @@ class autoInstron:
 					print('[DEBUG] received data: {}'.format(self.message))
 					
 					if self.message['message'] == 'online':						# connection : online / status : Idle
-						self.status['connection'] = 'online'
+						self.status['connection'] = 'Online'
 						self.status['status'] = 'Idle'
 
 
 					elif self.message['message'] == 'start':						
 						self.status['status'] = 'Initializing'	# status : Initializing
-						self.autoRun.changeTXT(scripts[0], self.message['subject_name'])
+						self.subject_name = self.message['subject_name']
+						self.autoRun.changeTXT(scripts[0], self.subject_name)
 						print(self.message['subject_name'])
 
 					elif self.message['message'] == 'setting':						
 						self.autoRun.execute(scripts[0])
 						self.status['status'] = 'Ready'			# status : Ready
-						self.autoRun.returnTXT(scripts[0], self.message['subject_name'])
+						self.autoRun.returnTXT(scripts[0], self.subject_name)
 
 					elif self.message['message'] == 'experiment_start':			
 						self.status['status'] = 'Testing'			# status : Testing
@@ -110,23 +110,23 @@ class autoInstron:
 						self.status['status']= 'Idle'			# status : Idle
 						self.message['subject_name'] = 'NONE'
 
-					elif self.message['message'] =='send_data':
-						self.data_send(self.message['subject_name'])
-						time.sleep(.5)
-						self.status['status'] = 'data_sent'
+					# elif self.message['message'] =='send_data':
+					# 	self.data_send(self.message['subject_name'])
+					# 	time.sleep(.5)
+					# 	self.status['status'] = 'data_sent'
 
-					elif self.message['message'] == 'data_saved':
-						if 'result' in self.status.keys():
-							self.status['result'] = ''
+					# elif self.message['message'] == 'data_saved':
+					# 	if 'result' in self.status.keys():
+					# 		self.status['result'] = ''
 
-							del(self.status['result'])
-						self.status['status'] = 'Idle'
+					# 		del(self.status['result'])
+					# 	self.status['status'] = 'Idle'
 						
 
 					elif self.message['message'] not in self.checklist:
-						if 'result' in self.status.keys():
-							self.status['result'] = ''
-							del(self.status['result'])
+						# if 'result' in self.status.keys():
+						# 	self.status['result'] = ''
+						# 	del(self.status['result'])
 						self.status['status'] = 'Serial_error'
 
 						
@@ -137,7 +137,7 @@ class autoInstron:
 				self.write_data(self.status)
 
 			except KeyboardInterrupt:
-				self.status['connection'] = 'offline'
+				self.status['connection'] = 'Offline'
 				self.write_data(self.status)
 
 				sys.exit()
