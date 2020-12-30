@@ -28,32 +28,40 @@ class autoInstron:
 		self.autoRun = idimAutomation(folder_dir)
 
 		self.status = dict()
-		self.status['connection'] = 'offline'
-		self.status['status'] = 'waiting'
+		self.status['connection'] = 'Offline'
+		self.status['status'] = None
 		self.message = dict()
-		self.message['subject_name'] = 'NONE'
+		self.message['subject_name'] = None
 		self.message['message'] = ''
-		self.subject_name  = 'NONE'
-		self.checklist = ['online','start','setting','experiment_start','running','finnish']
+		self.subject_name  = None
+		self.checklist = ['online','start','setting','experiment_start','running','finish','send_data','data_saved']
+		
 
 
 	def write_data(self, msg):
+		# print(msg)
 		msg = json.dumps(msg)+str('\n')
+		# print(msg)
 		msg = msg.encode('utf-8')
 		self.serial_port.write(msg)
 
-	# def s_name(self,data):
-	# 	self.subject_name = data
-	# 	print("debug!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-	# 	print(self.subject_name)
-	# 	return self.subject_name
 
+	def data_send(self,name):
+		with open ('C:\\Users\\IDIM-Instron\\Desktop\\Smart Laboratory\\' + str(name) + ".is_tens_RawData"+"\\Specimen_RawData_1.csv" ,"r") as res:
+			self.raw_data = res.readlines()
+			print(self.raw_data)
+			self.json_raw_data = json.dumps(self.raw_data)
+			self.status['result'] = self.json_raw_data
+
+		
 
 	def execute(self, scripts=''):
 		data = ''
 
 		while True:
 			try:
+				self.serial_port.flushInput()
+				time.sleep(0.5)
 
 				if self.serial_port.inWaiting() > 0:
 					data = self.serial_port.readline().decode('utf-8').split('\n')[0]
@@ -64,19 +72,21 @@ class autoInstron:
 					print('[DEBUG] received data: {}'.format(self.message))
 					
 					if self.message['message'] == 'online':						# connection : online / status : Idle
-						self.status['connection'] = 'online'
+						self.status['connection'] = 'Online'
 						self.status['status'] = 'Idle'
 
 
 					elif self.message['message'] == 'start':						
 						self.status['status'] = 'Initializing'	# status : Initializing
-						self.autoRun.changeTXT(scripts[0], self.message['subject_name'])
+						self.subject_name = self.message['subject_name']
+						self.autoRun.changeTXT(scripts[0], self.subject_name)
+
 						print(self.message['subject_name'])
 
 					elif self.message['message'] == 'setting':						
 						self.autoRun.execute(scripts[0])
 						self.status['status'] = 'Ready'			# status : Ready
-						self.autoRun.returnTXT(scripts[0], self.message['subject_name'])
+						self.autoRun.returnTXT(scripts[0], self.subject_name)
 
 					elif self.message['message'] == 'experiment_start':			
 						self.status['status'] = 'Testing'			# status : Testing
@@ -87,22 +97,34 @@ class autoInstron:
 
 					elif self.message['message'] == 'finish':						
 						self.status['status']= 'Idle'			# status : Idle
-
 						self.message['subject_name'] = 'NONE'
 
+					elif self.message['message'] =='send_data':
+						self.data_send(self.message['subject_name'])
+						# time.sleep(.5)
+						self.status['status'] = 'data_sent'
+
+					elif self.message['message'] == 'data_saved':
+						if 'result' in self.status.keys():
+							self.status['subject_name'] = 'NONE'
+
+							del(self.status['result'])
+						self.status['status'] = 'Idle'
+						
+
 					elif self.message['message'] not in self.checklist:
+						if 'result' in self.status.keys():
+							self.status['result'] = ''
+							del(self.status['result'])
 						self.status['status'] = 'Serial_error'
-
 					
-
 					print('[DEBUG] sent data: {}'.format(self.status))
 
 				self.write_data(self.status)
 
 			except KeyboardInterrupt:
-				self.status['connection'] = 'offline'
+				self.status['connection'] = 'Offline'
 				self.write_data(self.status)
-
 				sys.exit()
 
 			except serial.serialutil.SerialException:
@@ -114,8 +136,6 @@ class autoInstron:
 
 			except :
 				self.status['status'] = 'Serial_error'
-				self.write_data(self.status)
-				self.write_data(self.status)
 				self.write_data(self.status)
 
 
