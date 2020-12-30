@@ -42,12 +42,32 @@ class autoInstron:
 		msg = msg.encode('utf-8')
 		self.serial_port.write(msg)
 
-	# def s_name(self,data):
-	# 	self.subject_name = data
-	# 	print("debug!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-	# 	print(self.subject_name)
-	# 	return self.subject_name
+	def data_send(self,name):
+		print(name)
+		with open ('C:\\Users\\IDIM-Instron\\Desktop\\Smart Laboratory\\' + str(name) + ".is_tens_RawData"+"\\Specimen_RawData_1.csv" ,"r") as res:
+			print("1")
+			self.raw_data = res.readlines()
+			print(self.raw_data)
+			self.status['result'] = self.raw_data
 
+		
+	# 		time.sleep(0.5)
+	# 		self.write_data(self.raw_data)
+	# 		time.sleep(0.5)
+	# 		self.write_data(self.raw_data)
+	# 		time.sleep(0.5)
+	# 		self.write_data(self.raw_data)
+	# 		time.sleep(0.5)
+	# 		self.write_data(self.raw_data)
+	# 		time.sleep(0.5)
+	# 		self.write_data(self.raw_data)
+	# 		time.sleep(0.5)
+	# 		self.write_data(self.raw_data)
+	# 		time.sleep(0.5)
+	# 		self.write_data(self.raw_data)
+	# 		time.sleep(0.5)
+	# 		self.write_data(self.raw_data)
+	# 		print(self.raw_data)
 
 	def execute(self, scripts=''):
 		data = ''
@@ -70,13 +90,14 @@ class autoInstron:
 
 					elif self.message['message'] == 'start':						
 						self.status['status'] = 'Initializing'	# status : Initializing
-						self.autoRun.changeTXT(scripts[0], self.message['subject_name'])
+						self.subject_name = self.message['subject_name']
+						self.autoRun.changeTXT(scripts[0], self.subject_name)
 						print(self.message['subject_name'])
 
 					elif self.message['message'] == 'setting':						
 						self.autoRun.execute(scripts[0])
 						self.status['status'] = 'Ready'			# status : Ready
-						self.autoRun.returnTXT(scripts[0], self.message['subject_name'])
+						self.autoRun.returnTXT(scripts[0], self.subject_name)
 
 					elif self.message['message'] == 'experiment_start':			
 						self.status['status'] = 'Testing'			# status : Testing
@@ -87,12 +108,28 @@ class autoInstron:
 
 					elif self.message['message'] == 'finish':						
 						self.status['status']= 'Idle'			# status : Idle
-
 						self.message['subject_name'] = 'NONE'
 
+					# elif self.message['message'] =='send_data':
+					# 	self.data_send(self.message['subject_name'])
+					# 	time.sleep(.5)
+					# 	self.status['status'] = 'data_sent'
+
+					# elif self.message['message'] == 'data_saved':
+					# 	if 'result' in self.status.keys():
+					# 		self.status['result'] = ''
+
+					# 		del(self.status['result'])
+					# 	self.status['status'] = 'Idle'
+						
+
 					elif self.message['message'] not in self.checklist:
+						# if 'result' in self.status.keys():
+						# 	self.status['result'] = ''
+						# 	del(self.status['result'])
 						self.status['status'] = 'Serial_error'
 
+						
 					
 
 					print('[DEBUG] sent data: {}'.format(self.status))
