@@ -11,11 +11,13 @@ from tf.transformations import quaternion_from_euler
 from geometry_msgs.msg import Pose, Point, Quaternion, Twist
 
 import os, sys
+import json
 sys.dont_write_bytecode = True
 HOME_DIR = os.getenv('HOME')
 sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../../snu_idim_common/imp")) )
-# sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__),"%s/catkin_ws/src/SNU_SmartLAB/snu_idim_common/imp"%HOME_DIR)) )
+sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../../snu_idim_common/src")) )
 from IDIM_framework import *
+from DeviceHUB import DeviceHUB
 
             
 class StateMachine():
@@ -44,10 +46,20 @@ class StateMachine():
         rospy.init_node(ros_node_name, anonymous=True)
         self.client = actionlib.SimpleActionClient('/R_001/WAS', WorkFlowAction)
         self.client.wait_for_server(timeout=rospy.Duration(1))
+
         self.pnp_pub = rospy.Publisher("/R_001/ur_pnp", String, queue_size=1)
-        self.instron_cmd_pub = rospy.Publisher("/instron/command", String, queue_size=1)
         rospy.Subscriber("/R_001/ur_status", URStatus, self.dsr_status_cb, queue_size=1)
-        rospy.Subscriber("/instron/status", String, self.instron_cb, queue_size=1)
+
+        self.instron_manager  = DeviceHUB(device_name='instron')
+
+        self.printer0_manager = DeviceHUB(device_name='printer0')
+        self.printer1_manager = DeviceHUB(device_name='printer1')
+        self.printer2_manager = DeviceHUB(device_name='printer2')
+        self.printer3_manager = DeviceHUB(device_name='printer3')
+
+        # self.instron_cmd_pub = rospy.Publisher("/instron/command", String, queue_size=1)
+        # rospy.Subscriber("/instron/status", String, self.instron_cb, queue_size=1)
+        
         rospy.sleep(3.0)
 
         print("-------------------------------------")
@@ -89,6 +101,7 @@ class StateMachine():
         work = Action(SYSCON_URMISSION, [SYSCON_URPNP, int(float(action_name))],[])
         self.goal.work.append(work)
 
+
     '''
         executeAMR
     '''
@@ -118,6 +131,7 @@ class StateMachine():
         rospy.sleep(2)
         self.waitforInstron(cmd, hold_time)
 
+
     def waitforInstron(self, action_name, hold_time):
         while(1):
             print('[Instron] Experiment Running ...')
@@ -125,6 +139,11 @@ class StateMachine():
                 break
         print("[Instron] Experiment({}) Completed !!!".format(action_name))
         rospy.sleep(hold_time)
+
+    
+    def execute3DP(self, cmd_dict, hold_time=1.0):
+        pass
+        
 
     
 
@@ -148,7 +167,7 @@ class StateMachine():
                 break
         print("[Cobot] DSR WORK [{}] Done !!!".format(action_name))
         rospy.sleep(hold_time)
-    
+
 
 
 '''
@@ -208,13 +227,14 @@ if __name__ == '__main__':
     # sm.executeDSR(ACTION_HOME)                  # 23. Home position 이동
 
     # sm.executeDSR(TASK_INSTRON_SEARCH)          # 24. Instron 장비 referencing
-    sm.executeInstron(1)                         # 25. Experiment start
+    # sm.executeInstron(1)                         # 25. Experiment start
     # rospy.sleep(3.0)
     # sm.executeDSR(TASK_INSTRON_MOVEOUT)         # 26. Gripper open & 실험 장면 촬영
-    sm.executeInstron(2)
+    # sm.executeInstron(2)
     # sm.executeDSR(ACTION_HOME)
     # rospy.sleep(10.0)
     # sm.executeInstron(20.0)
+    print(sm.printer0_manager.getStatus())
 
 
     

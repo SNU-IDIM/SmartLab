@@ -45,6 +45,7 @@ class autoInstron:
 		msg = msg.encode('utf-8')
 		self.serial_port.write(msg)
 
+
 	def data_send(self,name):
 		with open ('C:\\Users\\IDIM-Instron\\Desktop\\Smart Laboratory\\' + str(name) + ".is_tens_RawData"+"\\Specimen_RawData_1.csv" ,"r") as res:
 			self.raw_data = res.readlines()
@@ -79,6 +80,7 @@ class autoInstron:
 						self.status['status'] = 'Initializing'	# status : Initializing
 						self.subject_name = self.message['subject_name']
 						self.autoRun.changeTXT(scripts[0], self.subject_name)
+
 						print(self.message['subject_name'])
 
 					elif self.message['message'] == 'setting':						
@@ -115,10 +117,7 @@ class autoInstron:
 							self.status['result'] = ''
 							del(self.status['result'])
 						self.status['status'] = 'Serial_error'
-
-						
 					
-
 					print('[DEBUG] sent data: {}'.format(self.status))
 
 				self.write_data(self.status)
@@ -126,7 +125,6 @@ class autoInstron:
 			except KeyboardInterrupt:
 				self.status['connection'] = 'Offline'
 				self.write_data(self.status)
-
 				sys.exit()
 
 			except serial.serialutil.SerialException:
