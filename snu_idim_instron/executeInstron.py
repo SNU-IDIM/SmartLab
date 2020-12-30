@@ -34,46 +34,33 @@ class autoInstron:
 		self.message['subject_name'] = None
 		self.message['message'] = ''
 		self.subject_name  = None
-		self.checklist = ['online','start','setting','experiment_start','running','finnish']
+		self.checklist = ['online','start','setting','experiment_start','running','finish','send_data','data_saved']
+		
 
 
 	def write_data(self, msg):
+		# print(msg)
 		msg = json.dumps(msg)+str('\n')
+		# print(msg)
 		msg = msg.encode('utf-8')
 		self.serial_port.write(msg)
 
 	def data_send(self,name):
-		print(name)
 		with open ('C:\\Users\\IDIM-Instron\\Desktop\\Smart Laboratory\\' + str(name) + ".is_tens_RawData"+"\\Specimen_RawData_1.csv" ,"r") as res:
-			print("1")
 			self.raw_data = res.readlines()
 			print(self.raw_data)
-			self.status['result'] = self.raw_data
+			self.json_raw_data = json.dumps(self.raw_data)
+			self.status['result'] = self.json_raw_data
 
 		
-	# 		time.sleep(0.5)
-	# 		self.write_data(self.raw_data)
-	# 		time.sleep(0.5)
-	# 		self.write_data(self.raw_data)
-	# 		time.sleep(0.5)
-	# 		self.write_data(self.raw_data)
-	# 		time.sleep(0.5)
-	# 		self.write_data(self.raw_data)
-	# 		time.sleep(0.5)
-	# 		self.write_data(self.raw_data)
-	# 		time.sleep(0.5)
-	# 		self.write_data(self.raw_data)
-	# 		time.sleep(0.5)
-	# 		self.write_data(self.raw_data)
-	# 		time.sleep(0.5)
-	# 		self.write_data(self.raw_data)
-	# 		print(self.raw_data)
 
 	def execute(self, scripts=''):
 		data = ''
 
 		while True:
 			try:
+				self.serial_port.flushInput()
+				time.sleep(0.5)
 
 				if self.serial_port.inWaiting() > 0:
 					data = self.serial_port.readline().decode('utf-8').split('\n')[0]
@@ -110,23 +97,23 @@ class autoInstron:
 						self.status['status']= 'Idle'			# status : Idle
 						self.message['subject_name'] = 'NONE'
 
-					# elif self.message['message'] =='send_data':
-					# 	self.data_send(self.message['subject_name'])
-					# 	time.sleep(.5)
-					# 	self.status['status'] = 'data_sent'
+					elif self.message['message'] =='send_data':
+						self.data_send(self.message['subject_name'])
+						# time.sleep(.5)
+						self.status['status'] = 'data_sent'
 
-					# elif self.message['message'] == 'data_saved':
-					# 	if 'result' in self.status.keys():
-					# 		self.status['result'] = ''
+					elif self.message['message'] == 'data_saved':
+						if 'result' in self.status.keys():
+							self.status['subject_name'] = 'NONE'
 
-					# 		del(self.status['result'])
-					# 	self.status['status'] = 'Idle'
+							del(self.status['result'])
+						self.status['status'] = 'Idle'
 						
 
 					elif self.message['message'] not in self.checklist:
-						# if 'result' in self.status.keys():
-						# 	self.status['result'] = ''
-						# 	del(self.status['result'])
+						if 'result' in self.status.keys():
+							self.status['result'] = ''
+							del(self.status['result'])
 						self.status['status'] = 'Serial_error'
 
 						
@@ -151,8 +138,6 @@ class autoInstron:
 
 			except :
 				self.status['status'] = 'Serial_error'
-				self.write_data(self.status)
-				self.write_data(self.status)
 				self.write_data(self.status)
 
 
