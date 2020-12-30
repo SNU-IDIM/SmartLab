@@ -46,6 +46,8 @@ class UART:
 
 		elif self.status['status'] == 'Serial_error':
 			self.continue_flag = 0
+			if 'result' in self.status.keys():
+				del(self.status['result'])
 
 		else:
 			self.continue_flag = -1
@@ -55,14 +57,13 @@ class UART:
 		data = json.dumps(data)
 		self.serial.write(data.encode())
 
-
 	def updateStatus(self):
 		while True:
-			print(self.status)
+			# print(self.status)
 
 			if self.serial.inWaiting() > 0:
 				self.serial.flushInput()
-				time.sleep(0.2)
+				time.sleep(0.5)
 
 				self.data = self.serial.readline().split('\n')#.decode('utf-8',errors = 'replace')
 				self.data = self.serial.readline().decode('utf-8', errors='replace').split('\n')[0]
@@ -75,6 +76,7 @@ class UART:
 
 
 	def waitStatus(self):
+		self.count = 0
 		while True:
 			self.changeflag(self.goal_status)
 			# print(self.status)
@@ -84,9 +86,15 @@ class UART:
 
 				break
 			elif self.continue_flag == 0:
+				print("1")
 				print(self.message)
 				self.write_data(self.message)
 				time.sleep(1)
+
+				if self.message['message'] == 'running':
+					self.count += 1
+				if self.count == 3:
+					break
 			else:
 				# print("Waiting for the next step\n")
 				continue
@@ -119,7 +127,7 @@ class DeviceClass_Instron:
 		# print(self.uart.status)
 		self.uart.waitStatus()  # status : 'Idle'
 
-		self.thread_1 = Thread(target=self.updateStatus)
+		self.thread_1 = threading.Thread(target=self.updateStatus)
 		self.thread_1.start()
 
 	
@@ -184,6 +192,29 @@ class DeviceClass_Instron:
 				self.uart.goal_status = 'Idle'									# wait until status = Idle
 				self.uart.waitStatus()											# status : Idle
 
+			# if self.cmd_keys[i] =='read_data':
+			# 	self.uart.message['subject_name'] = self.cmd_values[i]
+			# 	self.uart.message['message'] = 'send_data'
+			# 	self.uart.write_data(self.uart.message)
+			# 	self.uart.goal_status = 'data_sent'
+			# 	self.uart.waitStatus()
+			# 	print(self.uart.status['result'])
+			# 	with open('test11.txt','w') as exp:
+			# 		exp.writelines(self.uart.status['result'])
+			# 	time.sleep(0.1)
+			# 	del(self.uart.status['result'])
+			# 	# time.sleep(0.5)
+			# 	# print("2")
+			# 	self.uart.message['message'] = 'data_saved'
+			# 	self.uart.write_data(self.uart.message)
+			# 	self.uart.goal_status = 'Idle'
+			# 	self.uart.waitStatus()		
+			# 	# time.sleep(0.5)
+			# 	# self.uart.serial.flushInput()
+		
+			# 	# print("3")
+								
+
 		
 
 if __name__=='__main__':
@@ -193,6 +224,3 @@ if __name__=='__main__':
 	while True:
 		time.sleep(1.0)
 		pass
-
-
-
