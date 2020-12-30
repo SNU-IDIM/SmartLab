@@ -10,4 +10,5 @@ from DeviceClass_Instron import DeviceClass_Instron
 
 if __name__ == "__main__":
     device_name = 'instron'
+    rospy.init_node(device_name)
     instron_node = DevicePluginToROS(device_name=device_name, device_class=DeviceClass_Instron(device_name=device_name))
