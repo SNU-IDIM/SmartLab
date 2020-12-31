@@ -65,6 +65,8 @@ class DeviceClass_3DP:
         thread_1 = Thread(target=self.updateStatus)
         thread_1.start()
 
+        self.connectDevice()
+
 
     def __del__(self):
         ## Specialized del for the device (in this case, 3D printer)
