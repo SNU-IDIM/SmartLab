@@ -454,7 +454,7 @@ class DeviceClass_Cobot():
         self.rotate_z(10)
         self.gripper_open()
         self.movel_z(-2)
-        self.movel_x_base(100)  
+        self.movel_x_base(120)  
         self.movel_z(4)
         self.gripper_close()
         self.movel_z(-2)
@@ -462,7 +462,7 @@ class DeviceClass_Cobot():
         self.rotate_z(20)
         self.rotate_z(-10)
         self.gripper_open()
-        self.movel_x_base(-50)
+        self.movel_x_base(-60)
         self.movel_z(2)
         self.gripper_close()
         self.movel_z(-2)
@@ -590,7 +590,7 @@ class DeviceClass_Cobot():
             movel(waypoint_6)
             movel(waypoint_7)
             self.suction_cup_off();  rospy.sleep(1)
-            # self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
+            self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
             movel(waypoint_6)
             movej(Q_TOP_PLATE)
             self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0)
@@ -599,7 +599,7 @@ class DeviceClass_Cobot():
     def getBedFromJigToPrinter(self, printer_number):
         bed_number = printer_number + 4
         self.setVelAcc(50, 50, [100,100], [100,100])
-        # self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
+        self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
         movej(Q_TOP_PLATE)
 
         self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
@@ -1018,7 +1018,7 @@ class DeviceClass_Cobot():
                     print('search complete')
                     movel(self.drl_pose)
                     #SHAKING
-                    self.movel_x_base(-50)
+                    self.movel_x_base(-60)
                     self.movel_z(102, [100, 100], [100, 100]) #go down 94 for debug T4 -> 103mm
                     while True:
                         self.specimen_shaking()
@@ -1030,6 +1030,9 @@ class DeviceClass_Cobot():
                             self.gripper_open()
                             release_compliance_ctrl()
                             break
+                    rospy.sleep(1)
+                    self.movel_z(2)
+                    self.gripper_close()
                     self.movel_z(-102,[100, 100], [100, 100]) #go up
                     movej(Q_MULSPECIMEN_SEARCH)
                     
@@ -1092,6 +1095,7 @@ class DeviceClass_Cobot():
 
         # Task [10007]: AFTER ATTACHING SENSOR PICK SPECIMEN AND PLACE ON RACK
         elif(self.cmd_protocol == TASK_PICK_PLACE_RACK):
+            '''
             self.gripper_open()
             self.setVelAcc(30, 30, [30, 30], [30, 30])
             Q_SPECIMEN_RETRACT = [35.044342041015625, 9.633670806884766, -137.1417694091797, -0.0, -52.49190902709961, 35.044342041015625]
@@ -1103,6 +1107,7 @@ class DeviceClass_Cobot():
             self.movel_y_base(10)
             # movej(Q_MULSPECIMEN_SEARCH)
             self.movel_z_base(50)
+            '''
 
             # movel(P_PLACE_INITIAL)
             movej(Q_PLACE_INITIAL)
