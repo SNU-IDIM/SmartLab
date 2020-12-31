@@ -184,14 +184,15 @@ class DeviceManager():
 
         task_get_bed = [ACTION_HOME, ACTION_TOOLCHANGE_1_ATTACH, TASK_3DP_BED_OUT - printer_number, ACTION_HOME]
         task_detach_specimen = [ACTION_TOOLCHANGE_1_DETACH, ACTION_TOOLCHANGE_2_ATTACH, ACTION_HOME, TASK_DETACH_SPECIMEN, TASK_SEPCIMEN_TO_CENTER]
-        task_specimen_to_rack = [TASK_PICK_PLACE_RACK, TASK_RACK_ALIGN]
+        task_specimen_to_rack = [TASK_SPECIMEN_TO_RACK, TASK_RACK_ALIGN]
         task_return_bed = [ACTION_TOOLCHANGE_2_DETACH, ACTION_TOOLCHANGE_1_ATTACH, TASK_3DP_BED_IN + printer_number, ACTION_HOME]
+        task_feed_specimen = [ACTION_TOOLCHANGE_1_DETACH, ACTION_TOOLCHANGE_2_ATTACH, ACTION_HOME, TASK_SPECIMEN_FROM_RACK, ACTION_HOME, TASK_INSTRON_SEARCH]
         # task_get_bed = [ACTION_HOME, ACTION_TOOLCHANGE_1_ATTACH, TASK_3DP_BED_OUT - printer_number, ACTION_HOME]
         # task_detach_specimen = [ACTION_TOOLCHANGE_1_DETACH, ACTION_TOOLCHANGE_2_ATTACH, ACTION_HOME, TASK_DETACH_SPECIMEN, TASK_SEPCIMEN_TO_CENTER]
         # task_attach_sensor = [TASK_ADHESIVE_SAVER_OUT, TASK_SPECIMEN_TO_LEFT, TASK_ADHESIVE_DROP, TASK_SPECIMEN_TO_RIGHT, TASK_ADHESIVE_SAVER_IN, TASK_ATTACH_SENSOR + sensor_number]
         # task_specimen_to_rack = [TASK_SPECIMEN_READY, TASK_PICK_PLACE_RACK, TASK_RACK_ALIGN]
         # task_return_bed = [ACTION_TOOLCHANGE_2_DETACH, ACTION_TOOLCHANGE_1_ATTACH, TASK_3DP_BED_IN + printer_number, ACTION_HOME]
-        robot_task_queue = task_get_bed + task_detach_specimen + task_attach_sensor + task_specimen_to_rack + task_return_bed
+        robot_task_queue = task_get_bed + task_detach_specimen + task_specimen_to_rack + task_return_bed + task_feed_specimen
 
         return robot_task_queue
 
@@ -234,47 +235,50 @@ class DeviceManager():
         while True:
             
             for i in range(len(self.device_dict)):
-                device_id = self.device_dict.keys()[i]
-                device_status = self.device_dict[self.device_dict.keys()[i]].getStatus()
-                device_type = device_status['device_type']
+                try:
+                    device_id = self.device_dict.keys()[i]
+                    device_status = self.device_dict[self.device_dict.keys()[i]].getStatus()
+                    device_type = device_status['device_type']
 
-                if device_type == '3D Printer':
+                    if device_type == '3D Printer':
 
-                    ## 3DP status: Done -> Idle (if robot task is done with that 3DP)
-                    try:
-                        idx = self.printer_list_robot_done.index(device_id)
-                        self.printer_list_robot_done.pop(idx)
-                        self.device_dict[device_id].sendCommand({'status': 'Idle'})
-                        device_status['status'] = 'Idle'
-                        print("[3DP] {} status: Done -> Idle".format(device_id))
-                    except:
-                        pass
-
-                    ## Print a new subject from printing queue
-                    if device_status['status'].find('Done') != -1:
+                        ## 3DP status: Done -> Idle (if robot task is done with that 3DP)
                         try:
-                            self.printer_list_finished.index(device_id)
-                        except:
-                            self.printer_list_finished.append(device_id)
-                    else:
-                        try:
-                            idx = self.printer_list_finished.index(device_id)
-                            self.printer_list_finished.pop(idx)
+                            idx = self.printer_list_robot_done.index(device_id)
+                            self.printer_list_robot_done.pop(idx)
+                            self.device_dict[device_id].sendCommand({'status': 'Idle'})
+                            device_status['status'] = 'Idle'
+                            print("[3DP] {} status: Done -> Idle".format(device_id))
                         except:
                             pass
 
-                    ## Print a new subject from printing queue
-                    if device_status['status'].find('Idle') != -1:
-                        try:
-                            print_next = printing_queue.pop(0)
-                            self.device_dict[device_id].sendCommand({'print': print_next})
-                            print("[3DP] {} status: Idle -> Printing {}".format(device_id, print_next))
-                        except:
-                            print("[3DP] Printing queue is empty !!!")
-                
-                # print("\n[DEBUG] 3DP finished: {}".format(self.printer_list_finished))
-                # print("[DEBUG] 3DP robot done: {}".format(self.printer_list_robot_done))
-                # print("[DEBUG] Subject name: {}".format(device_status['subject_name']))
+                        ## Print a new subject from printing queue
+                        if device_status['status'].find('Done') != -1:
+                            try:
+                                self.printer_list_finished.index(device_id)
+                            except:
+                                self.printer_list_finished.append(device_id)
+                        else:
+                            try:
+                                idx = self.printer_list_finished.index(device_id)
+                                self.printer_list_finished.pop(idx)
+                            except:
+                                pass
+
+                        ## Print a new subject from printing queue
+                        if device_status['status'].find('Idle') != -1:
+                            try:
+                                print_next = printing_queue.pop(0)
+                                self.device_dict[device_id].sendCommand({'print': print_next})
+                                print("[3DP] {} status: Idle -> Printing {}".format(device_id, print_next))
+                            except:
+                                print("[3DP] Printing queue is empty !!!")
+                    
+                    # print("\n[DEBUG] 3DP finished: {}".format(self.printer_list_finished))
+                    # print("[DEBUG] 3DP robot done: {}".format(self.printer_list_robot_done))
+                    # print("[DEBUG] Subject name: {}".format(device_status['subject_name']))
+                except:
+                    pass
                     
             sleep(3.0)
 

@@ -1094,7 +1094,7 @@ class DeviceClass_Cobot():
                 
 
         # Task [10007]: AFTER ATTACHING SENSOR PICK SPECIMEN AND PLACE ON RACK
-        elif(self.cmd_protocol == TASK_PICK_PLACE_RACK):
+        elif(self.cmd_protocol == TASK_SPECIMEN_TO_RACK):
             '''
             self.gripper_open()
             self.setVelAcc(30, 30, [30, 30], [30, 30])
@@ -1128,7 +1128,7 @@ class DeviceClass_Cobot():
 
 
         # Task [10008]: Specimen pick and place at rack TEST
-        elif(self.cmd_protocol == TASK_PICK_PLACE_RACK_TEST):
+        elif(self.cmd_protocol == TASK_SPECIMEN_FROM_RACK):
             self.gripper_open()
             self.setVelAcc(70, 70, [50,50], [50,50])
             movej(Q_MULSPECIMEN_SEARCH)
