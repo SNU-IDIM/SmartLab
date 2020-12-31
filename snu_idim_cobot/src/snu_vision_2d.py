@@ -378,6 +378,7 @@ class snu_vision_2d():
                 theta = specimen_np[i, 1]; px2mm_Row = specimen_np[i, 2]; px2mm_Col = specimen_np[i, 3]
                 print(i+1, theta, px2mm_Row, px2mm_Col)
                 # self.tf_broadcaster('camera_color_frame', TEMP_PREFIX_ + str(i+1), 262.0, -px2mm_Row, px2mm_Col, 0, 0, 0)
+                # self.tf_broadcaster(CAMERA_FRAME_PREFIX_, TEMP_PREFIX_ + str(i+1), 262.0, -px2mm_Row+22.0, -px2mm_Col-10.5, 0, np.pi/2, np.pi)
                 self.tf_broadcaster(CAMERA_FRAME_PREFIX_, TEMP_PREFIX_ + str(i+1), 262.0, -px2mm_Row+22.0, -px2mm_Col-10.5, 0, np.pi/2, np.pi)
                 self.tf_broadcaster(TEMP_PREFIX_ + str(i+1), OBJECT_TARGET_PREFIX_ + str(i+1), 0.0, 0.0, 0.0, 0.0, 0.0, -theta+(90)*np.pi/180)
 

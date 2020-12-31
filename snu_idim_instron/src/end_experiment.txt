@@ -1,2 +1,5 @@
 click,1,start
 click,0,start,100
+click,1,finish,10
+click,1,no,10
+click,1,close,10

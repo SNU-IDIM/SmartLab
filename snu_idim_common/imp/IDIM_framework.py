@@ -278,15 +278,15 @@ P_COLOR_SENSOR_8 = deepcopy(P_COLOR_SENSOR_TRAY_RIGHT);  P_COLOR_SENSOR_8[1] -= 
 # RACK PICK AND PLACE POSITION
 P_AFTER_ATTACH = [-260.0, -182.0, 210, 28.504039764404297, 177.5694580078125, 28.337604522705078]
 
-P_PLACE_INITIAL = [-293.0, -100.0, 322.0, -180.0, -180.0, 0.0]
-P_PLACE_INCLINE = [-293.0, -160.0, 210.0, 90.0, 135.0, 0.0]
-P_PLACE_RACK_1  = [-293.0, -76.75, 191.0, 90.0, 135.0, 0.0]
+P_PLACE_INITIAL = [-293.0, -104.0, 322.0, -180.0, -180.0, 0.0]
+P_PLACE_INCLINE = [-293.0, -164.0, 210.0, 90.0, 135.0, 0.0]
+P_PLACE_RACK_1  = [-293.0, -80.75, 191.0, 90.0, 135.0, 0.0]
 P_PLACE_RACK_2  = deepcopy(P_PLACE_RACK_1);                      P_PLACE_RACK_2[1] -= 26.49; 
 P_PLACE_RACK_3  = deepcopy(P_PLACE_RACK_1);                      P_PLACE_RACK_3[1] -= 26.49 * 2.0; 
 P_PLACE_RACK_4  = deepcopy(P_PLACE_RACK_1);                      P_PLACE_RACK_4[1] -= 26.49 * 3.0; 
-P_PICK_INITIAL  = [-281.0, 180.0, 322.0, -180.0, -180.0, 0.0]
-P_PICK_INCLINE  = [-281.0, 180.0, 200.0, 90.0, -135.0, 0.0]
-P_PICK_RACK_1   = [-281.0, 171.2, 178.2, 90.0, -135.0, 0.0]
+P_PICK_INITIAL  = [-281.0, 176.0, 322.0, -180.0, -180.0, 0.0]
+P_PICK_INCLINE  = [-281.0, 176.0, 200.0, 90.0, -135.0, 0.0]
+P_PICK_RACK_1   = [-281.0, 167.2, 178.2, 90.0, -135.0, 0.0]
 P_PICK_RACK_2   = deepcopy(P_PICK_RACK_1);                       P_PICK_RACK_2[1] -= 26.49; 
 P_PICK_RACK_3   = deepcopy(P_PICK_RACK_1);                       P_PICK_RACK_3[1] -= 26.49 * 2.0; 
 P_PICK_RACK_4   = deepcopy(P_PICK_RACK_1);                       P_PICK_RACK_4[1] -= 26.49 * 3.0; 
