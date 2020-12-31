@@ -578,8 +578,8 @@ class DeviceClass_Cobot():
             waypoint_3 = self.calcRelMove([0, 0, 43, 0, 0, 0], True)
             waypoint_4 = self.calcRelMove([0, 0, -80, 0, 0, 0], True)
             waypoint_5 = self.calcRelMove([300, 0, 0, 0, 0, 0], True)
-            waypoint_6 = P_UNIVERSALJIG_3DP_BED;   waypoint_6[2] += 100
-            waypoint_7 = deepcopy(waypoint_6);     waypoint_7[2] -= 135
+            waypoint_6 = deepcopy(P_UNIVERSALJIG_3DP_BED);   waypoint_6[2] += 100
+            waypoint_7 = deepcopy(waypoint_6);               waypoint_7[2] -= 140
 
             movel(waypoint_1, ref=DR_TOOL, mod=DR_MV_MOD_REL)
             movel(waypoint_2, ref=DR_TOOL, mod=DR_MV_MOD_REL)
@@ -605,7 +605,8 @@ class DeviceClass_Cobot():
         self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
 
         if self.ARsearchFromEEF(bed_number) == True: ## when AR tag is detected, execute the following codes
-            movej(Q_SEARCH_3DP_PLATE)
+            waypoint_0 = deepcopy(Q_SEARCH_3DP_PLATE)
+            movej(waypoint_0)
             self.movel_z(100)
             self.suction_cup_on();  rospy.sleep(1)
             self.jig_x_open();  self.jig_y_open(); rospy.sleep(1)
@@ -766,7 +767,7 @@ class DeviceClass_Cobot():
             movel(p_tool1_step4)
             movel(p_tool1_step5)
 
-            self.status['gripper_type'] = 'Mechanical'
+            self.status['gripper_type'] = 'Suction'
             
 
         # ACTION [-301]: Tool Changer - Place Tool1 to the Toolchanger1
@@ -831,7 +832,7 @@ class DeviceClass_Cobot():
             movel(p_tool2_step4)
             movel(p_tool2_step5)
 
-            self.status['gripper_type'] = 'Suction'
+            self.status['gripper_type'] = 'Mechanical'
 
 
         # ACTION [-302]: Tool Changer - Place Tool2 to the Toolchanger2
