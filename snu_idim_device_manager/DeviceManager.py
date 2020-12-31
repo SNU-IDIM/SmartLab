@@ -20,8 +20,8 @@ from DevicePluginToROS import DevicePluginToROS
 sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_3dp")) )
 from DeviceClass_3DP import DeviceClass_3DP
 
-sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_instron")) )
-from DeviceClass_Instron import DeviceClass_Instron
+# sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_instron")) )
+# from DeviceClass_Instron import DeviceClass_Instron
 
 
 class DeviceManager():
@@ -90,6 +90,7 @@ class DeviceManager():
 
     def refreshDeviceInfo(self):
         while True:
+            print("[DEBUG] Device List: {}".format(self.device_dict.keys()))
             self.device_info = dict()
 
             keys = self.device_dict.keys()
@@ -149,23 +150,31 @@ class DeviceManager():
         if mode == 'real':
             while len(robot_task_queue) != 0:
                 if self.device_dict['R_001/cobot'].getStatus()['status'] == 'Standby':
+                    print('1')
                     next_task = robot_task_queue.pop(0)
-                    self.device_dict['R_001/cobot'].sendCommand({"command": '{}'.format(task_next)})
-                    print("[DEBUG] Robot task queue: {}".format(robot_task_queue))
+                    print('2')
+                    self.device_dict['R_001/cobot'].sendCommand({'command': next_task})
+                    print('3')
+                    print("[Cobot] Robot task queue: {}".format(robot_task_queue))
+                    print('4')
                     sleep(3.0)
         elif mode == 'debug':
             while len(robot_task_queue) != 0:
                 next_task = robot_task_queue.pop(0)
-                print("[DEBUG] Robot task queue: {}".format(robot_task_queue))
+                print("[Cobot] Robot task queue: {}".format(robot_task_queue))
                 sleep(0.2)
 
 
     
     def executeInstron(self, subject_name):
-        cmd_dict = dict()
-        cmd_dict['setup'] = subject_name
-        cmd_dict['execute'] = subject_name
-        self.device_dict['instron'].sendCommand(cmd_dict)
+        self.device_dict['instron'].sendCommand({'setup': subject_name})
+
+        while True:
+            if self.device_dict['instron'].getStatus()['status'] == 'Ready':
+                self.device_dict['instron'].sendCommand({'execute': 'specimen1'})
+                print("[Instron] Test Start !!!")
+                break
+
 
 
 
@@ -174,11 +183,14 @@ class DeviceManager():
         sensor_number = printer_number  ## 임시 (로봇쪽 sensor number 작업 필요)
 
         task_get_bed = [ACTION_HOME, ACTION_TOOLCHANGE_1_ATTACH, TASK_3DP_BED_OUT - printer_number, ACTION_HOME]
-        task_detach_specimen = [ACTION_TOOLCHANGE_1_DETACH, ACTION_TOOLCHANGE_2_ATTACH, ACTION_HOME, TASK_DETACH_SPECIMEN, TASK_SEARCH_PICK_SPECIMEN, TASK_SEPCIMEN_TO_CENTER]
-        task_attach_sensor = [TASK_ADHESIVE_SAVER_OUT, TASK_SPECIMEN_TO_LEFT, TASK_ADHESIVE_DROP, TASK_SPECIMEN_TO_RIGHT, TASK_ADHESIVE_SAVER_IN, TASK_ATTACH_SENSOR + sensor_number]
-        task_specimen_to_rack = [TASK_SPECIMEN_READY, TASK_PICK_PLACE_RACK, TASK_RACK_ALIGN]
+        task_detach_specimen = [ACTION_TOOLCHANGE_1_DETACH, ACTION_TOOLCHANGE_2_ATTACH, ACTION_HOME, TASK_DETACH_SPECIMEN, TASK_SEPCIMEN_TO_CENTER]
+        task_specimen_to_rack = [TASK_PICK_PLACE_RACK, TASK_RACK_ALIGN]
         task_return_bed = [ACTION_TOOLCHANGE_2_DETACH, ACTION_TOOLCHANGE_1_ATTACH, TASK_3DP_BED_IN + printer_number, ACTION_HOME]
-
+        # task_get_bed = [ACTION_HOME, ACTION_TOOLCHANGE_1_ATTACH, TASK_3DP_BED_OUT - printer_number, ACTION_HOME]
+        # task_detach_specimen = [ACTION_TOOLCHANGE_1_DETACH, ACTION_TOOLCHANGE_2_ATTACH, ACTION_HOME, TASK_DETACH_SPECIMEN, TASK_SEPCIMEN_TO_CENTER]
+        # task_attach_sensor = [TASK_ADHESIVE_SAVER_OUT, TASK_SPECIMEN_TO_LEFT, TASK_ADHESIVE_DROP, TASK_SPECIMEN_TO_RIGHT, TASK_ADHESIVE_SAVER_IN, TASK_ATTACH_SENSOR + sensor_number]
+        # task_specimen_to_rack = [TASK_SPECIMEN_READY, TASK_PICK_PLACE_RACK, TASK_RACK_ALIGN]
+        # task_return_bed = [ACTION_TOOLCHANGE_2_DETACH, ACTION_TOOLCHANGE_1_ATTACH, TASK_3DP_BED_IN + printer_number, ACTION_HOME]
         robot_task_queue = task_get_bed + task_detach_specimen + task_attach_sensor + task_specimen_to_rack + task_return_bed
 
         return robot_task_queue
@@ -187,28 +199,29 @@ class DeviceManager():
     def executionManager(self):
         while True:
             try:
-                print("[DEBUG] Print done list: {}".format(self.printer_list_finished))
+                print("[Execution Manager] Print done list: {}".format(self.printer_list_finished))
                 printer_id = self.printer_list_finished.pop(0)
 
                 ## 1. AMR 이동 (printer_id)
-                print("[DEBUG] AMR moving... (target: {})".format(printer_id))
-                self.executeAMR(spot_name=printer_id, target_pose=[3.016, -3.244, -1.622], hold_time=1.0) # target_pose 수정 작업 필요
+                print("[Execution Manager] AMR moving... (target: {})".format(printer_id))
+                # self.executeAMR(spot_name=printer_id, target_pose=[3.016, -3.244, -1.622], hold_time=0.0) # target_pose 수정 작업 필요
 
                 ## 2. 협동로봇 시편 준비 작업 (printer_id)
-                print("[DEBUG] Robot task start !!! (printer: {})".format(printer_id))
+                print("[Execution Manager] Robot task start !!! (printer: {})".format(printer_id))
                 robot_task_queue = self.makeRobotTaskQueue(printer_id)
+                print(robot_task_queue)
                 # robot_task_queue = [3050, -3050, 3050, -3050]  # for debug
                 self.executeCobot(robot_task_queue, mode='real')
                 self.printer_list_robot_done.append(printer_id)
-                print("[DEBUG] Robot task done !!! (printer: {})".format(printer_id))
+                print("[Execution Manager] Robot task done !!! (printer: {})".format(printer_id))
 
                 ## 3. 인장시험 수행 (subject_id)
                 subject_id = self.device_info[printer_id]['subject_name']
-                print("[DEBUG] Experiment start !!! (subject: {})".format(subject_id))
+                print("[Execution Manager] Experiment start !!! (subject: {})".format(subject_id))
                 self.executeInstron(subject_id)
 
             except:
-                print("[ERROR] Collaborative Robot is not connected yet !!!")
+                print("[Execution Manager] Error !!!")
                 pass
 
             sleep(3.0)
@@ -233,7 +246,7 @@ class DeviceManager():
                         self.printer_list_robot_done.pop(idx)
                         self.device_dict[device_id].sendCommand({'status': 'Idle'})
                         device_status['status'] = 'Idle'
-                        print("[DEBUG] 3DP({}) status: Done -> Idle".format(device_id))
+                        print("[3DP] {} status: Done -> Idle".format(device_id))
                     except:
                         pass
 
@@ -255,9 +268,9 @@ class DeviceManager():
                         try:
                             print_next = printing_queue.pop(0)
                             self.device_dict[device_id].sendCommand({'print': print_next})
-                            print("[DEBUG] 3DP({}) status: Idle -> Printing {}".format(device_id, print_next))
+                            print("[3DP] {} status: Idle -> Printing {}".format(device_id, print_next))
                         except:
-                            print("[DEBUG] Printing queue is empty !!!")
+                            print("[3DP] Printing queue is empty !!!")
                 
                 # print("\n[DEBUG] 3DP finished: {}".format(self.printer_list_finished))
                 # print("[DEBUG] 3DP robot done: {}".format(self.printer_list_robot_done))
@@ -273,15 +286,17 @@ if __name__ == '__main__':
     rospy.init_node('DeviceManager')
 
     manager = DeviceManager()
-    manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', port_='5000'))
-    manager.addDevice('instron')
+    # manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', port_='5000'))
     
 
-    # manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', ip_='192.168.60.101', port_='5001'))
+
+    manager.addDevice('R_001/cobot', device_class=None)
+    manager.addDevice('instron')
+    manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', ip_='192.168.60.101', port_='5001'))
     # manager.addDevice('printer2', DeviceClass_3DP(device_name='printer2', ip_='192.168.60.101', port_='5002'))
     # manager.addDevice('printer3', DeviceClass_3DP(device_name='printer3', ip_='192.168.60.101', port_='5003'))
     # manager.addDevice('printer4', DeviceClass_3DP(device_name='printer4', ip_='192.168.60.101', port_='5004'))
-    # manager.addDevice('R_001/cobot', device_class=None)
+
 
     # sleep(5.0)
     # manager.executeAMR(spot_name='Instron', target_pose=[3.016, -3.244, -1.622], hold_time=0.0)
