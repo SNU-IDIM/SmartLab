@@ -943,45 +943,8 @@ class DeviceClass_Cobot():
             movel(viewpoint)
 
 
-        # Task [10004]: Testing compliance mode using scale -> (F = -kx // k=10;10;100 , x=10;10;100)
-        elif(self.cmd_protocol == TASK_TEST_COMPLIANCE):
-            self.setVelAcc(50, 50, [50,100], [50,100])
 
-            init_posj = Q_BACK
-            movej(init_posj)
-
-            self.movel_z(280)
-            k = 10
-            x = 10
-            g = 9.81
-            
-            eef_weight = self.status['force'][2]
-            task_compliance_ctrl([100, 100, 10, 1000, 1000, 1000])
-
-            ##contact point 정의 필요 movel할 것
-            while(True):
-                if self.status['force'][2] == 0.0:  #set force in N
-                    contact_posx = posx(self.status['posx'][0], self.status['posx'][1], self.status['posx'][2]+5, 180, 180, 0)
-                    release_compliance_ctrl()
-                    print("Z position: {}".format(contact_posx[2]))
-                    break
-
-            for k in range(10,1000,10):
-                for x in range(10,100,10):
-                    task_compliance_ctrl([100, 100, k, 1000, 1000, 1000])
-                    self.movel_xyz(0, 0, x, velx=[10,10])
-                    print("----------------------------------")
-                    print("k: {}".format(k), "x: {}".format(x))
-                    # print("Expected mass -> {} [g]".format(k*x/g))
-                    # print("End-effector mass -> {} [g]".format(-eef_weight/g * 1000))
-                    print("Result mass -> {} g".format((self.toolforce_max - eef_weight)/g * 1000))
-
-                    release_compliance_ctrl()
-                    movel(contact_posx, vel=[20,20], acc=[100,50])
-                    self.toolforce_max = 0.0
-
-
-        # Task [10005]: SEARCH AND APPROACH TO ''MULTIPLE'' SPECIMENS AND DETACH TO THE BED
+        # Task [10004]: SEARCH AND APPROACH TO ''MULTIPLE'' SPECIMENS AND DETACH TO THE BED
         elif(self.cmd_protocol == TASK_DETACH_SPECIMEN):
             # self.setVelAcc(50, 50, [150,100], [150,100])
             self.setVelAcc(30, 30, [30,30], [30,30])
@@ -1052,7 +1015,7 @@ class DeviceClass_Cobot():
             # self.jig_x_open();  self.jig_y_open()
 
 
-        # Task [10006]: SEARCH ONE SPECIMEN AND PICK UP
+        # Task [10005]: SEARCH ONE SPECIMEN AND PICK UP
         elif(self.cmd_protocol == TASK_SEARCH_PICK_SPECIMEN):
             self.gripper_open()
             # rospy.sleep(5)
@@ -1093,7 +1056,7 @@ class DeviceClass_Cobot():
             movej(Q_MULSPECIMEN_SEARCH)
                 
 
-        # Task [10007]: AFTER ATTACHING SENSOR PICK SPECIMEN AND PLACE ON RACK
+        # Task [10006]: AFTER ATTACHING SENSOR PICK SPECIMEN AND PLACE ON RACK
         elif(self.cmd_protocol == TASK_SPECIMEN_TO_RACK):
             '''
             self.gripper_open()
@@ -1127,7 +1090,7 @@ class DeviceClass_Cobot():
             movej(Q_MULSPECIMEN_SEARCH)
 
 
-        # Task [10008]: Specimen pick and place at rack TEST
+        # Task [10007]: Specimen pick and place at rack TEST
         elif(self.cmd_protocol == TASK_SPECIMEN_FROM_RACK):
             self.gripper_open()
             self.setVelAcc(70, 70, [50,50], [50,50])
@@ -1139,12 +1102,13 @@ class DeviceClass_Cobot():
             movej(Q_MULSPECIMEN_SEARCH)
 
 
-        # Task [10009]: Alignment task
+        # Task [10008]: Alignment task
         elif(self.cmd_protocol == TASK_RACK_ALIGN):
             self.specimenAlign()            
 
         # Task [10011]: "TASK_3DP_1_BED_IN"   - (3DP-#1 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_1_BED_IN):
+            print("test")
             self.getBedFromJigToPrinter(1)
         # Task [-10011]: "TASK_3DP_1_BED_OUT" - (3DP-#1 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_1_BED_OUT):
@@ -1376,7 +1340,7 @@ class DeviceClass_Cobot():
             movej(Q_SPECIMEN_RETRACT)
 
 
-        # Task [10035]: Specimen is ready
+        # Task [10036]: Specimen is ready
         elif(self.cmd_protocol == TASK_SPECIMEN_READY):
             rospy.sleep(30)
             Q_SPECIMEN_RETRACT = [35.044342041015625, 9.633670806884766, -137.1417694091797, -0.0, -52.49190902709961, 35.044342041015625]
@@ -1392,6 +1356,42 @@ class DeviceClass_Cobot():
             self.suction_cup_off()
             movej(Q_SPECIMEN_RETRACT)
 
+        # Task [20001]: Testing compliance mode using scale -> (F = -kx // k=10;10;100 , x=10;10;100)
+        elif(self.cmd_protocol == TASK_TEST_COMPLIANCE):
+            self.setVelAcc(50, 50, [50,100], [50,100])
+
+            init_posj = Q_BACK
+            movej(init_posj)
+
+            self.movel_z(280)
+            k = 10
+            x = 10
+            g = 9.81
+            
+            eef_weight = self.status['force'][2]
+            task_compliance_ctrl([100, 100, 10, 1000, 1000, 1000])
+
+            ##contact point 정의 필요 movel할 것
+            while(True):
+                if self.status['force'][2] == 0.0:  #set force in N
+                    contact_posx = posx(self.status['posx'][0], self.status['posx'][1], self.status['posx'][2]+5, 180, 180, 0)
+                    release_compliance_ctrl()
+                    print("Z position: {}".format(contact_posx[2]))
+                    break
+
+            for k in range(10,1000,10):
+                for x in range(10,100,10):
+                    task_compliance_ctrl([100, 100, k, 1000, 1000, 1000])
+                    self.movel_xyz(0, 0, x, velx=[10,10])
+                    print("----------------------------------")
+                    print("k: {}".format(k), "x: {}".format(x))
+                    # print("Expected mass -> {} [g]".format(k*x/g))
+                    # print("End-effector mass -> {} [g]".format(-eef_weight/g * 1000))
+                    print("Result mass -> {} g".format((self.toolforce_max - eef_weight)/g * 1000))
+
+                    release_compliance_ctrl()
+                    movel(contact_posx, vel=[20,20], acc=[100,50])
+                    self.toolforce_max = 0.0
 
         # TEST: Color sensor handling [20004]
         elif(self.cmd_protocol == 20004):
