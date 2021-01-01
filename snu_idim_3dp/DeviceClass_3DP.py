@@ -65,7 +65,7 @@ class DeviceClass_3DP:
         thread_1 = Thread(target=self.updateStatus)
         thread_1.start()
 
-        self.connectDevice()
+        # self.connectDevice()
 
 
     def __del__(self):

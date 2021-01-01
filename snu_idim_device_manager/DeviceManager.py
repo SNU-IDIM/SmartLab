@@ -48,6 +48,10 @@ class DeviceManager():
 
         ## for Cobot Manager
         self.cobot_task_queue = list()
+        self.cobot_recent_work = None
+
+        ## for Instron Manager
+        self.instron_save_flag = False
 
         ## for AMR Manager
         self.client = actionlib.SimpleActionClient('/R_001/WAS', WorkFlowAction)
@@ -146,10 +150,14 @@ class DeviceManager():
 
 
     
-    def waitDeviceStatus(self, device_name, status):
+    def waitDeviceStatus(self, device_name, status_key='status', status_value=''):
         while True:
+            try:
+                status_int = int(status_value)
+            except:
+                status_int = status_value
             # print("[DEBUG] Waiting for '{}' status to be '{}'... ".format(device_name, status))
-            if self.device_dict[device_name].getStatus()['status'] == status:
+            if self.device_dict[device_name].getStatus()[status_key] == str(status_value) or self.device_dict[device_name].getStatus()[status_key] == status_int:
                 # print("[DEBUG] '{}' status = '{}' !!! ".format(device_name, status))
                 break
 
@@ -172,18 +180,27 @@ class DeviceManager():
 
 
     
-    def executeInstron(self, subject_name):
-        self.device_dict['instron'].sendCommand({'setup': subject_name})
+    def executeInstron(self, subject_name, command_type):
+        if command_type == 'setup':
+            if self.instron_save_flag == True:
+                self.waitDeviceStatus(device_name='instron', status_value='data_sent')
+                self.instron_save_flag = False
 
-        self.waitDeviceStatus(device_name='instron', status='Ready')
-        self.device_dict['instron'].sendCommand({'execute': subject_name})
-        print("[Instron] Test Start ({}) !!!".format(subject_name))
+            self.waitDeviceStatus(device_name='instron', status_value='Idle')
+            self.device_dict['instron'].sendCommand({'setup': subject_name})
 
-        self.waitDeviceStatus(device_name='instron', status='Idle')
-        self.device_dict['instron'].sendCommand({'result': subject_name})
-        self.waitDeviceStatus(device_name='instron', status='data_sent')
-        self.waitDeviceStatus(device_name='instron', status='Idle')
-        print("[Instron] Data saved ({}) !!!".format(subject_name))
+        elif command_type == 'execute':
+            self.waitDeviceStatus(device_name='instron', status_value='Ready')
+            self.device_dict['instron'].sendCommand({'execute': subject_name})
+            print("[Instron] Test Start ({}) !!!".format(subject_name))
+
+        elif command_type == 'result':
+            self.waitDeviceStatus(device_name='instron', status_value='Idle')
+            self.device_dict['instron'].sendCommand({'result': subject_name})
+            print("[Instron] Result file saving ... ({}) !!!".format(subject_name))
+            self.instron_save_flag = True
+            
+        
 
 
     # task_get_bed = [ACTION_HOME, ACTION_TOOLCHANGE_1_ATTACH, TASK_3DP_BED_OUT - printer_number, ACTION_HOME]
@@ -200,25 +217,34 @@ class DeviceManager():
             task_get_bed = [ACTION_HOME, ACTION_TOOLCHANGE_1_ATTACH, TASK_3DP_BED_OUT - printer_number, ACTION_HOME]
             task_detach_specimen = [ACTION_TOOLCHANGE_1_DETACH, ACTION_TOOLCHANGE_2_ATTACH, ACTION_HOME, TASK_DETACH_SPECIMEN]
             task_specimen_to_rack = [TASK_SPECIMEN_TO_RACK, TASK_RACK_ALIGN]
-            task_return_bed = [ACTION_TOOLCHANGE_2_DETACH, ACTION_TOOLCHANGE_1_ATTACH, TASK_3DP_BED_IN + printer_number, ACTION_HOME]
+            task_return_bed = [ACTION_TOOLCHANGE_2_DETACH, ACTION_TOOLCHANGE_1_ATTACH, TASK_3DP_BED_IN + printer_number, ACTION_HOME, ACTION_TOOLCHANGE_1_DETACH]
+            self.cobot_recent_work = ACTION_TOOLCHANGE_1_DETACH
             robot_task_queue = task_get_bed + task_detach_specimen + task_specimen_to_rack + task_return_bed
             return robot_task_queue
 
         elif task_type == 'feed_specimen':
-            task_feed_specimen = [ACTION_TOOLCHANGE_1_DETACH, ACTION_TOOLCHANGE_2_ATTACH, ACTION_HOME, TASK_SPECIMEN_FROM_RACK, ACTION_HOME, TASK_INSTRON_SEARCH]
+            task_feed_specimen = [ACTION_TOOLCHANGE_2_ATTACH, ACTION_HOME, TASK_SPECIMEN_FROM_RACK, ACTION_HOME, TASK_INSTRON_SEARCH]
+            self.cobot_recent_work = TASK_INSTRON_SEARCH
             robot_task_queue = task_feed_specimen
             return robot_task_queue
 
+        elif task_type == 'watch_specimen':
+            task_watch_specimen = [TASK_INSTRON_MOVEOUT]
+            self.cobot_recent_work = TASK_INSTRON_MOVEOUT
+            robot_task_queue = task_watch_specimen
+            return robot_task_queue
+
         elif task_type == 'finish':
-            task_feed_specimen = [TASK_INSTRON_MOVEOUT, ACTION_HOME, ACTION_TOOLCHANGE_2_DETACH, ACTION_HOME]
-            robot_task_queue = task_feed_specimen
+            task_finish_experiment = [ACTION_HOME, ACTION_TOOLCHANGE_2_DETACH, ACTION_HOME]
+            self.cobot_recent_work = ACTION_HOME
+            robot_task_queue = task_finish_experiment
             return robot_task_queue
 
 
 
     def executionManager(self):
-        step = 0
-        debug = True
+        step = 4; subject_id = 'test1'
+        debug = False
         
         while True:
             try:
@@ -230,7 +256,7 @@ class DeviceManager():
                     amr_instron =   [3.007, -3.491, -1.572]
                     offset_3dp = 0.47
                     printer_number = int(printer_id.split('printer')[1])
-                    amr_printer   = [2.967, -4.601 + (printer_number * offset_3dp), -1.572]
+                    amr_printer   = [2.967, -4.131 + (printer_number * offset_3dp), -1.572]
                     amr_home = [2.214, -0.407, 0.000]
                     step = 1
 
@@ -239,7 +265,7 @@ class DeviceManager():
                     if debug == False: self.executeAMR(spot_name=printer_id, target_pose=amr_printer, hold_time=0.0) # target_pose 수정 작업 필요
                     step = 2
                 
-                if step == 2: ## 2. 협동로봇 시편 준비 작업 (printer_id)
+                if step == 2: ## 2. 협동로봇 프린터 -> 시편준비 (printer_id)
                     print("[Execution Manager] 2. Robot task start !!! (printer: {})".format(printer_id))
                     robot_task_queue = self.makeRobotTaskQueue(printer_id, task_type='specimen_task')
                     self.executeCobot(robot_task_queue, debug=debug)
@@ -252,26 +278,32 @@ class DeviceManager():
                     if debug == False: self.executeAMR(spot_name='instron', target_pose=amr_instron, hold_time=0.0) # target_pose 수정 작업 필요
                     step = 4
 
-                if step == 4: ## 4. 협동로봇 시편 준비 작업 (printer_id)
+                if step == 4: ## 4. 협동로봇 시편 -> 인장시험기 (printer_id)
                     print("[Execution Manager] 4. Robot task start !!! (Feeding specimen)")
                     robot_task_queue = self.makeRobotTaskQueue(task_type='feed_specimen')
                     self.executeCobot(robot_task_queue, debug=debug)
                     step = 5
                 
-                if step == 5: ## 5. 인장시험 수행 (subject_id)
-                    print("[Execution Manager] 5. Experiment start !!! (subject: {})".format(subject_id))
-                    self.executeInstron(subject_id)
+                if step == 5: ## 5. 인장시험 준비 (subject_id)
+                    print("[Execution Manager] 5. Experiment initializing ... (subject: {})".format(subject_id))
+                    self.waitDeviceStatus(device_name='R_001/cobot', status_key='recent_work', status_value=self.cobot_recent_work)
+                    self.executeInstron(subject_id, command_type='setup')
+                    sleep(10.0)
+                    robot_task_queue = self.makeRobotTaskQueue(task_type='watch_specimen')
+                    self.executeCobot(robot_task_queue, debug=debug)
                     step = 6
                 
-                if step == 6: ## 6. 협동로봇 마무리 작업 (printer_id)
-                    print("[Execution Manager] 6. Robot task start !!! (Finishing experiment - {})".format(subject_id))
+                if step == 6: ## 6. 인장시험 실행 & 저장 (subject_id)
+                    print("[Execution Manager] 6. Experiment start !!! (subject: {})".format(subject_id))
+                    self.executeInstron(subject_id, command_type='execute')
+                    self.executeInstron(subject_id, command_type='result')
                     robot_task_queue = self.makeRobotTaskQueue(task_type='finish')
                     self.executeCobot(robot_task_queue, debug=debug)
                     step = 7 if len(self.printer_list_finished) == 0 else 0
                 
                 if step == 7: ## 7. AMR 이동 (home)
                     print("[Execution Manager] 7. AMR moving... (target: home, {})".format(amr_home))
-                    # if debug == False: self.executeAMR(spot_name='home', target_pose=amr_home, hold_time=0.0) # target_pose 수정 작업 필요
+                    if debug == False: self.executeAMR(spot_name='home', target_pose=amr_home, hold_time=0.0) # target_pose 수정 작업 필요
                     step = 0
 
             except:
@@ -343,17 +375,19 @@ if __name__ == '__main__':
     rospy.init_node('DeviceManager')
 
     manager = DeviceManager()
-    manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', port_='5000'))
+    # manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', port_='5000'))
     
 
 
     manager.addDevice('R_001/cobot', device_class=None)
     manager.addDevice('instron')
-    # manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', ip_='192.168.60.101', port_='5001'))
+    manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', ip_='192.168.60.101', port_='5001'))
     # manager.addDevice('printer2', DeviceClass_3DP(device_name='printer2', ip_='192.168.60.101', port_='5002'))
-    # manager.addDevice('printer3', DeviceClass_3DP(device_name='printer3', ip_='192.168.60.101', port_='5003'))
+    manager.addDevice('printer3', DeviceClass_3DP(device_name='printer3', ip_='192.168.60.101', port_='5003'))
     # manager.addDevice('printer4', DeviceClass_3DP(device_name='printer4', ip_='192.168.60.101', port_='5004'))
-
+    sleep(5.0)
+    manager.device_dict['printer1'].sendCommand({"connection": True})
+    manager.device_dict['printer3'].sendCommand({"connection": True})
 
     # sleep(5.0)
     # manager.executeAMR(spot_name='Instron', target_pose=[3.016, -3.244, -1.622], hold_time=0.0)
