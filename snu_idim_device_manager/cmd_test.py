@@ -23,7 +23,7 @@ if __name__ == '__main__':
 
     while True:
         rospy.sleep(5.0)
-        msg_json = json.dumps({'setup': 'test_specimen1'})
+        msg_json = json.dumps({'setup': 'test2'})
         pub_command.publish(msg_json)
         rospy.sleep(5.0)
         break

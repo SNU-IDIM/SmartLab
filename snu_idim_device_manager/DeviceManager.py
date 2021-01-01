@@ -163,7 +163,7 @@ class DeviceManager():
 
 
 
-    def executeCobot(self, robot_task_queue, debug=False):
+    def executeCobot(self, robot_task_queue, wait_until_end=False, debug=False):
         if debug == False:
             while len(robot_task_queue) != 0:
                 if self.device_dict['R_001/cobot'].getStatus()['status'] == 'Standby':
@@ -176,29 +176,41 @@ class DeviceManager():
                 next_task = robot_task_queue.pop(0)
                 print("[Cobot] Robot task queue: {}".format(robot_task_queue))
                 sleep(0.5)
+        if wait_until_end == True: self.waitDeviceStatus(device_name='R_001/cobot', status_key='recent_work', status_value=self.cobot_recent_work)
         print("[Cobot] Robot task finished !!! (Queue is empty)")
 
 
     
     def executeInstron(self, subject_name, command_type):
         if command_type == 'setup':
-            if self.instron_save_flag == True:
-                self.waitDeviceStatus(device_name='instron', status_value='data_sent')
-                self.instron_save_flag = False
-
             self.waitDeviceStatus(device_name='instron', status_value='Idle')
             self.device_dict['instron'].sendCommand({'setup': subject_name})
-
         elif command_type == 'execute':
             self.waitDeviceStatus(device_name='instron', status_value='Ready')
             self.device_dict['instron'].sendCommand({'execute': subject_name})
             print("[Instron] Test Start ({}) !!!".format(subject_name))
 
-        elif command_type == 'result':
-            self.waitDeviceStatus(device_name='instron', status_value='Idle')
-            self.device_dict['instron'].sendCommand({'result': subject_name})
-            print("[Instron] Result file saving ... ({}) !!!".format(subject_name))
-            self.instron_save_flag = True
+        
+
+        # if command_type == 'setup':
+        #     if self.instron_save_flag == True:
+        #         self.waitDeviceStatus(device_name='instron', status_value='data_sent')
+        #         self.device_dict['instron'].sendCommand({'setup': subject_name})
+        #         self.instron_save_flag = False
+        #     else:
+        #         self.waitDeviceStatus(device_name='instron', status_value='Idle')
+        #         self.device_dict['instron'].sendCommand({'setup': subject_name})
+
+        # elif command_type == 'execute':
+        #     self.waitDeviceStatus(device_name='instron', status_value='Ready')
+        #     self.device_dict['instron'].sendCommand({'execute': subject_name})
+        #     print("[Instron] Test Start ({}) !!!".format(subject_name))
+
+        # elif command_type == 'result':
+        #     self.waitDeviceStatus(device_name='instron', status_value='Idle')
+        #     self.device_dict['instron'].sendCommand({'result': subject_name})
+        #     print("[Instron] Result file saving ... ({}) !!!".format(subject_name))
+        #     self.instron_save_flag = True
             
         
 
@@ -243,8 +255,8 @@ class DeviceManager():
 
 
     def executionManager(self):
-        step = 4; subject_id = 'test1'
-        debug = False
+        step = 0 #; subject_id = 'test1'
+        debug = True
         
         while True:
             try:
@@ -253,10 +265,10 @@ class DeviceManager():
                     printer_id = self.printer_list_finished.pop(0)
                     subject_id = self.device_info[printer_id]['subject_name']
 
-                    amr_instron =   [3.007, -3.491, -1.572]
+                    amr_instron =   [2.967, -3.661, -1.610]
                     offset_3dp = 0.47
                     printer_number = int(printer_id.split('printer')[1])
-                    amr_printer   = [2.967, -4.131 + (printer_number * offset_3dp), -1.572]
+                    amr_printer   = [2.967, -4.131 + (printer_number * offset_3dp), -1.610]
                     amr_home = [2.214, -0.407, 0.000]
                     step = 1
 
@@ -281,12 +293,11 @@ class DeviceManager():
                 if step == 4: ## 4. 협동로봇 시편 -> 인장시험기 (printer_id)
                     print("[Execution Manager] 4. Robot task start !!! (Feeding specimen)")
                     robot_task_queue = self.makeRobotTaskQueue(task_type='feed_specimen')
-                    self.executeCobot(robot_task_queue, debug=debug)
+                    self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
                     step = 5
                 
                 if step == 5: ## 5. 인장시험 준비 (subject_id)
                     print("[Execution Manager] 5. Experiment initializing ... (subject: {})".format(subject_id))
-                    self.waitDeviceStatus(device_name='R_001/cobot', status_key='recent_work', status_value=self.cobot_recent_work)
                     self.executeInstron(subject_id, command_type='setup')
                     sleep(10.0)
                     robot_task_queue = self.makeRobotTaskQueue(task_type='watch_specimen')
