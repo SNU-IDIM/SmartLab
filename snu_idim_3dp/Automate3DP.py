@@ -109,7 +109,8 @@ class Automate3DP:
                 elif cmd_values[i] == False and self.status['connection'].find('Offline') == -1: # disconnect printer
                     self.disconnectDevice()
             elif cmd_keys[i] == 'print': # start printing
-                self.selectGcodeFile(file_name=cmd_values[i])
+                if self.status['gcode_name'] != cmd_values[i]:
+                    self.selectGcodeFile(file_name=cmd_values[i])
                 self.startPrinting()
             elif cmd_keys[i] == 'cancel': # cancel printing
                 self.cancelPrinting()
