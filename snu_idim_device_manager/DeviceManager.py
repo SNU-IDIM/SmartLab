@@ -214,13 +214,6 @@ class DeviceManager():
             
         
 
-
-    # task_get_bed = [ACTION_HOME, ACTION_TOOLCHANGE_1_ATTACH, TASK_3DP_BED_OUT - printer_number, ACTION_HOME]
-    # task_detach_specimen = [ACTION_TOOLCHANGE_1_DETACH, ACTION_TOOLCHANGE_2_ATTACH, ACTION_HOME, TASK_DETACH_SPECIMEN, TASK_SEPCIMEN_TO_CENTER]
-    # task_attach_sensor = [TASK_ADHESIVE_SAVER_OUT, TASK_SPECIMEN_TO_LEFT, TASK_ADHESIVE_DROP, TASK_SPECIMEN_TO_RIGHT, TASK_ADHESIVE_SAVER_IN, TASK_ATTACH_SENSOR + sensor_number]
-    # task_specimen_to_rack = [TASK_SPECIMEN_READY, TASK_PICK_PLACE_RACK, TASK_RACK_ALIGN]
-    # task_return_bed = [ACTION_TOOLCHANGE_2_DETACH, ACTION_TOOLCHANGE_1_ATTACH, TASK_3DP_BED_IN + printer_number, ACTION_HOME]
-
     def makeRobotTaskQueue(self, printer_id='printer1', task_type='specimen_task'):
         if task_type == 'specimen_task':
             printer_number = int(printer_id.split('printer')[1])
@@ -228,7 +221,7 @@ class DeviceManager():
 
             task_get_bed = [ACTION_HOME, ACTION_TOOLCHANGE_1_ATTACH, TASK_3DP_BED_OUT - printer_number, ACTION_HOME]
             task_detach_specimen = [ACTION_TOOLCHANGE_1_DETACH, ACTION_TOOLCHANGE_2_ATTACH, ACTION_HOME, TASK_DETACH_SPECIMEN]
-            task_specimen_to_rack = [TASK_SPECIMEN_TO_RACK, TASK_RACK_ALIGN]
+            task_specimen_to_rack = [TASK_SPECIMEN_TO_RACK, TASK_RACK_ALIGN, ACTION_HOME]
             task_return_bed = [ACTION_TOOLCHANGE_2_DETACH, ACTION_TOOLCHANGE_1_ATTACH, TASK_3DP_BED_IN + printer_number, ACTION_HOME, ACTION_TOOLCHANGE_1_DETACH]
             self.cobot_recent_work = ACTION_TOOLCHANGE_1_DETACH
             robot_task_queue = task_get_bed + task_detach_specimen + task_specimen_to_rack + task_return_bed
@@ -255,8 +248,8 @@ class DeviceManager():
 
 
     def executionManager(self):
-        step = 0 #; subject_id = 'test1'
-        debug = True
+        step = 0 #; printer_id = 'printer2'; subject_id = 'test2'
+        debug = False
         
         while True:
             try:
@@ -265,7 +258,7 @@ class DeviceManager():
                     printer_id = self.printer_list_finished.pop(0)
                     subject_id = self.device_info[printer_id]['subject_name']
 
-                    amr_instron =   [2.967, -3.661, -1.610]
+                    amr_instron =   [3.005, -3.268, -1.610]
                     offset_3dp = 0.47
                     printer_number = int(printer_id.split('printer')[1])
                     amr_printer   = [2.967, -4.131 + (printer_number * offset_3dp), -1.610]
@@ -287,7 +280,8 @@ class DeviceManager():
                 
                 if step == 3: ## 3. AMR 이동 (instron)
                     print("[Execution Manager] 3. AMR moving... (target: instron, {})".format(amr_instron))
-                    if debug == False: self.executeAMR(spot_name='instron', target_pose=amr_instron, hold_time=0.0) # target_pose 수정 작업 필요
+                    if subject_id != 'test3':
+                        if debug == False: self.executeAMR(spot_name='instron', target_pose=amr_instron, hold_time=0.0) # target_pose 수정 작업 필요
                     step = 4
 
                 if step == 4: ## 4. 협동로봇 시편 -> 인장시험기 (printer_id)
@@ -326,7 +320,7 @@ class DeviceManager():
 
 
     def manager3DP(self):
-        printing_queue = ['test1', 'test2', 'test3', 'test1', 'test2', 'test3']
+        printing_queue = ['test1', 'test2', 'test3']
         # printing_queue = []
         while True:
             
@@ -386,19 +380,24 @@ if __name__ == '__main__':
     rospy.init_node('DeviceManager')
 
     manager = DeviceManager()
-    # manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', port_='5000'))
-    
-
-
-    manager.addDevice('R_001/cobot', device_class=None)
-    manager.addDevice('instron')
-    manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', ip_='192.168.60.101', port_='5001'))
-    # manager.addDevice('printer2', DeviceClass_3DP(device_name='printer2', ip_='192.168.60.101', port_='5002'))
-    manager.addDevice('printer3', DeviceClass_3DP(device_name='printer3', ip_='192.168.60.101', port_='5003'))
-    # manager.addDevice('printer4', DeviceClass_3DP(device_name='printer4', ip_='192.168.60.101', port_='5004'))
+    manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', port_='5000'))
     sleep(5.0)
     manager.device_dict['printer1'].sendCommand({"connection": True})
+    
+
+    '''
+    manager.addDevice('R_001/cobot', device_class=None)
+    manager.addDevice('instron')
+    # manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', ip_='192.168.60.101', port_='5001', usb_port_=0))
+    manager.addDevice('printer2', DeviceClass_3DP(device_name='printer2', ip_='192.168.60.101', port_='5002', usb_port_=1))
+    manager.addDevice('printer3', DeviceClass_3DP(device_name='printer3', ip_='192.168.60.101', port_='5003', usb_port_=2))
+    # manager.addDevice('printer4', DeviceClass_3DP(device_name='printer4', ip_='192.168.60.101', port_='5004'))
+    sleep(5.0)
+    manager.device_dict['printer2'].sendCommand({"connection": True})
     manager.device_dict['printer3'].sendCommand({"connection": True})
+    '''
+
+
 
     # sleep(5.0)
     # manager.executeAMR(spot_name='Instron', target_pose=[3.016, -3.244, -1.622], hold_time=0.0)

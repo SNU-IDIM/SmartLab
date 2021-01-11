@@ -33,9 +33,10 @@ from selenium.webdriver.common.by import By
 
 
 class DeviceClass_3DP:
-    def __init__(self, device_name='printer0', ip_=None, port_=None):
+    def __init__(self, device_name='printer0', ip_=None, port_=None, usb_port_=None):
         ## Common init for all devices
-        self.device_id = int(device_name.split('printer')[1])
+        self.device_id = int(device_name.split('printer')[1]) if usb_port_ == None else usb_port_
+        
         self.ip = '0.0.0.0' if ip_ == None else ip_
         self.port = 5000 + self.device_id if port_ == None else int(port_)
 
