@@ -607,10 +607,10 @@ class DeviceClass_Cobot():
         if self.ARsearchFromEEF(bed_number) == True: ## when AR tag is detected, execute the following codes
             waypoint_0 = deepcopy(Q_SEARCH_3DP_PLATE)
             movej(waypoint_0)
-            self.movel_z(100)
+            self.movel_z(105)
             self.suction_cup_on();  rospy.sleep(1)
             self.jig_x_open();  self.jig_y_open(); rospy.sleep(1)
-            self.movel_z(-100)
+            self.movel_z(-105)
         
             movej(Q_SEARCH_3DP_RIGHT)
 
@@ -744,11 +744,6 @@ class DeviceClass_Cobot():
         elif(self.cmd_protocol == ACTION_TOOLCHANGE_1_ATTACH):
             self.toolchanger_detach()
 
-            # P_TOOLCHANGE_1 = [-436.074462890625, -346.8432312011719, 69.4855728149414, 101.02711486816406, 179.40762329101562, 22.690649032592773]
-            # P_TOOLCHANGE_1 = [-435.8908386230469, -346.9735412597656, 71.24858093261719, 136.8338623046875, 178.95765686035156, 58.61622619628906]
-            P_TOOLCHANGE_1 = [-436.25396728515625, -347.1180725097656, 69.14281463623047, 99.86766052246094, 178.8153076171875, 21.311969757080078]
-
-
             p_tool1_step1 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step1[2] += 300
             p_tool1_step2 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step2[2] +=  20
             p_tool1_step3 = deepcopy(P_TOOLCHANGE_1)
@@ -772,9 +767,6 @@ class DeviceClass_Cobot():
 
         # ACTION [-301]: Tool Changer - Place Tool1 to the Toolchanger1
         elif(self.cmd_protocol == ACTION_TOOLCHANGE_1_DETACH):
-            # P_TOOLCHANGE_1 = [-436.074462890625, -346.8432312011719, 69.4855728149414, 101.02711486816406, 179.40762329101562, 22.690649032592773]
-            # P_TOOLCHANGE_1 = [-435.8908386230469, -346.9735412597656, 71.24858093261719, 136.8338623046875, 178.95765686035156, 58.61622619628906]
-            P_TOOLCHANGE_1 = [-436.25396728515625, -347.1180725097656, 69.14281463623047, 99.86766052246094, 178.8153076171875, 21.311969757080078]
 
             p_tool1_step1 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step1[1] += -20;    p_tool1_step1[2] += 300
             p_tool1_step2 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step2[1] += -20;    p_tool1_step2[2] += 20
@@ -809,10 +801,6 @@ class DeviceClass_Cobot():
         elif(self.cmd_protocol == ACTION_TOOLCHANGE_2_ATTACH):
             self.toolchanger_detach()
 
-            # P_TOOLCHANGE_2 = [-277.7904052734375, -346.1768493652344, 69.29383850097656, 109.82817840576172, 179.61642456054688, 31.086288452148438]
-            # P_TOOLCHANGE_2 = [-277.3737487792969, -345.2371826171875, 71.8157958984375, 71.0041732788086, -178.6968231201172, -7.797959804534912]
-            P_TOOLCHANGE_2 = [-277.465087890625, -346.6596984863281, 69.99971771240234, 49.05696487426758, 179.89199829101562, -29.439313888549805]
-
             p_tool2_step1 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step1[2] += 300
             p_tool2_step2 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step2[2] +=  20
             p_tool2_step3 = deepcopy(P_TOOLCHANGE_2)
@@ -837,9 +825,6 @@ class DeviceClass_Cobot():
 
         # ACTION [-302]: Tool Changer - Place Tool2 to the Toolchanger2
         elif(self.cmd_protocol == ACTION_TOOLCHANGE_2_DETACH):
-            # P_TOOLCHANGE_2 = [-277.7904052734375, -346.1768493652344, 69.29383850097656, 109.82817840576172, 179.61642456054688, 31.086288452148438]
-            # P_TOOLCHANGE_2 = [-277.3737487792969, -345.2371826171875, 71.8157958984375, 71.0041732788086, -178.6968231201172, -7.797959804534912]
-            P_TOOLCHANGE_2 = [-277.465087890625, -346.6596984863281, 69.99971771240234, 49.05696487426758, 179.89199829101562, -29.439313888549805]
             
             p_tool2_step1 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step1[1] += -20;    p_tool2_step1[2] += 300
             p_tool2_step2 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step2[1] += -20;    p_tool2_step2[2] += 20
