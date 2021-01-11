@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+
 ## these parameter should be imported by zeromq
 TWO_LEVEL_FULL_FACTORIAL        = 1
 THREE_LEVEL_FULL_FACTORIAL      = 2
@@ -73,6 +74,7 @@ class testDesigner(object):
                     self.output[j, i] = option[i][int(self.output[j, i])]
 
         elif typeOfDOE == TWO_LEVEL_FULL_FACTORIAL or typeOfDOE == TWO_LEVEL_FRACTIONAL_FACTORIAL:
+
             for i in range(self.numberOfFactors):
                 lower_limit = str(factors[i][1])
                 upper_limit = str(factors[i][2])
@@ -114,6 +116,7 @@ class testDesigner(object):
 
 
 
+
 if __name__ == '__main__':
 # User setting by GUI
     typeOfExperiment = 'Tensile Test'
@@ -129,4 +132,4 @@ if __name__ == '__main__':
 # Test Design
     test = testDesigner(typeOfExperiment, factors, typeOfDOE, option)
     test.saveDOE()
-    test.zmq_server()/
+    test.zmq_server()

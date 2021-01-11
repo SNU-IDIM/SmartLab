@@ -1,0 +1,3 @@
+program,3
+tab,1
+click,1,print
