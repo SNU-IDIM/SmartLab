@@ -64,12 +64,12 @@ class DeviceClass_3DP:
 
         thread_1 = Thread(target=self.updateStatus)
         thread_1.start()
-        # thread_1.join()
 
 
     def __del__(self):
         ## Specialized del for the device (in this case, 3D printer)
         self.driver.close()
+        thread_1.terminate()
 
 
     def updateStatus(self):
@@ -86,9 +86,9 @@ class DeviceClass_3DP:
                 ## 'status' : 'Idle' -> 'Printing {subject_name}'
                 if self.status['connection'].find('Printing') != -1 and self.status['status'].find('Printing') == -1:
                     self.status['recent_work'] = self.status['subject_name']
-                    self.status['subject_name'] = self.status['gcode_file']
+                    self.status['subject_name'] = self.status['gcode_file'].split('.')[0]
                     self.status['status'] = "Printing {}".format(self.status['subject_name'])
-                    print("[DEBUG] Status: {}".format(self.status['status']))
+                    # print("[DEBUG] Status: {}".format(self.status['status']))
             
                 ## 'status' : 'Printing {subject_name}' -> 'Done {subject_name}'
                 if self.status['status'].find('Printing') != -1 and self.status['connection'] == 'Operational':

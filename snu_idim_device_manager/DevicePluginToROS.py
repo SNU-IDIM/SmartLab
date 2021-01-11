@@ -27,7 +27,7 @@ class DevicePluginToROS:
         self.device_name = device_name
         self.device_status = dict()
 
-        ## Node for device
+        ## [Integrated driver] DeviceManager = DeviceClass (publish status from integrated DeviceClass)
         if device_class != None:
             self.device_class = device_class
 
@@ -41,7 +41,7 @@ class DevicePluginToROS:
             thread_1.start()
             # self.device_runNode()
         
-        ## Node for device manager
+        ## [Seperated driver] DeviceManager ~= DeviceClass (subscribe status message from seperated DeviceClass)
         else:
             self.manager_cmd_publisher = rospy.Publisher("{}/command".format(self.device_name), String, queue_size=1)
             rospy.Subscriber('{}/status'.format(self.device_name), String, self.manager_status_cb, queue_size=1)

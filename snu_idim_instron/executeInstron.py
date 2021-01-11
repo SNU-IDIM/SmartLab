@@ -37,7 +37,6 @@ class autoInstron:
 		self.checklist = ['online','start','setting','experiment_start','running','finish','send_data','data_saved']
 		
 
-
 	def write_data(self, msg):
 		print("writeerror")
 
@@ -62,7 +61,6 @@ class autoInstron:
 			else:
 				self.status['status'] = 'data_sent'
 
-		
 
 	def execute(self, scripts=''):
 		data = ''
@@ -93,7 +91,6 @@ class autoInstron:
 						self.status['status'] = 'Initializing'	# status : Initializing
 						self.subject_name = self.message['subject_name']
 						self.autoRun.changeTXT(scripts[0], self.subject_name)
-
 						print(self.message['subject_name'])
 
 					elif self.message['message'] == 'setting':						
