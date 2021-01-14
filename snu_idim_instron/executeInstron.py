@@ -16,7 +16,7 @@ import json
 
 class autoInstron:
 
-	def __init__(self, port='COM4', baud=115200, folder_dir='src'):
+	def __init__(self, port='COM6', baud=115200, folder_dir='src'):
 		self.serial_port = serial.Serial(port=port,
 										 baudrate=baud,
 										 bytesize=serial.EIGHTBITS,
@@ -38,21 +38,20 @@ class autoInstron:
 		
 
 	def write_data(self, msg):
-		print("writeerror")
+		# print("writeerror")
 
 		# print(msg)
 		msg = json.dumps(msg)+str('\n')
 		# print(msg)
 		msg = msg.encode('utf-8')
 		self.serial_port.write(msg)
-		print("writeerrorfinish")
+		# print("writeerrorfinish")
 
 
 	def data_send(self,name,linenum):
 		with open ('C:\\Users\\IDIM-Instron\\Desktop\\Smart Laboratory\\' + str(name) + ".is_tens_RawData"+"\\Specimen_RawData_1.csv" ,"r") as res:
 			self.raw_data = res.readlines()
 			self.line = len(self.raw_data)
-			print("lineread")
 			if linenum < self.line:
 				self.raw_data = self.raw_data[linenum]
 				print(self.raw_data)
@@ -75,14 +74,12 @@ class autoInstron:
 					data = self.serial_port.readline().decode('utf-8').split('\n')[0]
 					print("debug: {}".format(data))
 					self.message = json.loads(data)
-					print("dddd")
 
 					time.sleep(0.1)
 
 					print('[DEBUG] received data: {}'.format(self.message))
 					
 					if self.message['message'] == 'online':						# connection : online / status : Idle
-						print("yogi6")
 						self.status['connection'] = 'Online'
 						self.status['status'] = 'Idle'
 
@@ -99,22 +96,18 @@ class autoInstron:
 						self.autoRun.returnTXT(scripts[0], self.subject_name)
 
 					elif self.message['message'] == 'experiment_start':			
-						print("yogi4")
 						self.status['status'] = 'Testing'			# status : Testing
 
 					elif self.message['message'] == 'running':						
-						print("yogi3")
 					
 						self.autoRun.execute(scripts[1])
 						self.status['status'] = 'Done'			# status : Done
 
 					elif self.message['message'] == 'finish':	 					
-						print("yogi2")
 						self.status['status']= 'Idle'			# status : Idle
 						self.message['subject_name'] = 'NONE'
 
 					elif self.message['message'] =='send_data':
-						print("??????????????")
 						self.status['status'] = 'sending_data'
 						self.data_send(self.message['subject_name'],self.message['line'])
 						# time.sleep(.5)
@@ -128,18 +121,15 @@ class autoInstron:
 						
 
 					elif self.message['message'] not in self.checklist:
-						print("yogi1")
 						if 'result' in self.status.keys():
 							self.status['result'] = ''
 							del(self.status['result'])
 						self.status['status'] = 'Serial_error'
 					
 					print('[DEBUG] sent data: {}'.format(self.status))
-				print("debug")
 				self.write_data(self.status)
 
 			except KeyboardInterrupt:
-				print("debug3")
 				self.status['connection'] = 'Offline'
 				self.write_data(self.status)
 				sys.exit()
@@ -152,18 +142,16 @@ class autoInstron:
 				self.serial_port.open()
 
 			except :
-				print("debug2")
 				self.status['status'] = 'Serial_error'
 				self.write_data(self.status)
 
-		print("debug5")
 
 
 if __name__=='__main__':
 	print("[DEBUG] Instron Automation Started !!!")
 
 	## Serial communication setting
-	port = 'COM5'
+	port = 'COM6'
 	baud = 115200
 	
 	## Automation program setting
