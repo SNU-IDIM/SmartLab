@@ -4,7 +4,7 @@ click,1,home,3
 click,1,test
 click,1,next
 wait,10,next
-text,specimen_1
+text,subject_name
 click,1,browse
 click,1,dropdown
 click,1,folder_dir

@@ -12,11 +12,14 @@ import serial
 import sys
 import json
 
+sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_strain")) )
+import keyboard_recorder_save_Ver
+
 
 
 class autoInstron:
 
-	def __init__(self, port='COM6', baud=115200, folder_dir='src'):
+	def __init__(self, port='COM7', baud=115200, folder_dir='src'):
 		self.serial_port = serial.Serial(port=port,
 										 baudrate=baud,
 										 bytesize=serial.EIGHTBITS,
@@ -35,6 +38,8 @@ class autoInstron:
 		self.message['message'] = ''
 		self.subject_name  = None
 		self.checklist = ['online','start','setting','experiment_start','running','finish','send_data','data_saved']
+
+		self.record = keyboard_recorder_save_Ver.Instron_cam()
 		
 
 	def write_data(self, msg):
@@ -99,8 +104,10 @@ class autoInstron:
 						self.status['status'] = 'Testing'			# status : Testing
 
 					elif self.message['message'] == 'running':						
-					
+						
+						self.record.trigger('recordstart',self.subject_name)
 						self.autoRun.execute(scripts[1])
+						self.record.trigger('recordstop',self.subject_name)
 						self.status['status'] = 'Done'			# status : Done
 
 					elif self.message['message'] == 'finish':	 					
@@ -151,7 +158,7 @@ if __name__=='__main__':
 	print("[DEBUG] Instron Automation Started !!!")
 
 	## Serial communication setting
-	port = 'COM6'
+	port = 'COM7'
 	baud = 115200
 	
 	## Automation program setting
