@@ -38,7 +38,7 @@ class DeviceManagerClient():
                 # device_dict['id'] = 2
                 device_type = device_dict['device_type']
                 print(device_id, device_type)
-                pd.DataFrame.from_dict([device_dict]).to_sql(device_type, self.conn, if_exists='replace', index=False)
+                pd.DataFrame.from_dict([device_dict]).to_sql(device_type, self.conn, if_exists='append', index=False)
         except:
             print("[ERROR]")
 
