@@ -111,13 +111,14 @@ class DeviceManager():
     def zmq_server(self):
         while True:
             request = json.loads(self.socket.recv())
+            print('GGGGGGGGGGGGGG')
             try:
                 print("[DEBUG] Client requested status of devices ({})".format(request['status']))
                 self.socket.send_string(json.dumps(self.device_info))
             except:
                 pass
 
-            sleep(1.0)
+            # sleep(1.0)
 
 
 
@@ -190,8 +191,6 @@ class DeviceManager():
             self.device_dict['instron'].sendCommand({'execute': subject_name})
             print("[Instron] Test Start ({}) !!!".format(subject_name))
 
-        
-
         # if command_type == 'setup':
         #     if self.instron_save_flag == True:
         #         self.waitDeviceStatus(device_name='instron', status_value='data_sent')
@@ -249,7 +248,7 @@ class DeviceManager():
 
     def executionManager(self):
         step = 0 #; printer_id = 'printer2'; subject_id = 'test2'
-        debug = False
+        debug = True
         
         while True:
             try:
@@ -330,7 +329,7 @@ class DeviceManager():
                     device_status = self.device_dict[self.device_dict.keys()[i]].getStatus()
                     device_type = device_status['device_type']
 
-                    if device_type == '3D Printer':
+                    if device_type == 'Printer':
 
                         ## 3DP status: Done -> Idle (if robot task is done with that 3DP)
                         try:
@@ -381,21 +380,17 @@ if __name__ == '__main__':
 
     manager = DeviceManager()
     manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', port_='5000'))
-    sleep(5.0)
-    manager.device_dict['printer1'].sendCommand({"connection": True})
-    
 
-    '''
-    manager.addDevice('R_001/cobot', device_class=None)
-    manager.addDevice('instron')
+    # manager.addDevice('R_001/cobot', device_class=None)
+    # manager.addDevice('instron')
     # manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', ip_='192.168.60.101', port_='5001', usb_port_=0))
-    manager.addDevice('printer2', DeviceClass_3DP(device_name='printer2', ip_='192.168.60.101', port_='5002', usb_port_=1))
-    manager.addDevice('printer3', DeviceClass_3DP(device_name='printer3', ip_='192.168.60.101', port_='5003', usb_port_=2))
-    # manager.addDevice('printer4', DeviceClass_3DP(device_name='printer4', ip_='192.168.60.101', port_='5004'))
-    sleep(5.0)
-    manager.device_dict['printer2'].sendCommand({"connection": True})
-    manager.device_dict['printer3'].sendCommand({"connection": True})
-    '''
+    # manager.addDevice('printer2', DeviceClass_3DP(device_name='printer2', ip_='192.168.60.101', port_='5002', usb_port_=1))
+    # manager.addDevice('printer3', DeviceClass_3DP(device_name='printer3', ip_='192.168.60.101', port_='5003', usb_port_=2))
+    # manager.addDevice('printer4', DeviceClass_3DP(device_name='printer4', ip_='192.168.60.101', port_='5004', usb_port_=3))
+    # sleep(5.0)
+    # manager.device_dict['printer1'].sendCommand({"connection": True})
+    # manager.device_dict['printer2'].sendCommand({"connection": True})
+    # manager.device_dict['printer3'].sendCommand({"connection": True})
 
 
 
