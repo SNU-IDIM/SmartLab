@@ -6,6 +6,7 @@ import zmq
 from DOE import DOE
 import numpy as np
 import pyDOE2 as pyDOE
+import json
 
 
 TWO_LEVEL_FULL_FACTORIAL = 1
@@ -19,7 +20,7 @@ CENTRAL_COMPOSITE = 7
 
 class testDesigner(object):
 
-    def __init__(self, test_setting):
+    def __init__(self, test_setting, ip='192.168.0.81'):
         ## Subject Info. definition
         self.header_ = test_setting
         self.info_ = {'experiment_sets': dict(),
@@ -30,10 +31,20 @@ class testDesigner(object):
         self.numberOfFactors = len(self.header_['factors'])
         self.typeOfDOE = self.header_['doe_type']
 
-        ## ZMQ setting (This node is a client)
-        self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.REP)
-        self.socket.bind("tcp://*:5555")
+        # ## ZMQ setting (This node is a server side)
+        # self.context = zmq.Context()
+        # self.socket = self.context.socket(zmq.REP)
+        # self.socket.bind("tcp://*:5555")
+
+        ## ZMQ setting (This node is a client side)
+        try:
+            self.context = zmq.Context()
+            print("[DEBUG] ZMQ - Connecting...")
+            self.socket = self.context.socket(zmq.REQ) # REQuest
+            self.socket.connect("tcp://{}:5555".format(ip)) # Change LocalHost IP 
+            print("[DEBUG] ZMQ - Client initialized!")
+        except:
+            print("[ERROR] ZMQ error")
 
         self.makeDOE()
         self.saveDOE()
@@ -119,14 +130,28 @@ class testDesigner(object):
 
     ## send the json data transformed by pandas dataframe through ZeroMQ server // UNDER DEVELOPMENT(Status check, where to send)
     def zmq_server(self):
-        request = self.socket.recv()
-        time.sleep(1.0)
+        # request = self.socket.recv()
+        # time.sleep(1.0)
+        # try:
+        #     testset_dict = dict()
+        #     testset_dict['header'] = self.header_
+        #     testset_dict['doe'] = self.test_sets.to_dict()
+        #     print(testset_dict)
+        #     self.socket.send_string(json.dumps(testset_dict))
+        #     print("[DEBUG - zmq_server] 'Test set' was sent to the client successfully !")
+        # except:
+        #     print("[ERROR - zmq_server]")
+        #     pass
         try:
-            self.socket.send_string(self.test_sets.to_json())
-            print("[DEBUG - zmq_server] 'Test set' was sent to the client successfully !")
+            testset_dict = dict()
+            testset_dict['header'] = self.header_
+            testset_dict['doe'] = self.test_sets.to_dict()
+            print(testset_dict)
+            self.socket.send_string(json.dumps(testset_dict))
+            response = self.socket.recv()
+            print(response)
         except:
-            print("[ERROR - zmq_server]")
-            pass
+            print('[ERROR - ZMQ Client]')
 
 
 # def returnFactorInfo(factor_name='', factor_range=[]):
@@ -143,7 +168,7 @@ if __name__ == '__main__':
                     'doe_type': int(),
                     'option': list(),}
 
-    test_setting['header_id']       = 'demo'
+    test_setting['header_id']       = 'idim_test2'
     test_setting['experiment_type'] = 'Tensile Test'
     test_setting['factors']         = [ {'factor_name': 'infill_line_distance', 'factor_range': [1, 6]},
                                         {'factor_name': 'layer_height', 'factor_range': [0.1, 0.2]},
