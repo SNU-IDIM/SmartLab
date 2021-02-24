@@ -11,8 +11,8 @@ def zmq_client():
 
     context = zmq.Context()
     print("Connecting to hello world server...")
-    socket = context.socket(zmq.REQ) #REQuest
-    socket.connect("tcp://192.168.43.87:5555") #Change LocalHost IP 
+    socket = context.socket(zmq.REQ) # REQuest
+    socket.connect("tcp://192.168.43.87:5555") # Change LocalHost IP 
     print('Ready')
 
     Request_TestInfo = dict()
@@ -45,10 +45,8 @@ def zmq_client():
 
 
 def Factor2Gcode(TestInfo_List, Factor_List) :
-    
-    #TestInfo_2 = ['infill_sparse_thickness', 'infill_sparse_density']
 
-    # Get Test Information 
+    ## Get Test Information 
     '''
     TestInfo = {}
     TestInfo[0] = {'Number':'1' , 'infill_line_distance' : '1', 'infill_pattern' : 'lines'}
@@ -80,7 +78,12 @@ def Factor2Gcode(TestInfo_List, Factor_List) :
         Num_Factor_Setted = 0
         Num_Factor_Unsetted = len(TestInfo_Each)
 
-        command = '/home/idim3d/CuraEngine/build/CuraEngine slice -v -j /home/idim3d/catkin_ws/src/SNU_SmartLAB/snu_idim_slicer/anet.def.json' 
+        HOME_DIR = os.getenv("HOME")
+        CURA_ENGINE_DIR = os.path.join(HOME_DIR, 'CuraEngine/build/CuraEngine')
+        JSON_FILE_DIR = 'anet.def.json'
+        command = "{} slice -v -j {}".format(CURA_ENGINE_DIR, JSON_FILE_DIR)
+
+        # command = '/home/idim3d/CuraEngine/build/CuraEngine slice -v -j /home/idim3d/catkin_ws/src/SNU_SmartLAB/snu_idim_slicer/anet.def.json' 
 
         while Num_Factor_Setted < Num_Factor_Unsetted :
 
@@ -92,12 +95,16 @@ def Factor2Gcode(TestInfo_List, Factor_List) :
 
             print(FactorInfo_Keys[Num_Factor_Setted], FactorInfo_Values[Num_Factor_Setted])
 
-            command = command + ' -s "' + str(FactorInfo_Keys[Num_Factor_Setted]) + '=' + str(FactorInfo_Values[Num_Factor_Setted]) + '"'
+            command = '{} -s "{}={}"'.format(command, str(FactorInfo_Keys[Num_Factor_Setted]), str(FactorInfo_Values[Num_Factor_Setted]))
+            # command = command + ' -s "' + str(FactorInfo_Keys[Num_Factor_Setted]) + '=' + str(FactorInfo_Values[Num_Factor_Setted]) + '"'
 
             Num_Factor_Setted += 1
 
-
         Test_Done_Num += 1
+        TEST_HEADER_ID = 'demo' # 임시(변경 필요)
+        
+        SAVE_DIR = os.path.join(HOME_DIR, '/.octoprint/uploads', TEST_HEADER_ID)
+        command = '{} -o {}'.format(command)
         command = command + ' -o "/home/idim3d/catkin_ws/src/SNU_SmartLAB/snu_idim_3dp/gcode/test' + str(Test_Done_Num) + '.gcode"' + ' -l "/home/idim3d/catkin_ws/src/SNU_SmartLAB/snu_idim_slicer/specimen_3T.stl"' 
             
         os.system(command) #Operate
