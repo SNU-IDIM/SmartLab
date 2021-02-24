@@ -1,61 +1,62 @@
 #! usr/bin/python
 
 import sys, os, json
+from threading import Thread
 import zmq
 
 
 class AutoSlicer():
     def __init__(self, ip='192.168.60.25'):
-        try:
-            self.context = zmq.Context()
-            print("[DEBUG] ZMQ - Connecting...")
-            self.socket = self.context.socket(zmq.REQ) # REQuest
-            self.socket.connect("tcp://{}:5555".format(ip)) # Change LocalHost IP 
-            print("[DEBUG] ZMQ - Connected to server!")
-        except:
-            print("[ERROR] ZMQ error")
 
+        ## ZMQ server setting
+        context = zmq.Context()
+        self.socket = context.socket(zmq.REP)
+        self.socket.bind("tcp://*:5555")
+
+        ## Test information
         self.testset_dict = dict()
         self.doe_list     = list()
         self.doe_factors  = list()
 
-    
-    def sendRequest(self):
-        testset_dict = dict()
-
-        self.socket.send(b"Ready")
-        request = self.socket.recv()
-
-        request_decoded = request.decode('utf-8')
-        self.testset_dict = json.loads(request_decoded)
-        testset_doe = self.testset_dict['doe']
-        
-
-        n_test = len(testset_doe['NUMBER'])
-
-        testset_doe_keys = list(testset_doe.keys())
-        testset_doe_keys.remove('NUMBER')
-        self.doe_factors = testset_doe_keys
-        print(self.doe_factors)
-
-        n_factors = len(self.doe_factors)
-
-        self.doe_list = list()
-        for i in range(n_factors):
-            self.doe_list.append(list())
-            factor = self.doe_factors[i]
-
-            for j in range(n_test) :
-                self.doe_list[i].append(testset_doe[factor][str(j)])
+        ## Threadings ...
+        thread_1 = Thread(target=self.zmqServer)
+        thread_1.start()
 
 
+    def zmqServer(self):
+        while True:
+            try:
+                request = self.socket.recv()
+                request_decoded = request.decode('utf-8')
+                self.testset_dict = json.loads(request_decoded)
+                testset_doe = self.testset_dict['doe']
+
+                n_test = len(testset_doe['NUMBER'])
+
+                testset_doe_keys = list(testset_doe.keys())
+                testset_doe_keys.remove('NUMBER')
+                self.doe_factors = testset_doe_keys
+                n_factors = len(self.doe_factors)
+
+                self.doe_list = list()
+                for i in range(n_factors):
+                    self.doe_list.append(list())
+                    factor = self.doe_factors[i]
+                    for j in range(n_test) :
+                        self.doe_list[i].append(testset_doe[factor][str(j)])
+                
+                self.executeAutoSlicing()
+                self.socket.send(b"Done")
+
+            except:
+                print("[ERROR - ZMQ] ZMQ Server Error!")
 
 
-    def execute(self) :
+    def executeAutoSlicing(self) :
 
         ## Get Test Information 
         '''
-        testset_dict = {}
+        testset_dict = dict()
         testset_dict[0] = {'Number':'1' , 'infill_line_distance' : '1', 'infill_pattern' : 'lines'}
         testset_dict[1] = {'Number':'2' , 'infill_line_distance' : '6', 'infill_pattern' : 'triangles'}
         '''
@@ -114,13 +115,10 @@ class AutoSlicer():
 
 
             print("[DEBUG] Slicer command(): \n{}".format(n_test_done, command))
-            os.system(command)
-            del command
+            os.system(command);   del command
             n_test_done += 1
 
 
 if __name__ == "__main__":
     
     slicer = AutoSlicer(ip='192.168.0.40')
-    slicer.sendRequest()
-    slicer.execute()
