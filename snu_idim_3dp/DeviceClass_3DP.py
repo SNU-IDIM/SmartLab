@@ -42,7 +42,7 @@ class DeviceClass_3DP:
 
         self.status = dict()
         self.status['ip_port'] = 'http://{}:{}/?#temp'.format(self.ip, self.port)
-        self.status['device_type'] = '3D Printer'
+        self.status['device_type'] = 'Printer'
         self.status['device_name'] = device_name
         self.status['connection'] = ''
         self.status['subject_name'] = ''
