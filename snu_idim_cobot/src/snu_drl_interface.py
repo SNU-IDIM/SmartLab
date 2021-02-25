@@ -28,7 +28,7 @@ class DeviceClass_Cobot():
         self.status_overwrite = None
 
         self.status = dict()
-        self.status['device_type'] = 'Collaborative Robot'
+        self.status['device_type'] = 'Collaborative_Robot'
         self.status['device_name'] = device_name
         self.status['status'] = None
         self.status['current_work'] = None

@@ -8,25 +8,33 @@ import numpy as np
 ASCENDING_ORDER = 1
 DESCENDING_ORDER = 2
 
+def getFactorsName(factors):
+    factors_name = list()
+    for factor in factors:
+        factors_name.append(factor['factor_name'])
+    factors_name = np.asarray(factors_name)
+    return factors_name
+    # print(len(factors_name), factors_name)
+
 class DOE(object):
     def __init__(self, typeOfExperiment, factors, testDesigner, DOE):
-        self.factors = np.array(factors)
-        self.factors = self.factors[:, 0]
-        self.factors = np.concatenate((np.array(['NUMBER']), self.factors))
+        # self.factors = np.array(factors)
+        # self.factors = self.factors[:, 0]
+        self.factors = np.concatenate((np.array(['NUMBER']), getFactorsName(factors)))
         self.numberOfFactors = len(factors)
         self.numberOfExperiments = len(testDesigner)
         self.typeOfExperiment = typeOfExperiment
         self.typeOfDOE = DOE
-        print ('Number Of Factors : ' , self.numberOfFactors)
-        print ('Number Of Experiment : ' , self.numberOfExperiments)
-        print ('Type Of Experiment : ' , self.typeOfExperiment)
-        print ('Type Of DOE : ' , self.typeOfDOE)
-        print ('Type Of Factors : ', self.factors)
+        # print(self.factors)
+        # print('Number Of Factors : ', self.numberOfFactors)
+        # print('Number Of Experiment : ', self.numberOfExperiments)
+        # print('Type Of Experiment : ', self.typeOfExperiment)
+        # print('Type Of DOE : ', self.typeOfDOE)
+        # print('Type Of Factors : ', self.factors)
 
         # self.listFactors = list(self.factors)
         # self.sortedFactors = sorted(self.factors)
-        self.df = pd.DataFrame(testDesigner, columns = self.factors)
-        print(self.df)
+        self.df = pd.DataFrame(testDesigner, columns=self.factors)
 
     def __len__(self):
         return len(self.df.count())
@@ -39,7 +47,7 @@ class DOE(object):
 
     def insert(self, data):
         if(sorted(data) == self.sortedFactors):
-            self.df = self.df.append(data, ignore_index = True)
+            self.df = self.df.append(data, ignore_index=True)
             # print(self.df)
         else:
             print('Wrong Data Input')
@@ -50,12 +58,12 @@ class DOE(object):
         else:
             print('No factor in Dataframe')
 
-    def sort(self, factor, condition = ASCENDING_ORDER):
+    def sort(self, factor, condition=ASCENDING_ORDER):
         if(factor in self.sortedFactors):
             if condition == ASCENDING_ORDER:
-                return self.df.sort_values(by = factor, ascending = True)
+                return self.df.sort_values(by=factor, ascending=True)
             elif condition == DESCENDING_ORDER:
-                return self.df.sort_values(by = factor, ascending = False)
+                return self.df.sort_values(by=factor, ascending=False)
         else:
             print('No factor in Dataframe')
 
@@ -63,7 +71,8 @@ class DOE(object):
 if __name__ == '__main__':
     pass
     # # Two Factors(Thickness, feedrate) and Two DOF EXPERIMENT
-    # info = [{'NUMBER', 'THICKNESS', 'FEEDRATES'}, {'Number' : 4, "Factors" : 2, "Type" : 'Tensile Test', 'DOE' : '2DOF'}] #depends on the initial setting by user // need to update
+    info = [{'NUMBER', 'THICKNESS', 'FEEDRATES'}, {'Number': 4, "Factors": 2, "Type": 'Tensile Test', 'DOE': '2DOF'}]  # depends on the initial setting by user // need to update
+
     # a = DOE(info)
     # FDM = {}
     # # Result of Test Designer
