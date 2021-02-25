@@ -392,7 +392,7 @@ class DeviceManager():
 if __name__ == '__main__':
     SERVER_IP = '192.168.0.81'
     # SERVER_IP = '192.168.60.101'
-    test_setting = {'header_id': 'demo',
+    test_setting = {'header_id': 'wonjae',
                     'experiment_type': 'Tensile Test',
                     'factors': [ 
                                  {'factor_name': 'infill_line_distance', 'factor_range': [1, 6]},
@@ -424,12 +424,12 @@ if __name__ == '__main__':
     manager.addPrintingQueue(test_id_list)
 
     manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', ip_=SERVER_IP, port_='5001', usb_port_=0))
-    manager.addDevice('printer2', DeviceClass_3DP(device_name='printer2', ip_=SERVER_IP, port_='5002', usb_port_=1))
+    # manager.addDevice('printer2', DeviceClass_3DP(device_name='printer2', ip_=SERVER_IP, port_='5002', usb_port_=1))
     # manager.addDevice('printer3', DeviceClass_3DP(device_name='printer3', ip_=SERVER_IP, port_='5003', usb_port_=2))
     # manager.addDevice('printer4', DeviceClass_3DP(device_name='printer4', ip_=SERVER_IP, port_='5004', usb_port_=3))
     sleep(3.0)
     manager.device_dict['printer1'].sendCommand({"connection": True})
-    manager.device_dict['printer2'].sendCommand({"connection": True})
+    # manager.device_dict['printer2'].sendCommand({"connection": True})
     
     # manager.device_dict['printer3'].sendCommand({"connection": True})
 

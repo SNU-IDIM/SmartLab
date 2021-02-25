@@ -2253,7 +2253,7 @@
                     "minimum_value_warning": "build_volume_temperature",
                     "maximum_value_warning": "130",
                     "maximum_value": "200",
-                    "enabled": false,
+                    "enabled": true,
                     "settable_per_mesh": false,
                     "settable_per_extruder": false,
                     "settable_per_meshgroup": false
