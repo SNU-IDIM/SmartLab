@@ -23,9 +23,12 @@ class mysql():
     def __init__(self):
 
         user='MS'
-        self.Device = 'MS'        
+        self.Device = 'MS'
+        host = '192.168.0.81'
+        db = 'SNU_smartlab'
+        table = 'Ekfh'        
 
-        self.con = pymysql.connect(user=user, host='192.168.60.101', port=3306, password='0000',db='SNU_smartlab',charset='utf8')
+        self.con = pymysql.connect(user=user, host=host, port=3306, password='0000',db=db,charset='utf8')
         self.cur = self.con.cursor(pymysql.cursors.DictCursor)
         # self.save_data()
 
@@ -52,6 +55,9 @@ class mysql():
 
 
     def save_data(self ,test_name ,data1, data2, data3):
+        data1 = round(float(data1),2)
+        data2 = round(float(data2),2)
+        data3 = round(float(data3),2)
         sql = "INSERT INTO " + self.Device +  " VALUES ('" + str(test_name) + "','" + str(data1) + "','" + str(data2) + "','" + str(data3) + "');"
         #example : "INSERT INTO Instron VALUES ('specimen1','data1','data2','data3','data4');"
 
@@ -66,7 +72,7 @@ class mysql():
         return sql
 
 
-    def send_data(self,test_name ,data1, data2, data3):
+    def send_data(self, test_name, data1, data2, data3):
 
 
         save_sql = self.save_data(test_name, data1, data2, data3)
@@ -85,3 +91,7 @@ if __name__=='__main__':
 
     while True:
         pass
+
+
+# database, table, dict -> table 
+#dict : 'test_name' = 

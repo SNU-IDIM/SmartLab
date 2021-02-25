@@ -23,7 +23,7 @@ class DevicePluginToROS:
         4. Subscribe topic: "{device_name}/command" 
             - data format: ROS String -> string -> json -> python dict
     '''
-    def __init__(self, device_name='device_name', device_class=None):
+    def __init__(self, device_name='MS', device_class=None):
         self.device_name = device_name
         self.device_status = dict()
 
@@ -31,7 +31,7 @@ class DevicePluginToROS:
         if device_class != None:
             self.device_class = device_class
 
-            # rospy.init_node(self.device_name)
+            rospy.init_node(self.device_name)
             self.device_status_publisher = rospy.Publisher("{}/status".format(self.device_name), String, queue_size=1)
             self.manager_cmd_publisher = rospy.Publisher("{}/command".format(self.device_name), String, queue_size=1)
             rospy.Subscriber('{}/command'.format(self.device_name), String, self.device_cmd_cb, queue_size=1)

@@ -15,9 +15,12 @@ import json
 from matplotlib import pyplot as plt
 from threading import Thread
 
+sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__))) )
+import datasql
+
 
 class measureStation(object):
-    def __init__(self, device_name = 'MS_station', port_ = None):
+    def __init__(self, device_name = 'MS', port_ = 'None'):
         self.port = port_
         self.device_id = device_name
         self.status = dict()
@@ -27,9 +30,11 @@ class measureStation(object):
         self.status['connection'] = 'disconnected'
         self.status['status'] = ''
         self.status['recent_work'] = ''
-        self.result['thickness'] = ''
-        self.result['axial_length'] = ''
-        self.result['width'] = ''
+        self.result['thickness'] = 0
+        self.result['axial_length'] = 0
+        self.result['width'] = 0
+
+        self.sql = datasql.mysql()
 
         self.thread_1 = Thread(target=self.updateStatus)
         self.thread_1.start()
@@ -79,28 +84,35 @@ class measureStation(object):
             elif cmd_keys[key] == 'home':
                 self.status['status'] = 'G28 : Home Position'
                 self.send_home()
+                # self.send_GCode('G0 Z25')
             elif cmd_keys[key] == 'measure_thickness':
                 self.status['status'] = 'G30 : Measure Thickness'
                 self.send_zPosition()
                 self.result['thickness'] = self.readline_zPosition()
+                self.status['status'] = 'Ready'
             elif cmd_keys[key] == 'measure_dimension':
                 self.status['status'] = 'Measure Size'
                 self.send_GCode('G0 X143 Y140 Z125')
+                print("---------------------------")
+                # self.readline_status()
+                time.sleep(15)
                 self.result['axial_length'], self.result['width'] = self.measure_dimension()
+                self.status['status'] = 'Ready'
             elif cmd_keys[key] == 'readline':
                 self.status['status'] = 'read_line'
                 self.readline()
             elif cmd_keys[key] == 'save_result':
                 specimen_name = cmd_values[key]
-                result_enc = json.load(self.status)
-                self.save_result(specimen_name,result_enc)
+                # result_enc = json.load(self.status)
+                self.sql.send_data(specimen_name, self.result['thickness'], self.result['axial_length'], self.result['width'])
+                # self.save_result(specimen_name,result_enc)
 
             
             else:
                 print(" wrong command!! ")
 
         self.status['recent_work'] = self.status['status']
-        self.status['status'] = 'Ready'
+        # self.status['status'] = 'Ready'
     
 
     def wakeDevice(self):
@@ -149,8 +161,17 @@ class measureStation(object):
     
     def readline(self):
         out = self.serial.readline()
-        print(out)
+        print("readline " + out)
         return out
+
+    def readline_status(self):
+        while True:
+            out = self.readline()
+            print("why", out)
+            # if out == 'ok\n':
+            #     break
+
+        print('done')
 
     def readline_zPosition(self):
         while True:
@@ -162,6 +183,8 @@ class measureStation(object):
         return thickness
 
     def save_result(self, subn, result):
+        self.status['status']='working'
+        
         name = subn
         newpath = './result/'+str(name)
         filename = newpath + '/' + name + '.txt'
@@ -172,6 +195,20 @@ class measureStation(object):
 
         with open(filename, 'w') as w:
             w.write(result)
+
+    def stopsign(self, status):
+        while True:
+            print(" 1 ")
+            if self.result['thickness'] != 0 and self.flag == 0:
+                self.flag = 1
+                break
+            elif self.result['axial_length'] != 0 and self.flag == 1:
+                self.flag = 2
+                break
+            elif self.result['width'] != 0 and self.flag == 2:
+                break
+        print("Qkwuskdhk")
+        self.status['status'] = status
 
 
     
@@ -478,11 +515,8 @@ class measureStation(object):
         except:
             self.pipeline.stop()
 
-        # return axial_dimension, width
+        return axial_dimension, width
 
-
-    def send_db(self):
-        pass
 
 if __name__ =='__main__':
     temp = measureStation()
