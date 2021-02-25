@@ -150,12 +150,18 @@ if __name__ == '__main__':
     # test_setting['doe_type']        = DOE_GENERALIZED_FACTORIAL # DOE_GENERALIZED_FACTORIAL=3
     # test_setting['option']          = [[1, 2, 4, 6], [0.1, 0.12, 0.2], [190, 191, 219, 220]]
 
-    test_setting = {'header_id': 'demo',
+    test_setting = {
+                    'header_id': 'demo',
                     'experiment_type': 'Tensile Test',
                     'factors': [ {'factor_name': 'infill_line_distance', 'factor_range': [1, 6]},
                                  {'factor_name': 'layer_height', 'factor_range': [0.1, 0.2]},
-                                 {'factor_name': 'default_material_print_temperature', 'factor_range': [190, 220]}, ],
+                                #  {'factor_name': 'default_material_print_temperature', 'factor_range': [190, 220]}, 
+                               ],
                     'doe_type': DOE_GENERALIZED_FACTORIAL, # DOE_GENERALIZED_FACTORIAL=3
-                    'option': [[1, 2, 4, 6], [0.1, 0.12, 0.2], [190, 191, 219, 220]],}
+                    'option': [ [1, 2, 4, 6], 
+                                [0.1, 0.12, 0.2], 
+                                # [190, 191, 219, 220],
+                              ],
+                    }
 
     test = TestDesigner(test_setting)
