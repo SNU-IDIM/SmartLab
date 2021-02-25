@@ -19,7 +19,7 @@ import keyboard_recorder_save_Ver
 
 class autoInstron:
 
-	def __init__(self, port='COM7', baud=115200, folder_dir='src'):
+	def __init__(self, port='COM8', baud=115200, folder_dir='src'):
 		self.serial_port = serial.Serial(port=port,
 										 baudrate=baud,
 										 bytesize=serial.EIGHTBITS,
@@ -158,7 +158,7 @@ if __name__=='__main__':
 	print("[DEBUG] Instron Automation Started !!!")
 
 	## Serial communication setting
-	port = 'COM7'
+	port = 'COM8'
 	baud = 115200
 	
 	## Automation program setting
