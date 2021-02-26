@@ -12,6 +12,9 @@ import rospy, actionlib
 from std_msgs.msg import String
 from syscon_msgs.msg import *
 
+sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_doe")) )
+from TestDesigner import TestDesigner
+
 sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_common/imp")) )
 from IDIM_framework import *
 
@@ -22,6 +25,17 @@ from DeviceClass_3DP import DeviceClass_3DP
 
 # sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_instron")) )
 # from DeviceClass_Instron import DeviceClass_Instron
+
+
+class TestManager():
+    def __init__(self, test_setting, ip='localhost'):
+        self.test_designer = TestDesigner(test_setting=test_setting, ip=ip)
+        self.test_id_list = self.test_designer.sendDOE()
+    
+    def getTestIDs(self):
+        print("[DEBUG - TestManager] Test ID list: \n{}".format(self.test_id_list))
+        return self.test_id_list
+
 
 
 class DeviceManager():
@@ -37,6 +51,7 @@ class DeviceManager():
         self.device_info = dict() # to send data to client via ZMQ
         
         ## for 3DP Manager
+        self.printing_queue            = list()
         self.printer_list_idle         = list()
         self.printer_list_initializing = list()
         self.printer_list_printing     = list()
@@ -54,16 +69,16 @@ class DeviceManager():
         self.instron_save_flag = False
 
         ## for AMR Manager
-        self.client = actionlib.SimpleActionClient('/R_001/WAS', WorkFlowAction)
-        self.client.wait_for_server(timeout=rospy.Duration(1))
-        self.amr = WorkFlowGoal()
-        self.amr_param = [Param('max_trans_vel','float','0.3'),
-                          Param('max_rot_vel','float','0.25'), 
-                          Param('xy_goal_tolerance','float','0.20'),
-                          Param('yaw_goal_tolerance','float','0.05')]
-        self.amr.work = []
-        self.amr.work_id = 'amr'
-        self.amr.loop_flag = 1  # default: 1 (no repeat)
+        # self.client = actionlib.SimpleActionClient('/R_001/WAS', WorkFlowAction)
+        # self.client.wait_for_server(timeout=rospy.Duration(1))
+        # self.amr = WorkFlowGoal()
+        # self.amr_param = [Param('max_trans_vel','float','0.3'),
+        #                   Param('max_rot_vel','float','0.25'), 
+        #                   Param('xy_goal_tolerance','float','0.20'),
+        #                   Param('yaw_goal_tolerance','float','0.05')]
+        # self.amr.work = []
+        # self.amr.work_id = 'amr'
+        # self.amr.loop_flag = 1  # default: 1 (no repeat)
         
         ## 3DP Manager thread
         self.thread_1 = Thread(target=self.manager3DP)
@@ -90,7 +105,6 @@ class DeviceManager():
         self.thread_4.terminate()
         pass
 
-    
 
     def refreshDeviceInfo(self):
         while True:
@@ -316,13 +330,14 @@ class DeviceManager():
 
             sleep(3.0)
 
+    
+    def addPrintingQueue(self, printing_queue):
+        self.printing_queue = printing_queue
+
 
 
     def manager3DP(self):
-        printing_queue = ['test1', 'test2', 'test3']
-        # printing_queue = []
         while True:
-            
             for i in range(len(self.device_dict)):
                 try:
                     device_id = self.device_dict.keys()[i]
@@ -357,7 +372,7 @@ class DeviceManager():
                         ## Print a new subject from printing queue
                         if device_status['status'].find('Idle') != -1:
                             try:
-                                print_next = printing_queue.pop(0)
+                                print_next = self.printing_queue.pop(0)
                                 self.device_dict[device_id].sendCommand({'print': print_next})
                                 print("[3DP] {} status: Idle -> Printing {}".format(device_id, print_next))
                             except:
@@ -375,21 +390,47 @@ class DeviceManager():
 
 
 if __name__ == '__main__':
+    SERVER_IP = '192.168.0.81'
+    # SERVER_IP = '192.168.60.101'
+    test_setting = {'header_id': 'wonjae',
+                    'experiment_type': 'Tensile Test',
+                    'factors': [ 
+                                 {'factor_name': 'infill_line_distance', 'factor_range': [1, 6]},
+                                 {'factor_name': 'layer_height', 'factor_range': [0.1, 0.2]},
+                                #  {'factor_name': 'default_material_print_temperature', 'factor_range': [190, 220]}, 
+                               ],
+                    'doe_type': DOE_GENERALIZED_FACTORIAL, # DOE_GENERALIZED_FACTORIAL=3
+                    'option': [
+                                [1, 2, 4, 6], 
+                                [0.1, 0.12, 0.2], 
+                                # [190, 191, 219, 220]
+                              ],
+                    }
+
+    test_manager = TestManager(test_setting=test_setting, ip=SERVER_IP)
+    test_id_list = test_manager.getTestIDs()
+    
+
+
+
 
     rospy.init_node('DeviceManager')
 
     manager = DeviceManager()
-    manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', port_='5000'))
+    # manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', port_='5000'))
 
     # manager.addDevice('R_001/cobot', device_class=None)
     # manager.addDevice('instron')
-    # manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', ip_='192.168.60.101', port_='5001', usb_port_=0))
-    # manager.addDevice('printer2', DeviceClass_3DP(device_name='printer2', ip_='192.168.60.101', port_='5002', usb_port_=1))
-    # manager.addDevice('printer3', DeviceClass_3DP(device_name='printer3', ip_='192.168.60.101', port_='5003', usb_port_=2))
-    # manager.addDevice('printer4', DeviceClass_3DP(device_name='printer4', ip_='192.168.60.101', port_='5004', usb_port_=3))
-    # sleep(5.0)
-    # manager.device_dict['printer1'].sendCommand({"connection": True})
+    manager.addPrintingQueue(test_id_list)
+
+    manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', ip_=SERVER_IP, port_='5001', usb_port_=0))
+    # manager.addDevice('printer2', DeviceClass_3DP(device_name='printer2', ip_=SERVER_IP, port_='5002', usb_port_=1))
+    # manager.addDevice('printer3', DeviceClass_3DP(device_name='printer3', ip_=SERVER_IP, port_='5003', usb_port_=2))
+    # manager.addDevice('printer4', DeviceClass_3DP(device_name='printer4', ip_=SERVER_IP, port_='5004', usb_port_=3))
+    sleep(3.0)
+    manager.device_dict['printer1'].sendCommand({"connection": True})
     # manager.device_dict['printer2'].sendCommand({"connection": True})
+    
     # manager.device_dict['printer3'].sendCommand({"connection": True})
 
 
