@@ -97,13 +97,28 @@ class DeviceManager():
         self.thread_4.start()
 
 
-
     def __del__(self):
         self.thread_1.terminate()
         self.thread_2.terminate()
         self.thread_3.terminate()
         self.thread_4.terminate()
         pass
+
+    '''#####################################################################################################
+        Device manager related
+    '''
+    def addDevice(self, device_name, device_class=None):
+        self.device_dict[device_name] = DevicePluginToROS(device_name=device_name, device_class=device_class)
+        print("[DEBUG] '{}' is added to DeviceManager".format(device_name))
+
+
+    def printStatus(self, status_dict):
+        key_list = status_dict.keys()
+        value_list = status_dict.values()
+
+        print("\n=======================================================")
+        for i in range(len(key_list)):
+            print("[DEBUG - {}] {}: {}".format(status_dict['device_name'], key_list[i], value_list[i]))
 
 
     def refreshDeviceInfo(self):
@@ -120,7 +135,6 @@ class DeviceManager():
             # print("[DEBUG] Device information updated !!! (Devices: {})".format(self.device_info.keys()))
             sleep(1.0)
 
-    
 
     def zmq_server(self):
         while True:
@@ -131,209 +145,13 @@ class DeviceManager():
                 self.socket.send_string(json.dumps(self.device_info))
             except:
                 pass
-
-            # sleep(1.0)
-
-
-
-    def addDevice(self, device_name, device_class=None):
-        self.device_dict[device_name] = DevicePluginToROS(device_name=device_name, device_class=device_class)
-        print("[DEBUG] '{}' is added to DeviceManager".format(device_name))
-
-
-
-    def printStatus(self, status_dict):
-        key_list = status_dict.keys()
-        value_list = status_dict.values()
-
-        print("\n=======================================================")
-        for i in range(len(key_list)):
-            print("[DEBUG - {}] {}: {}".format(status_dict['device_name'], key_list[i], value_list[i]))
-
-
-
-    def executeAMR(self, target_pose, spot_name="default", hold_time=0.0):
-        print("[AMR] AMR Start Moving ... (target pose = {})".format(target_pose))
-        work = Action(SYSCON_WAYPOINT, target_pose, self.amr_param)
-        self.amr.work.append(work)
-        self.amr.work_id = spot_name
-        self.client.send_goal(self.amr)
-        self.client.wait_for_result()
-        print("[AMR] Arrived at [{}] !!!".format(target_pose))
-        self.amr.work = []
-        rospy.sleep(hold_time)
-
-
     
-    def waitDeviceStatus(self, device_name, status_key='status', status_value=''):
-        while True:
-            try:
-                status_int = int(status_value)
-            except:
-                status_int = status_value
-            # print("[DEBUG] Waiting for '{}' status to be '{}'... ".format(device_name, status))
-            if self.device_dict[device_name].getStatus()[status_key] == str(status_value) or self.device_dict[device_name].getStatus()[status_key] == status_int:
-                # print("[DEBUG] '{}' status = '{}' !!! ".format(device_name, status))
-                break
 
-
-
-    def executeCobot(self, robot_task_queue, wait_until_end=False, debug=False):
-        if debug == False:
-            while len(robot_task_queue) != 0:
-                if self.device_dict['R_001/cobot'].getStatus()['status'] == 'Standby':
-                    next_task = robot_task_queue.pop(0)
-                    self.device_dict['R_001/cobot'].sendCommand({'command': next_task})
-                    print("[Cobot] Robot task queue: {}".format(robot_task_queue))
-                    sleep(3.0)
-        elif debug == True:
-            while len(robot_task_queue) != 0:
-                next_task = robot_task_queue.pop(0)
-                print("[Cobot] Robot task queue: {}".format(robot_task_queue))
-                sleep(0.5)
-        if wait_until_end == True: self.waitDeviceStatus(device_name='R_001/cobot', status_key='recent_work', status_value=self.cobot_recent_work)
-        print("[Cobot] Robot task finished !!! (Queue is empty)")
-
-
-    
-    def executeInstron(self, subject_name, command_type):
-        if command_type == 'setup':
-            self.waitDeviceStatus(device_name='instron', status_value='Idle')
-            self.device_dict['instron'].sendCommand({'setup': subject_name})
-        elif command_type == 'execute':
-            self.waitDeviceStatus(device_name='instron', status_value='Ready')
-            self.device_dict['instron'].sendCommand({'execute': subject_name})
-            print("[Instron] Test Start ({}) !!!".format(subject_name))
-
-        # if command_type == 'setup':
-        #     if self.instron_save_flag == True:
-        #         self.waitDeviceStatus(device_name='instron', status_value='data_sent')
-        #         self.device_dict['instron'].sendCommand({'setup': subject_name})
-        #         self.instron_save_flag = False
-        #     else:
-        #         self.waitDeviceStatus(device_name='instron', status_value='Idle')
-        #         self.device_dict['instron'].sendCommand({'setup': subject_name})
-
-        # elif command_type == 'execute':
-        #     self.waitDeviceStatus(device_name='instron', status_value='Ready')
-        #     self.device_dict['instron'].sendCommand({'execute': subject_name})
-        #     print("[Instron] Test Start ({}) !!!".format(subject_name))
-
-        # elif command_type == 'result':
-        #     self.waitDeviceStatus(device_name='instron', status_value='Idle')
-        #     self.device_dict['instron'].sendCommand({'result': subject_name})
-        #     print("[Instron] Result file saving ... ({}) !!!".format(subject_name))
-        #     self.instron_save_flag = True
-            
-        
-
-    def makeRobotTaskQueue(self, printer_id='printer1', task_type='specimen_task'):
-        if task_type == 'specimen_task':
-            printer_number = int(printer_id.split('printer')[1])
-            sensor_number = printer_number  ## 임시 (로봇쪽 sensor number 작업 필요)
-
-            task_get_bed = [ACTION_HOME, ACTION_TOOLCHANGE_1_ATTACH, TASK_3DP_BED_OUT - printer_number, ACTION_HOME]
-            task_detach_specimen = [ACTION_TOOLCHANGE_1_DETACH, ACTION_TOOLCHANGE_2_ATTACH, ACTION_HOME, TASK_DETACH_SPECIMEN]
-            task_specimen_to_rack = [TASK_SPECIMEN_TO_RACK, TASK_RACK_ALIGN, ACTION_HOME]
-            task_return_bed = [ACTION_TOOLCHANGE_2_DETACH, ACTION_TOOLCHANGE_1_ATTACH, TASK_3DP_BED_IN + printer_number, ACTION_HOME, ACTION_TOOLCHANGE_1_DETACH]
-            self.cobot_recent_work = ACTION_TOOLCHANGE_1_DETACH
-            robot_task_queue = task_get_bed + task_detach_specimen + task_specimen_to_rack + task_return_bed
-            return robot_task_queue
-
-        elif task_type == 'feed_specimen':
-            task_feed_specimen = [ACTION_TOOLCHANGE_2_ATTACH, ACTION_HOME, TASK_SPECIMEN_FROM_RACK, ACTION_HOME, TASK_INSTRON_SEARCH]
-            self.cobot_recent_work = TASK_INSTRON_SEARCH
-            robot_task_queue = task_feed_specimen
-            return robot_task_queue
-
-        elif task_type == 'watch_specimen':
-            task_watch_specimen = [TASK_INSTRON_MOVEOUT]
-            self.cobot_recent_work = TASK_INSTRON_MOVEOUT
-            robot_task_queue = task_watch_specimen
-            return robot_task_queue
-
-        elif task_type == 'finish':
-            task_finish_experiment = [ACTION_HOME, ACTION_TOOLCHANGE_2_DETACH, ACTION_HOME]
-            self.cobot_recent_work = ACTION_HOME
-            robot_task_queue = task_finish_experiment
-            return robot_task_queue
-
-
-
-    def executionManager(self):
-        step = 0 #; printer_id = 'printer2'; subject_id = 'test2'
-        debug = True
-        
-        while True:
-            try:
-                if step == 0:
-                    print("[Execution Manager] 0. Print done list: {}".format(self.printer_list_finished))
-                    printer_id = self.printer_list_finished.pop(0)
-                    subject_id = self.device_info[printer_id]['subject_name']
-
-                    amr_instron =   [3.005, -3.268, -1.610]
-                    offset_3dp = 0.47
-                    printer_number = int(printer_id.split('printer')[1])
-                    amr_printer   = [2.967, -4.131 + (printer_number * offset_3dp), -1.610]
-                    amr_home = [2.214, -0.407, 0.000]
-                    step = 1
-
-                if step == 1: ## 1. AMR 이동 (printer_id)
-                    print("[Execution Manager] 1. AMR moving... (target: {}: {})".format(printer_id, amr_printer))
-                    if debug == False: self.executeAMR(spot_name=printer_id, target_pose=amr_printer, hold_time=0.0) # target_pose 수정 작업 필요
-                    step = 2
-                
-                if step == 2: ## 2. 협동로봇 프린터 -> 시편준비 (printer_id)
-                    print("[Execution Manager] 2. Robot task start !!! (printer: {})".format(printer_id))
-                    robot_task_queue = self.makeRobotTaskQueue(printer_id, task_type='specimen_task')
-                    self.executeCobot(robot_task_queue, debug=debug)
-                    self.printer_list_robot_done.append(printer_id)
-                    print("[Execution Manager] 2. Robot task done !!! (printer: {})".format(printer_id))
-                    step = 3
-                
-                if step == 3: ## 3. AMR 이동 (instron)
-                    print("[Execution Manager] 3. AMR moving... (target: instron, {})".format(amr_instron))
-                    if subject_id != 'test3':
-                        if debug == False: self.executeAMR(spot_name='instron', target_pose=amr_instron, hold_time=0.0) # target_pose 수정 작업 필요
-                    step = 4
-
-                if step == 4: ## 4. 협동로봇 시편 -> 인장시험기 (printer_id)
-                    print("[Execution Manager] 4. Robot task start !!! (Feeding specimen)")
-                    robot_task_queue = self.makeRobotTaskQueue(task_type='feed_specimen')
-                    self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
-                    step = 5
-                
-                if step == 5: ## 5. 인장시험 준비 (subject_id)
-                    print("[Execution Manager] 5. Experiment initializing ... (subject: {})".format(subject_id))
-                    self.executeInstron(subject_id, command_type='setup')
-                    sleep(10.0)
-                    robot_task_queue = self.makeRobotTaskQueue(task_type='watch_specimen')
-                    self.executeCobot(robot_task_queue, debug=debug)
-                    step = 6
-                
-                if step == 6: ## 6. 인장시험 실행 & 저장 (subject_id)
-                    print("[Execution Manager] 6. Experiment start !!! (subject: {})".format(subject_id))
-                    self.executeInstron(subject_id, command_type='execute')
-                    self.executeInstron(subject_id, command_type='result')
-                    robot_task_queue = self.makeRobotTaskQueue(task_type='finish')
-                    self.executeCobot(robot_task_queue, debug=debug)
-                    step = 7 if len(self.printer_list_finished) == 0 else 0
-                
-                if step == 7: ## 7. AMR 이동 (home)
-                    print("[Execution Manager] 7. AMR moving... (target: home, {})".format(amr_home))
-                    if debug == False: self.executeAMR(spot_name='home', target_pose=amr_home, hold_time=0.0) # target_pose 수정 작업 필요
-                    step = 0
-
-            except:
-                # print("[Execution Manager] Error !!!")
-                pass
-
-            sleep(3.0)
-
-    
+    '''#####################################################################################################
+        3D Printer related
+    '''
     def addPrintingQueue(self, printing_queue):
         self.printing_queue = printing_queue
-
 
 
     def manager3DP(self):
@@ -385,6 +203,225 @@ class DeviceManager():
                     pass
                     
             sleep(3.0)
+
+
+    '''#####################################################################################################
+        Robot related
+    '''
+    def executeAMR(self, target_pose, spot_name="default", hold_time=0.0, debug=False):
+        if debug == False:
+            print("[AMR - Real mode] AMR Start Moving ... (target pose = {})".format(target_pose))
+            work = Action(SYSCON_WAYPOINT, target_pose, self.amr_param)
+            self.amr.work.append(work)
+            self.amr.work_id = spot_name
+            self.client.send_goal(self.amr)
+            self.client.wait_for_result()
+            print("[AMR - Real mode] Arrived at [{}] !!!".format(target_pose))
+            self.amr.work = []
+            sleep(hold_time)
+
+        elif debug == True:
+            print("[AMR - Debug mode] AMR Start Moving ... (target pose = {})".format(target_pose))
+            sleep(1.0)
+            print("[AMR - Real mode] Arrived at [{}] !!!".format(target_pose))
+            sleep(hold_time)
+
+
+    def makeRobotTaskQueue(self, printer_id='printer1', task_type='specimen_task'):
+        if task_type == 'specimen_task':
+            printer_number = int(printer_id.split('printer')[1])
+            sensor_number = printer_number  ## 임시 (로봇쪽 sensor number 작업 필요)
+
+            task_get_bed = [ACTION_HOME, ACTION_TOOLCHANGE_1_ATTACH, TASK_3DP_BED_OUT - printer_number, ACTION_HOME]
+            task_detach_specimen = [ACTION_TOOLCHANGE_1_DETACH, ACTION_TOOLCHANGE_2_ATTACH, ACTION_HOME, TASK_DETACH_SPECIMEN]
+            task_specimen_to_rack = [TASK_SPECIMEN_TO_RACK, TASK_RACK_ALIGN, ACTION_HOME]
+            task_return_bed = [ACTION_TOOLCHANGE_2_DETACH, ACTION_TOOLCHANGE_1_ATTACH, TASK_3DP_BED_IN + printer_number, ACTION_HOME, ACTION_TOOLCHANGE_1_DETACH]
+            self.cobot_recent_work = ACTION_TOOLCHANGE_1_DETACH
+            robot_task_queue = task_get_bed + task_detach_specimen + task_specimen_to_rack + task_return_bed
+            return robot_task_queue
+
+        elif task_type == 'feed_specimen':
+            task_feed_specimen = [ACTION_TOOLCHANGE_2_ATTACH, ACTION_HOME, TASK_SPECIMEN_FROM_RACK, ACTION_HOME, TASK_INSTRON_SEARCH]
+            self.cobot_recent_work = TASK_INSTRON_SEARCH
+            robot_task_queue = task_feed_specimen
+            return robot_task_queue
+
+        elif task_type == 'watch_specimen':
+            task_watch_specimen = [TASK_INSTRON_MOVEOUT]
+            self.cobot_recent_work = TASK_INSTRON_MOVEOUT
+            robot_task_queue = task_watch_specimen
+            return robot_task_queue
+
+        elif task_type == 'finish':
+            task_finish_experiment = [ACTION_HOME, ACTION_TOOLCHANGE_2_DETACH, ACTION_HOME]
+            self.cobot_recent_work = ACTION_HOME
+            robot_task_queue = task_finish_experiment
+            return robot_task_queue
+
+
+    def executeCobot(self, robot_task_queue, wait_until_end=False, debug=False):
+        if debug == False:
+            while len(robot_task_queue) != 0:
+                if self.device_dict['R_001/cobot'].getStatus()['status'] == 'Standby':
+                    next_task = robot_task_queue.pop(0)
+                    self.device_dict['R_001/cobot'].sendCommand({'command': next_task})
+                    print("[Cobot - Real mode] Robot task queue: {}".format(robot_task_queue))
+                    sleep(3.0)
+        elif debug == True:
+            while len(robot_task_queue) != 0:
+                next_task = robot_task_queue.pop(0)
+                print("[Cobot - Debug mode] Robot task queue: {}".format(robot_task_queue))
+                sleep(0.5)
+        if wait_until_end == True: self.waitDeviceStatus(device_name='R_001/cobot', status_key='recent_work', status_value=self.cobot_recent_work)
+        print("[Cobot] Robot task finished !!! (Queue is empty)")
+
+
+    '''#####################################################################################################
+        Instron related
+    '''
+    def executeInstron(self, subject_name, command_type, debug=False):
+        if debug == False:
+            if command_type == 'setup':
+                self.waitDeviceStatus(device_name='instron', status_value='Idle')
+                self.device_dict['instron'].sendCommand({'setup': subject_name})
+                print("[Instron - Real mode] Test Initializing ({}) ...".format(subject_name))
+            elif command_type == 'execute':
+                self.waitDeviceStatus(device_name='instron', status_value='Ready')
+                self.device_dict['instron'].sendCommand({'execute': subject_name})
+                print("[Instron - Real mode] Test Start ({}) !!!".format(subject_name))
+        
+        elif debug == True:
+            if command_type == 'setup':
+                print("[Instron - Debug mode] Test Initializing ({}) ...".format(subject_name))
+                sleep(1.0)
+            elif command_type == 'execute':
+                print("[Instron - Debug mode] Test Start ({}) !!!".format(subject_name))
+                sleep(1.0)
+
+        # if command_type == 'setup':
+        #     if self.instron_save_flag == True:
+        #         self.waitDeviceStatus(device_name='instron', status_value='data_sent')
+        #         self.device_dict['instron'].sendCommand({'setup': subject_name})
+        #         self.instron_save_flag = False
+        #     else:
+        #         self.waitDeviceStatus(device_name='instron', status_value='Idle')
+        #         self.device_dict['instron'].sendCommand({'setup': subject_name})
+
+        # elif command_type == 'execute':
+        #     self.waitDeviceStatus(device_name='instron', status_value='Ready')
+        #     self.device_dict['instron'].sendCommand({'execute': subject_name})
+        #     print("[Instron] Test Start ({}) !!!".format(subject_name))
+
+        # elif command_type == 'result':
+        #     self.waitDeviceStatus(device_name='instron', status_value='Idle')
+        #     self.device_dict['instron'].sendCommand({'result': subject_name})
+        #     print("[Instron] Result file saving ... ({}) !!!".format(subject_name))
+        #     self.instron_save_flag = True
+            
+        
+    '''#####################################################################################################
+        Execution manager related
+    ''' 
+    def checkExecutionMode(self):
+        while True:
+            if self.bool_auto_mode == True:
+                break
+            elif self.step_flag == True:
+                self.step_flag = False
+                break
+
+
+    def waitDeviceStatus(self, device_name, status_key='status', status_value=''):
+        while True:
+            try:
+                status_int = int(status_value)
+            except:
+                status_int = status_value
+            # print("[DEBUG] Waiting for '{}' status to be '{}'... ".format(device_name, status))
+            if self.device_dict[device_name].getStatus()[status_key] == str(status_value) or self.device_dict[device_name].getStatus()[status_key] == status_int:
+                # print("[DEBUG] '{}' status = '{}' !!! ".format(device_name, status))
+                break
+
+
+    def executionManager(self):
+        step = 0 #; printer_id = 'printer2'; subject_id = 'test2'
+        debug = True
+        
+        while True:
+            try:
+                if step == 0:
+                    self.checkExecutionMode()
+                    print("[Execution Manager] 0. Print done list: {}".format(self.printer_list_finished))
+                    printer_id = self.printer_list_finished.pop(0)
+                    subject_id = self.device_info[printer_id]['subject_name']
+
+                    amr_instron =   [3.005, -3.268, -1.610]
+                    offset_3dp = 0.47
+                    printer_number = int(printer_id.split('printer')[1])
+                    amr_printer   = [2.967, -4.131 + (printer_number * offset_3dp), -1.610]
+                    amr_home = [2.214, -0.407, 0.000]
+                    step = 1
+
+                if step == 1: ## 1. AMR 이동 (printer_id)
+                    self.checkExecutionMode()
+                    print("[Execution Manager] 1. AMR moving... (target: {}: {})".format(printer_id, amr_printer))
+                    self.executeAMR(spot_name=printer_id, target_pose=amr_printer, hold_time=0.0, debug=debug)
+                    step = 2
+                
+                if step == 2: ## 2. 협동로봇 프린터 -> 시편준비 (printer_id)
+                    self.checkExecutionMode()
+                    print("[Execution Manager] 2. Robot task start !!! (printer: {})".format(printer_id))
+                    robot_task_queue = self.makeRobotTaskQueue(printer_id, task_type='specimen_task')
+                    self.executeCobot(robot_task_queue, debug=debug)
+                    self.printer_list_robot_done.append(printer_id)
+                    print("[Execution Manager] 2. Robot task done !!! (printer: {})".format(printer_id))
+                    step = 3
+                
+                if step == 3: ## 3. AMR 이동 (instron)
+                    self.checkExecutionMode()
+                    print("[Execution Manager] 3. AMR moving... (target: instron, {})".format(amr_instron))
+                    if subject_id != 'test3':
+                        self.executeAMR(spot_name='instron', target_pose=amr_instron, hold_time=0.0, debug=debug)
+                    step = 4
+
+                if step == 4: ## 4. 협동로봇 시편 -> 인장시험기 (printer_id)
+                    self.checkExecutionMode()
+                    print("[Execution Manager] 4. Robot task start !!! (Feeding specimen)")
+                    robot_task_queue = self.makeRobotTaskQueue(task_type='feed_specimen')
+                    self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
+                    step = 5
+                
+                if step == 5: ## 5. 인장시험 준비 (subject_id)
+                    self.checkExecutionMode()
+                    print("[Execution Manager] 5. Experiment initializing ... (subject: {})".format(subject_id))
+                    self.executeInstron(subject_id, command_type='setup')
+                    sleep(10.0)
+                    robot_task_queue = self.makeRobotTaskQueue(task_type='watch_specimen')
+                    self.executeCobot(robot_task_queue, debug=debug)
+                    step = 6
+                
+                if step == 6: ## 6. 인장시험 실행 & 저장 (subject_id)
+                    self.checkExecutionMode()
+                    print("[Execution Manager] 6. Experiment start !!! (subject: {})".format(subject_id))
+                    self.executeInstron(subject_id, command_type='execute')
+                    self.executeInstron(subject_id, command_type='result')
+                    robot_task_queue = self.makeRobotTaskQueue(task_type='finish')
+                    self.executeCobot(robot_task_queue, debug=debug)
+                    step = 7 if len(self.printer_list_finished) == 0 else 0
+                
+                if step == 7: ## 7. AMR 이동 (home)
+                    self.checkExecutionMode()
+                    print("[Execution Manager] 7. AMR moving... (target: home, {})".format(amr_home))
+                    if debug == False: self.executeAMR(spot_name='home', target_pose=amr_home, hold_time=0.0) # target_pose 수정 작업 필요
+                    step = 0
+
+            except:
+                # print("[Execution Manager] Error !!!")
+                pass
+
+            sleep(3.0)
+
+    
 
 
 
