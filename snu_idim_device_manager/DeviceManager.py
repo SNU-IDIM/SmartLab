@@ -104,6 +104,7 @@ class DeviceManager():
         self.thread_4.terminate()
         pass
 
+
     '''#####################################################################################################
         Device manager related
     '''
@@ -349,74 +350,96 @@ class DeviceManager():
         
         while True:
             try:
-                if step == 0:
+                if step == 0: ## Step 0. 시편 제작 완료 시 시작
                     self.checkExecutionMode()
-                    print("[Execution Manager] 0. Print done list: {}".format(self.printer_list_finished))
+                    print("[Execution Manager] Step 1. Fabricating specimens for experiment... (finnished: {})".format(self.printer_list_finished))
                     printer_id = self.printer_list_finished.pop(0)
                     subject_id = self.device_info[printer_id]['subject_name']
 
-                    amr_instron =   [3.005, -3.268, -1.610]
-                    offset_3dp = 0.47
                     printer_number = int(printer_id.split('printer')[1])
-                    amr_printer   = [2.967, -4.131 + (printer_number * offset_3dp), -1.610]
-                    amr_home = [2.214, -0.407, 0.000]
+                    amr_pos_3dp = copy.deepcopy(AMR_POS_3DP_0);   amr_pos_3dp[1] += printer_number * AMR_OFFSET_3DP
                     step = 1
 
-                if step == 1: ## 1. AMR 이동 (printer_id)
+                if step == 1: ## Step 2-1. Get printing bed from printer (3DP bed: 3D printer -> Robot)
                     self.checkExecutionMode()
-                    print("[Execution Manager] 1. AMR moving... (target: {}: {})".format(printer_id, amr_printer))
-                    self.executeAMR(spot_name=printer_id, target_pose=amr_printer, hold_time=0.0, debug=debug)
+                    print("[Execution Manager] Step 2-1 (1 of 2). AMR moving... (target: {}: {})".format(printer_id, amr_pos_3dp))
+                    self.executeAMR(spot_name=printer_id, target_pose=amr_pos_3dp, hold_time=0.0, debug=debug)
+
+                    print("[Execution Manager] Step 2-1 (2 of 2). Robot task start !!! (3DP bed: {} -> Robot)".format(printer_id))
+                    robot_task_queue = self.makeRobotTaskQueue(printer_id, task_type='bed_from_printer_to_robot')
+                    self.executeCobot(robot_task_queue, debug=debug)
                     step = 2
                 
-                if step == 2: ## 2. 협동로봇 프린터 -> 시편준비 (printer_id)
+                if step == 2: ## Step 2-2. Measurement (3DP bed: Robot -> OMM -> Robot)
                     self.checkExecutionMode()
-                    print("[Execution Manager] 2. Robot task start !!! (printer: {})".format(printer_id))
-                    robot_task_queue = self.makeRobotTaskQueue(printer_id, task_type='specimen_task')
-                    self.executeCobot(robot_task_queue, debug=debug)
-                    self.printer_list_robot_done.append(printer_id)
-                    print("[Execution Manager] 2. Robot task done !!! (printer: {})".format(printer_id))
+                    print("[Execution Manager] Step 2-2 (1 of 4). AMR moving... (target: OMM, {})".format(AMR_POS_OMM))
+                    self.executeAMR(spot_name='omm', target_pose=AMR_POS_OMM, hold_time=0.0, debug=debug)
+                    
+                    print("[Execution Manager] Step 2-2 (2 of 4). Robot task start !!! (3DP bed: Robot -> OMM)")
+                    robot_task_queue = self.makeRobotTaskQueue(task_type='bed_from_robot_to_omm') # TODO: Robot task queue 짜야함 (bed_from_robot_to_omm)
+                    self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
+
+                    print("[Execution Manager] Step 2-2 (3 of 4). Measuring a dimension of specimen ({})".format(subject_id))
+                    # TODO: OMM 신호 보내는 코드 삽입
+
+                    print("[Execution Manager] Step 2-2 (4 of 4). Robot task start !!! (3DP bed: OMM -> Robot)")
+                    robot_task_queue = self.makeRobotTaskQueue(task_type='bed_from_omm_to_robot')
+                    self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
                     step = 3
                 
-                if step == 3: ## 3. AMR 이동 (instron)
+                if step == 3: ## Step 2-3. Get ready for the next print (시편 분리 후 3DP bed: Robot -> 3DP)
                     self.checkExecutionMode()
-                    print("[Execution Manager] 3. AMR moving... (target: instron, {})".format(amr_instron))
-                    if subject_id != 'test3':
-                        self.executeAMR(spot_name='instron', target_pose=amr_instron, hold_time=0.0, debug=debug)
+                    print("[Execution Manager] Step 2-3 (1 of 3). Robot task start !!! (specimen handling: {})".format(subject_id))
+                    robot_task_queue = self.makeRobotTaskQueue(task_type='specimen_handling') # TODO: Robot task queue 짜야함 (specimen_handling: 시편 분리, Rack 저장)
+                    self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
+
+                    print("[Execution Manager] Step 2-3 (2 of 3). AMR moving... (target: {}, {})".format(printer_id, amr_pos_3dp))
+                    self.executeAMR(spot_name=printer_id, target_pose=amr_pos_3dp, hold_time=0.0, debug=debug)
+                                        
+                    print("[Execution Manager] Step 2-3 (3 of 3). Robot task start !!! (3DP bed: Robot -> {})".format(printer_id))
+                    robot_task_queue = self.makeRobotTaskQueue(printer_id, task_type='bed_from_robot_to_printer')
+                    self.executeCobot(robot_task_queue, debug=debug)
+                    self.printer_list_robot_done.append(printer_id)
                     step = 4
 
-                if step == 4: ## 4. 협동로봇 시편 -> 인장시험기 (printer_id)
+                if step == 4: ## Step 3-1. 협동로봇 시편 -> 인장시험기 (printer_id)
                     self.checkExecutionMode()
-                    print("[Execution Manager] 4. Robot task start !!! (Feeding specimen)")
+                    print("[Execution Manager] Step 3-1 (1 of 2). AMR moving... (target: instron, {})".format(AMR_POS_INSTRON))
+                    self.executeAMR(spot_name='instron', target_pose=AMR_POS_INSTRON, hold_time=0.0, debug=debug)
+
+                    print("[Execution Manager] Step 3-1 (2 of 2). Robot task start !!! (Feeding specimen: {})".format(subject_id))
                     robot_task_queue = self.makeRobotTaskQueue(task_type='feed_specimen')
                     self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
                     step = 5
                 
-                if step == 5: ## 5. 인장시험 준비 (subject_id)
+                if step == 5: ## Step 3-2. 인장시험 준비 (subject_id)
                     self.checkExecutionMode()
-                    print("[Execution Manager] 5. Experiment initializing ... (subject: {})".format(subject_id))
-                    self.executeInstron(subject_id, command_type='setup')
-                    sleep(10.0)
+                    print("[Execution Manager] Step 3-2 (1 of 2). Experiment initializing ... (subject: {})".format(subject_id))
+                    self.executeInstron(subject_id, command_type='setup');   sleep(10.0)
+
+                    print("[Execution Manager] Step 3-2 (2 of 2). Robot task start !!! (Monitor experiment: {})".format(subject_id))
                     robot_task_queue = self.makeRobotTaskQueue(task_type='watch_specimen')
                     self.executeCobot(robot_task_queue, debug=debug)
                     step = 6
                 
-                if step == 6: ## 6. 인장시험 실행 & 저장 (subject_id)
+                if step == 6: ## Step 3-3. 인장시험 실행 & 저장 (subject_id)
                     self.checkExecutionMode()
-                    print("[Execution Manager] 6. Experiment start !!! (subject: {})".format(subject_id))
+                    print("[Execution Manager] Step 3-3 (1 of 2). Experiment start !!! (subject: {})".format(subject_id))
                     self.executeInstron(subject_id, command_type='execute')
-                    self.executeInstron(subject_id, command_type='result')
+
+                    print("[Execution Manager] Step 3-3 (1 of 2). Robot task start !!! (Finnishing experiment: {})".format(subject_id))
                     robot_task_queue = self.makeRobotTaskQueue(task_type='finish')
                     self.executeCobot(robot_task_queue, debug=debug)
                     step = 7 if len(self.printer_list_finished) == 0 else 0
                 
-                if step == 7: ## 7. AMR 이동 (home)
+                if step == 7: ## Step 4. AMR 이동 (home)
                     self.checkExecutionMode()
-                    print("[Execution Manager] 7. AMR moving... (target: home, {})".format(amr_home))
-                    if debug == False: self.executeAMR(spot_name='home', target_pose=amr_home, hold_time=0.0) # target_pose 수정 작업 필요
+                    print("[Execution Manager] Step 4. AMR moving... (target: home, {})".format(AMR_POS_ZERO))
+                    if debug == False: self.executeAMR(spot_name='home', target_pose=AMR_POS_ZERO, hold_time=0.0) # target_pose 수정 작업 필요
                     step = 0
 
             except:
-                # print("[Execution Manager] Error !!!")
+                print("[Execution Manager] ERROR !!!")
                 pass
 
             sleep(3.0)
@@ -446,10 +469,6 @@ if __name__ == '__main__':
 
     test_manager = TestManager(test_setting=test_setting, ip=SERVER_IP)
     test_id_list = test_manager.getTestIDs()
-    
-
-
-
 
     rospy.init_node('DeviceManager')
 
