@@ -203,7 +203,7 @@
                 {
                     "label": "Has Heated Build Plate",
                     "description": "Whether the machine has a heated build plate present.",
-                    "default_value": false,
+                    "default_value": true,
                     "type": "bool",
                     "settable_per_mesh": false,
                     "settable_per_extruder": false,
@@ -2253,7 +2253,7 @@
                     "minimum_value_warning": "build_volume_temperature",
                     "maximum_value_warning": "130",
                     "maximum_value": "200",
-                    "enabled": false,
+                    "enabled": true,
                     "settable_per_mesh": false,
                     "settable_per_extruder": false,
                     "settable_per_meshgroup": false

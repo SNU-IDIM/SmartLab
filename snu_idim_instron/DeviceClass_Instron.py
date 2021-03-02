@@ -8,6 +8,7 @@ import json
 import threading
 
 
+
 class UART:
 
 	def __init__(self, port_="/dev/ttyTHS1", baudrate_=115200):
@@ -28,13 +29,13 @@ class UART:
 		self.message = dict()  # message from Jetson to Instron
 		self.message['message'] = 'online'
 		self.message['subject_name'] = ''
+		self.message['line'] = 0
 		
 		self.newstatus = dict()
 
 		self.thread_1 = threading.Thread(target=self.updateStatus)
 		self.thread_1.daemon = True
 		self.thread_1.start()
-	
 
 	def __del__(self):
 		self.thread_1.terminate()
@@ -80,8 +81,8 @@ class UART:
 			if self.continue_flag == 1:
 				self.continue_flag = -1
 				print('[Status] {}'.format(self.status))
-
 				break
+
 			elif self.continue_flag == 0:
 				print(self.message)
 				self.write_data(self.message)
@@ -91,10 +92,31 @@ class UART:
 					self.count += 1
 				if self.count == 3:
 					break
+			
 			else:
 				# print("Waiting for the next step\n")
 				continue
 
+	def datacollect(self):
+		print("data collect")
+		self.prev_result = 'empty'
+		self.result = []
+		self.linecount = 0
+
+		while True:
+			if self.status['status'] == 'data_sent':
+				break
+
+			if self.status['result'] != self.prev_result:
+				self.prev_result = self.status['result']
+				self.result.append(json.loads(self.prev_result))
+				self.linecount = self.linecount + 1
+				self.message['line'] = self.linecount
+				print(self.linecount)
+
+			print(self.message)
+			self.write_data(self.message)
+			time.sleep(1)
 
 
 class DeviceClass_Instron:
@@ -102,7 +124,7 @@ class DeviceClass_Instron:
 	def __init__(self, device_name='instron'):
 		## Common init for all devices
 		self.status = dict()
-		self.status['device_type'] = 'Universal Testing Machine'
+		self.status['device_type'] = 'Universal_Testing_Machine'
 		self.status['device_name'] = device_name
 		self.status['connection'] = ''
 		self.status['subject_name'] = ''
@@ -110,10 +132,13 @@ class DeviceClass_Instron:
 		self.status['recent_work'] = ''
 
 		## Jetson nano board setting for digital I/O
+		# GPIO.cleanup()
+		# GPIO.setwarnings(False)
+
 		self.PIN = 15
 		GPIO.setmode(GPIO.BOARD)
 		GPIO.setup(self.PIN, GPIO.OUT, initial=GPIO.LOW)
-		GPIO.setwarnings(False)
+
 
 		## UART communication with Instron PC
 		self.uart = UART()
@@ -192,17 +217,17 @@ class DeviceClass_Instron:
 				self.uart.message['subject_name'] = cmd_values[i]
 				self.uart.message['message'] = 'send_data'
 				self.uart.write_data(self.uart.message)
-				self.uart.goal_status = 'data_sent'
+
+				self.uart.goal_status = 'sending_data'
 				self.uart.waitStatus()
-				self.result = self.uart.status['result']
-				self.json_dec = json.loads(self.result)
-				print("???????????")
-				print(self.uart.status['result'])
+				
+				self.uart.datacollect()
+
 				self.uart.message['message'] = 'data_saved'
 				self.uart.write_data(self.uart.message)
 				
-				with open('test.txt','w') as exp:
-					exp.writelines(self.json_dec)
+				with open(self.uart.message['subject_name'] + '.txt','w') as exp:
+					exp.writelines(self.uart.result)
 				time.sleep(0.1)
 				del(self.uart.status['result'])
 

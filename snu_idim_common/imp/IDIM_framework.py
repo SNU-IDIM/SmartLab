@@ -21,6 +21,19 @@ def M2MM(meter):
 
 def MM2M(milimeter):
     return (1.0/1000.0)*milimeter
+
+##################################################################################################################################################
+'''
+    DOE Types
+'''
+DOE_TWO_LEVEL_FULL_FACTORIAL       = 1
+DOE_THREE_LEVEL_FULL_FACTORIAL     = 2
+DOE_GENERALIZED_FACTORIAL          = 3
+DOE_TWO_LEVEL_FRACTIONAL_FACTORIAL = 4
+DOE_PLACKETT_BURMAN                = 5
+DOE_BOX_BEHNKEN                    = 6
+DOE_CENTRAL_COMPOSITE              = 7
+
 ##################################################################################################################################################
 '''
     Current End-effector number (Tool changer)
