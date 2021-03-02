@@ -15,8 +15,8 @@ import json
 from matplotlib import pyplot as plt
 from threading import Thread
 
-sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__))) )
-import datasql
+sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_common/src")) )
+from datasql import mysql
 
 
 class measureStation(object):
@@ -30,11 +30,12 @@ class measureStation(object):
         self.status['connection'] = 'disconnected'
         self.status['status'] = ''
         self.status['recent_work'] = ''
-        self.result['thickness'] = 0
-        self.result['axial_length'] = 0
-        self.result['width'] = 0
+        self.result['subject_name'] =''
+        self.result['Thickness'] = 0
+        self.result['Length'] = 0
+        self.result['Width'] = 0
 
-        self.sql = datasql.mysql()
+        self.sql = mysql(user=self.device_id, host = '192.168.0.81')
 
         self.thread_1 = Thread(target=self.updateStatus)
         self.thread_1.start()
@@ -88,23 +89,23 @@ class measureStation(object):
             elif cmd_keys[key] == 'measure_thickness':
                 self.status['status'] = 'G30 : Measure Thickness'
                 self.send_zPosition()
-                self.result['thickness'] = self.readline_zPosition()
+                self.result['Thickness'] = self.readline_zPosition()
                 self.status['status'] = 'Ready'
             elif cmd_keys[key] == 'measure_dimension':
                 self.status['status'] = 'Measure Size'
                 self.send_GCode('G0 X143 Y140 Z125')
                 print("---------------------------")
-                # self.readline_status()
                 time.sleep(15)
-                self.result['axial_length'], self.result['width'] = self.measure_dimension()
+                self.result['Length'], self.result['Width'] = self.measure_dimension()
                 self.status['status'] = 'Ready'
             elif cmd_keys[key] == 'readline':
                 self.status['status'] = 'read_line'
                 self.readline()
             elif cmd_keys[key] == 'save_result':
-                specimen_name = cmd_values[key]
+                self.result['subject_name'] = cmd_values[key]
                 # result_enc = json.load(self.status)
-                self.sql.send_data(specimen_name, self.result['thickness'], self.result['axial_length'], self.result['width'])
+                
+                self.sql.send('smartlab_result', 'MS', self.result)
                 # self.save_result(specimen_name,result_enc)
 
             
@@ -164,15 +165,6 @@ class measureStation(object):
         print("readline " + out)
         return out
 
-    def readline_status(self):
-        while True:
-            out = self.readline()
-            print("why", out)
-            # if out == 'ok\n':
-            #     break
-
-        print('done')
-
     def readline_zPosition(self):
         while True:
             out = self.readline()
@@ -180,6 +172,7 @@ class measureStation(object):
                 break
         thickness = out[-5:]
         print 'Specimen Thickness :' + str(thickness)
+        thickness = thickness.split('\n')[0]
         return thickness
 
     def save_result(self, subn, result):
@@ -198,7 +191,6 @@ class measureStation(object):
 
     def stopsign(self, status):
         while True:
-            print(" 1 ")
             if self.result['thickness'] != 0 and self.flag == 0:
                 self.flag = 1
                 break
@@ -207,7 +199,6 @@ class measureStation(object):
                 break
             elif self.result['width'] != 0 and self.flag == 2:
                 break
-        print("Qkwuskdhk")
         self.status['status'] = status
 
 
@@ -261,14 +252,14 @@ class measureStation(object):
         for i in range(0,h):
             # print(i)
             val1 = contour_img[i,int(w/2)]
-            if val1 == 100:
+            if val1 == 255:
                 up_pix = i
                 break
 
         for i in range(0,h):
             # print(i)
             val2 = contour_img[h-i-1,int(w/2)]
-            if val2 == 100:
+            if val2 == 255:
                 low_pix = h-i-1
                 break
         
@@ -287,8 +278,6 @@ class measureStation(object):
         
         # ret, thresh_img = cv2.threshold(gray_img, threshold_value, value, cv2.THRESH_BINARY)
         ret, thresh_img = cv2.threshold(h, threshold_value, value, cv2.THRESH_BINARY)
-
-
 
         startTime2 = time.time()
         while True:
@@ -338,10 +327,9 @@ class measureStation(object):
         # img2 = img  
         epsilon = cv2.arcLength(a, True) *0.001
         approx = cv2.approxPolyDP(a,epsilon,True)
-        cv2.drawContours(img2,[approx],0,(100,255,100),cv2.FILLED)
+        cv2.drawContours(img2,[approx],0,(255,255,50),cv2.FILLED)
 
-
-
+        single_contour = [approx]
 
         # print("num : {}".format(len(contours)))
 
@@ -349,15 +337,15 @@ class measureStation(object):
         cv2.waitKey(1)
 
         time.sleep(2)
-        return img2
+        return single_contour, img2
 
 
 
     def lefttop(self, img):
-        _, contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        # _, contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         # print(np.shape(contours[0]))
         # print(np.shape(contours[0][0]))
-        
+        contours = img
 
 
         l = np.shape(contours[0])[0]
@@ -376,7 +364,8 @@ class measureStation(object):
         return contours[0][cnt][0]
 
     def leftbottom(self, img):
-        _, contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        # _, contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        contours = img
         
         l = np.shape(contours[0])[0]
         # print("lt", l)
@@ -394,7 +383,9 @@ class measureStation(object):
         return contours[0][cnt][0]
 
     def righttop(self, img):
-        _, contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        # _, contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        contours = img
+        
         l = np.shape(contours[0])[0]
         # print(l)
         dist = np.zeros(l)
@@ -410,7 +401,9 @@ class measureStation(object):
         return contours[0][cnt][0]
 
     def rightbottom(self, img):
-        _, contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        # _, contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        contours = img
+        
         l = np.shape(contours[0])[0]
         # print(l)
         dist = np.zeros(l)
@@ -458,12 +451,12 @@ class measureStation(object):
                     
                     color = self.capture()
                     gray = self.color2gray(color)
-                    contour_img = self.edge2contour(gray)
-                    edge = self.gray2edge(contour_img)
+                    contour_img,_ = self.edge2contour(gray)
+                    # edge = self.gray2edge(contour_img)
                     # edge = gray2edge(gray)
 
-                    ltop = self.lefttop(edge)
-                    lbot = self.leftbottom(edge)
+                    ltop = self.lefttop(contour_img)
+                    lbot = self.leftbottom(contour_img)
                     
                     time.sleep(5)           # moving part
                     flag = 2                # for debug
@@ -474,7 +467,7 @@ class measureStation(object):
                 elif flag == 1:
                     mid_color = self.midcrop(color)
                     gray = self.color2gray(mid_color)
-                    contour_img = self.edge2contour(gray)
+                    _, contour_img = self.edge2contour(gray)
                     # edge = gray2edge(contour_img)
                     width_pix = self.center_ms(contour_img)
 
@@ -486,8 +479,8 @@ class measureStation(object):
         ##------------------------right corner-----------------------
                 elif flag == 2:
 
-                    rtop = self.righttop(edge)
-                    rbot = self.rightbottom(edge)
+                    rtop = self.righttop(contour_img)
+                    rbot = self.rightbottom(contour_img)
 
                     flag = 1                # for debug
 
@@ -502,12 +495,16 @@ class measureStation(object):
                     # print(theta,math.cos(theta))
                     x_disp = perp_disp_pix * pix2mm                             #mm
                     y_disp = axial_disp_pix * pix2mm                            #mm
+
                     
                     axial_dimension = math.sqrt(pow(x_disp,2) + pow(y_disp,2))
-
+                    
                     width = pix2mm * axial_disp_pix/axial_dimension * width_pix* pix2mm
+                    print(axial_dimension, width)
                     cv2.destroyWindow('Realsense')
                     cv2.destroyWindow('RealSense')
+                    axial_dimension = round(axial_dimension,2)
+                    width = round(width,2)
                     print("axial dimension is {}mm, width is {}mm".format(axial_dimension,width))
                     break
 

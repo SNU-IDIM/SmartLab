@@ -20,7 +20,7 @@ if __name__ == "__main__":
     measurement_node = DevicePluginToROS(device_name=device_name, device_class=measureStation(device_name, port_='/dev/ttyUSB0'))
 
 
-    specimen_name = 'base'
+    specimen_name = '20210302t1'
 
     rospy.sleep(5)
     cmd_dict = dict()
@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
     while True:
         if measurement_node.getStatus()['connection'] == 'connected':
-            print('debugging start')
+            print('\n debugging start \n')
             del(cmd_dict['connection'])
             cmd_dict['measure_thickness'] = specimen_name
             measurement_node.sendCommand(cmd_dict)
@@ -41,8 +41,11 @@ if __name__ == "__main__":
 
     while True:
         if measurement_node.getStatus()['status'] == 'Ready':
-            print('measure debugging')
+        # if measurement_node.getStatus()['connection'] == 'connected':
+            print('\n measure debugging \n')
             del(cmd_dict['measure_thickness'])
+            # del(cmd_dict['connection'])
+            
             cmd_dict['measure_dimension'] = specimen_name
             measurement_node.sendCommand(cmd_dict)
             time.sleep(2)

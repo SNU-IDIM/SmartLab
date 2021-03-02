@@ -5,30 +5,69 @@ import base64
 from io import BytesIO
 import time
 
-
-
 # ifconfig eth0 102.168.60.101
-##-------------------------------------------------------------------------------------------
-##-----------------------------------need to change------------------------------------------
-##-------------------------------------------------------------------------------------------
-##-----------1. __init__ : user, Device------------------------------------------------------
-##-----------2. file_name : file directory --------------------------------------------------
-##-----------3. save_data :  number of input data--------------------------------------------
-##-----------4. delet_data : name of table line title----------------------------------------
-##-------------------------------------------------------------------------------------------
-##-------------------------------------------------------------------------------------------
-##-------------------------------------------------------------------------------------------
 
-class mysql():
-    def __init__(self):
 
-        user='MS'
-        self.Device = 'MS'        
+class mysql:
+    def __init__(self, user=None, host=None):
+        if user != None:
+            self.con = pymysql.connect(user=user, host=host, port=3306, password='0000',db='smartlab_status', charset='utf8')
+            self.cur = self.con.cursor(pymysql.cursors.DictCursor)
+            print("\n database connection success \n")
+        
+        else:
+            print("\n database connection failed \n")
 
-        self.con = pymysql.connect(user=user, host='192.168.60.101', port=3306, password='0000',db='SNU_smartlab',charset='utf8')
-        self.cur = self.con.cursor(pymysql.cursors.DictCursor)
-        # self.save_data()
 
+    def delete(self, db, table, specimen):
+        sql1 = "USE " + db
+        #example : "USE smartlab_status"
+        sql2 = "DELETE TABLE " + table + " WHERE " + "subject_name=" + specimen + ";"
+        #example : "DELETE TABLE Instron WHERE subject_name= specimen1;"
+        
+        self.cur.execute(sql1)
+        self.cur.execute(sql2)
+
+        self.con.commit()
+        self.con.close()
+        print("specimen deleted")
+
+        return sql
+
+    def send(self, db, table ,data_dict):
+        data_keys = data_dict.keys()
+        data_values = map(str,data_dict.values())
+        sql1 = "USE " + db
+        #example : "USE smartlab_status"
+        print("sql1", sql1)
+
+        self.cur.execute(sql1)
+
+
+        fields = ','.join(data_keys)
+        contents = "'" + "','".join(data_values) + "'"
+        sql2 = "INSERT INTO %s (%s) VALUES (%s);" %(table,fields,contents)
+        print("sql2", sql2)
+
+
+        self.cur.execute(sql2)
+
+
+        self.con.commit()
+        self.con.close()
+        print("\n data saved \n")
+
+
+
+if __name__=='__main__':
+    mysql = mysql()
+
+    while True:
+        pass
+
+
+
+'''
 
     def file_name(self,last_frame,test_name):
         try:
@@ -49,39 +88,4 @@ class mysql():
         binary_image = binary_image.decode('UTF-8')
 
         return binary_image
-
-
-    def save_data(self ,test_name ,data1, data2, data3):
-        sql = "INSERT INTO " + self.Device +  " VALUES ('" + str(test_name) + "','" + str(data1) + "','" + str(data2) + "','" + str(data3) + "');"
-        #example : "INSERT INTO Instron VALUES ('specimen1','data1','data2','data3','data4');"
-
-        return sql
-
-    
-
-    def delete_testdata(self, test_name):
-        sql = "DELETE TABLE" + self.Device + "WHERE" + "Test_name=" + test_name + ";"
-        #example : "DELETE TABLE Instron WHERE Test_name= specimen1;"
-
-        return sql
-
-
-    def send_data(self,test_name ,data1, data2, data3):
-
-
-        save_sql = self.save_data(test_name, data1, data2, data3)
-
-
-        self.cur.execute(save_sql)
-        
-        self.con.commit()
-        self.con.close()
-        print("data saved")
-
-
-
-if __name__=='__main__':
-    mysql = mysql()
-
-    while True:
-        pass
+'''
