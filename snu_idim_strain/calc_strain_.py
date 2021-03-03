@@ -23,7 +23,7 @@ class calc_strain:
 
         TEST_NUMBER =5
         self.cut_frame = 0 #test1: 44        #test2:100      #test3:117 # test5: 55
-        self.final_frame = 250 #test1: 270      #test2: 329   #test3:350   #test5:550
+        self.final_frame = 550 #test1: 270      #test2: 329   #test3:350   #test5:550
         TEST_NUMBER_=TEST_NUMBER
         # self.Runcal('0122test5')
 
@@ -287,155 +287,159 @@ class calc_strain:
         displist = []
         strain_list = []
 
-        while (cap.isOpened()):
-            #앞서 영상속 필요없는 부분 삭제 코드
-            if frame_count< self.cut_frame:
-                ret, frame = cap.read()
-                frame_count+=1
-                continue
-            # 마지막 frame 도달시 나갈 것
-            if frame_count==self.final_frame:
-                break
+        try:
+            while (cap.isOpened()):
+                #앞서 영상속 필요없는 부분 삭제 코드
+                if frame_count< self.cut_frame:
+                    ret, frame = cap.read()
+                    frame_count+=1
+                    continue
+                # 마지막 frame 도달시 나갈 것
+                if frame_count==self.final_frame:
+                    break
 
-            print("read frame at",frame_count)
-            ret, frame_ = cap.read()
+                print("read frame at",frame_count)
+                ret, frame_ = cap.read()
 
-            if np.all(frame_ == None):
-                break
+                if np.all(frame_ == None):
+                    break
 
-            #TODO: 이전에 체크보드를 통해 작성한 카메라 calibratiion matrix 이용 자르기
-            # print("this is fram : ", frame_)
-            frame = self.calibrate_camera(frame_)
+                #TODO: 이전에 체크보드를 통해 작성한 카메라 calibratiion matrix 이용 자르기
+                # print("this is fram : ", frame_)
+                frame = self.calibrate_camera(frame_)
 
-            # frame = frame_
+                # frame = frame_
 
-            # self.imgshow(frame)
-            # displayplt(frame)
-            img = cv2.rotate(frame, cv2.cv2.ROTATE_90_CLOCKWISE) #카메라 설정에 따라 변경할 것
+                # self.imgshow(frame)
+                # displayplt(frame)
+                img = cv2.rotate(frame, cv2.cv2.ROTATE_90_CLOCKWISE) #카메라 설정에 따라 변경할 것
 
-            #TODO: 관심있는 프레임 시작시 시작해서 기존에 작성한 template에 맞춰서 ROI(Region of interest)를 구함
-            if frame_count==self.cut_frame:
-                center_x, center_y = self.template_match(img)
-                w = 130;  h = 150; # 경험적으로 구함
-                x = int(center_x-w/2); y = int(center_y-h/2);
+                #TODO: 관심있는 프레임 시작시 시작해서 기존에 작성한 template에 맞춰서 ROI(Region of interest)를 구함
+                if frame_count==self.cut_frame:
+                    center_x, center_y = self.template_match(img)
+                    w = 130;  h = 150; # 경험적으로 구함
+                    x = int(center_x-w/2); y = int(center_y-h/2);
 
-            iterdilate = 1
-            # center_x = 500; center_y = 500
-            c_img = self.crop_image(img, x, w, y, h)
-            # self.imgshow(c_img)
+                iterdilate = 1
+                # center_x = 500; center_y = 500
+                c_img = self.crop_image(img, x, w, y, h)
+                # self.imgshow(c_img)
 
-            # displayplt(c_img)
-            # gray = cv2.cvtColor(c_img, cv2.COLOR_BGR2GRAY)
-            #TODO: Filter out noise(이부분에서 iteration 수를 조정할 것)
-            kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (4, 4))
-            img_mask = cv.morphologyEx(c_img, cv.MORPH_DILATE, kernel, iterations=1) #for test10 it is 1 else 2
-            img_mask = cv.morphologyEx(img_mask, cv.MORPH_ERODE, kernel, iterations=2)
-            img_mask = cv.morphologyEx(img_mask, cv.MORPH_DILATE, kernel, iterations=2)
-            # displayplt(c_img)
+                # displayplt(c_img)
+                # gray = cv2.cvtColor(c_img, cv2.COLOR_BGR2GRAY)
+                #TODO: Filter out noise(이부분에서 iteration 수를 조정할 것)
+                kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (4, 4))
+                img_mask = cv.morphologyEx(c_img, cv.MORPH_DILATE, kernel, iterations=1) #for test10 it is 1 else 2
+                img_mask = cv.morphologyEx(img_mask, cv.MORPH_ERODE, kernel, iterations=2)
+                img_mask = cv.morphologyEx(img_mask, cv.MORPH_DILATE, kernel, iterations=2)
+                # displayplt(c_img)
 
 
-            gray = cv2.cvtColor(img_mask, cv2.COLOR_BGR2GRAY)
+                gray = cv2.cvtColor(img_mask, cv2.COLOR_BGR2GRAY)
 
-            # displaygplt(gray)
-            # cv2.imshow('gray',gray)
-            # cv2.waitKey()
-            # cv.imshow("gray", gray)
-            # cv2.waitKey()
-            # ret, bin = cv.threshold(gray, 120, 255, cv.THRESH_BINARY_INV)
-            ret, bin = cv.threshold(gray, 120, 255, cv.THRESH_BINARY_INV) #TODO: 이부분에서 threshold 값들은 실험 초반에서 찾기 #80
+                # displaygplt(gray)
+                # cv2.imshow('gray',gray)
+                # cv2.waitKey()
+                # cv.imshow("gray", gray)
+                # cv2.waitKey()
+                # ret, bin = cv.threshold(gray, 120, 255, cv.THRESH_BINARY_INV)
+                ret, bin = cv.threshold(gray, 120, 255, cv.THRESH_BINARY_INV) #TODO: 이부분에서 threshold 값들은 실험 초반에서 찾기 #80
 
-            # displaygplt(bin)
-            cv2.imshow("bin",bin)
-            cv2.waitKey(1)
-
-            #서로 붙어 있는 요소들을 찾고 하나의 객체로 묶음
-            nlabels, labels, stats, centroids = cv.connectedComponentsWithStats(bin,connectivity=4)
-
-            #TODO: 각 객체들이 묶이고 나서 갯수가 부족한지 많은지 확인하여 조치하는 방법
-            # 총 9개의 점이 나와야하는데 위 cv 함수의경우 0번을 제외한 1번부터 봐야하므로 nlabels 개수가 10개 이상
-            centroid_ = []
-            if nlabels >10: #
-                print("filter is used")
-                correct_idx = self.area_filter(nlabels, labels, stats, centroids,bin)
-                print("correct_dix is", correct_idx)
-                print("the area non sorted is",stats[:, 4])
-                for it in range(0,len(correct_idx)):
-                    centroid_.append(centroids[correct_idx[it]])
-                print("centroid sorted~!!!!!!,centroid",centroid_)
-
-            elif nlabels ==10:
-                centroid_ = centroids[1:10]
-            else:
-                print("/////////////////////////////////////")
-                print("value error labels less than 10")
-                print("/////////////////////////////////////")
-                break
-
-            print(frame_count)
-
-            centroid__ = sorted(centroid_, key=lambda a_entry: a_entry[0])
-            print("before sorting", centroid__)
-            #TODO: 9개의 점들을 sorting을해서 각자의 위치에 맞는 번호를 매기는 과정 자세한 번호는 위 function을 직접 보면 그림 그려놨음
-            centroid = self.label_img(centroid__)
-            print("after sorting", centroid)
-
-            # displacement = calculate_displacement(centroid)
-            displacement = self.two_pdispstrain(centroid)
-            dispsmall = self.calculate_displacement(centroid)
-            if frame_count ==self.cut_frame: #첫 프레임의 경우 initial 값을 읽어옴
-                strain = self.disp2strain_zero(displacement)
-                # print(displacement)
-                # strain = two_strain(displacement)
-                self.initial_axial = displacement[0]
-                self.initial_perp = displacement[1]
-                print("THe displacement is!!!!!!!!")
-                print(displacement)
-
-                # cv2.imwrite("template.png", gray)
-                # self.displaygplt(bin)
-            else:
-                strain = self.two_strain(displacement,self.initial_axial)
-                # print("the strain value is", strain)
-                print("THe displacement is!!!!!!!!")
-                print(displacement)
-                print("the strain value is")
-                print(strain)
-                print("the dismplacement list is")
-                print(displist)
-                print("The initial value is")
-                print(self.initial_axial)
-                print("The strain list is")
-                print(strain_list)
                 # displaygplt(bin)
+                cv2.imshow("bin",bin)
+                cv2.waitKey(1)
 
-                if strain[0]>7:
-                    strain[0] = prev_ax
-            print("The strain values are", strain)
-            if frame_count==0:
-                print("the centroid values at frame 1",centroid)
-                # displaygplt(bin)
-            if strain[0] < -0.5 or strain[0] > 7: # strain value 가 이상하게 나오는 경우 debug funciton
-                print("the centroid values at frame 1", centroid)
-                print("nlabels", nlabels)
-                print("centroids",sorted(centroids, key=lambda a_entry: a_entry[0]))
-                print("centroid", centroid)
-                print("area", stats[:, 4])
-                print("displacement", displacement[0])
-                print("strain value", strain[0])
-                print("displacement", displacement[0])
-                print("strain value",strain)
-                print("the initial axial",self.initial_axial)
-                print("the calculated displacement",displacement[0])
-                print("diffenrence", displacement[0]-self.initial_axial)
-                print("strain in spot", (displacement[0]-self.initial_axial)/self.initial_axial*100)
+                #서로 붙어 있는 요소들을 찾고 하나의 객체로 묶음
+                nlabels, labels, stats, centroids = cv.connectedComponentsWithStats(bin,connectivity=4)
 
-            #TODO:  위에서 계산한 결과 값들을 변수에 모두 모음
-            strain_list.append(strain)
-            displist.append(displacement)
-            disp_slist.append(dispsmall)
-            prev_ax = strain[0]
-            prev_perp = strain[1]
-            frame_count += 1
+                #TODO: 각 객체들이 묶이고 나서 갯수가 부족한지 많은지 확인하여 조치하는 방법
+                # 총 9개의 점이 나와야하는데 위 cv 함수의경우 0번을 제외한 1번부터 봐야하므로 nlabels 개수가 10개 이상
+                centroid_ = []
+                if nlabels >10: #
+                    print("filter is used")
+                    correct_idx = self.area_filter(nlabels, labels, stats, centroids,bin)
+                    print("correct_dix is", correct_idx)
+                    print("the area non sorted is",stats[:, 4])
+                    for it in range(0,len(correct_idx)):
+                        centroid_.append(centroids[correct_idx[it]])
+                    print("centroid sorted~!!!!!!,centroid",centroid_)
+
+                elif nlabels ==10:
+                    centroid_ = centroids[1:10]
+                else:
+                    print("/////////////////////////////////////")
+                    print("value error labels less than 10")
+                    print("/////////////////////////////////////")
+                    break
+
+                print(frame_count)
+
+                centroid__ = sorted(centroid_, key=lambda a_entry: a_entry[0])
+                print("before sorting", centroid__)
+                #TODO: 9개의 점들을 sorting을해서 각자의 위치에 맞는 번호를 매기는 과정 자세한 번호는 위 function을 직접 보면 그림 그려놨음
+                centroid = self.label_img(centroid__)
+                print("after sorting", centroid)
+
+                # displacement = calculate_displacement(centroid)
+                displacement = self.two_pdispstrain(centroid)
+                dispsmall = self.calculate_displacement(centroid)
+                if frame_count ==self.cut_frame: #첫 프레임의 경우 initial 값을 읽어옴
+                    strain = self.disp2strain_zero(displacement)
+                    # print(displacement)
+                    # strain = two_strain(displacement)
+                    self.initial_axial = displacement[0]
+                    self.initial_perp = displacement[1]
+                    print("THe displacement is!!!!!!!!")
+                    print(displacement)
+
+                    # cv2.imwrite("template.png", gray)
+                    # self.displaygplt(bin)
+                else:
+                    strain = self.two_strain(displacement,self.initial_axial)
+                    # print("the strain value is", strain)
+                    print("THe displacement is!!!!!!!!")
+                    print(displacement)
+                    print("the strain value is")
+                    print(strain)
+                    print("the dismplacement list is")
+                    print(displist)
+                    print("The initial value is")
+                    print(self.initial_axial)
+                    print("The strain list is")
+                    print(strain_list)
+                    # displaygplt(bin)
+
+                    if strain[0]>7:
+                        strain[0] = prev_ax
+                print("The strain values are", strain)
+                if frame_count==0:
+                    print("the centroid values at frame 1",centroid)
+                    # displaygplt(bin)
+                if strain[0] < -0.5 or strain[0] > 7: # strain value 가 이상하게 나오는 경우 debug funciton
+                    print("the centroid values at frame 1", centroid)
+                    print("nlabels", nlabels)
+                    print("centroids",sorted(centroids, key=lambda a_entry: a_entry[0]))
+                    print("centroid", centroid)
+                    print("area", stats[:, 4])
+                    print("displacement", displacement[0])
+                    print("strain value", strain[0])
+                    print("displacement", displacement[0])
+                    print("strain value",strain)
+                    print("the initial axial",self.initial_axial)
+                    print("the calculated displacement",displacement[0])
+                    print("diffenrence", displacement[0]-self.initial_axial)
+                    print("strain in spot", (displacement[0]-self.initial_axial)/self.initial_axial*100)
+
+                #TODO:  위에서 계산한 결과 값들을 변수에 모두 모음
+                strain_list.append(strain)
+                displist.append(displacement)
+                disp_slist.append(dispsmall)
+                prev_ax = strain[0]
+                prev_perp = strain[1]
+                frame_count += 1
+        
+        except:
+            print("broken")
 
         # 데이터 타입 변환
         displist1 = np.asarray(displist)
@@ -443,7 +447,7 @@ class calc_strain:
         strainx = np.asarray(strain_list)
 
         ## TODO: fps 설정 필요
-        fps = 3
+        fps = 5
         spf = 1 / fps
         img_num = total_frames
         time_end = img_num * spf
@@ -478,6 +482,8 @@ class calc_strain:
         writer = pd.ExcelWriter(filename, engine='xlsxwriter')
         df1.to_excel(writer, sheet_name='Sheet1')
         writer.close()
+        cv2.destroyAllWindows()
+
         print("finish")
 
 

@@ -11,6 +11,8 @@ import pandas as pd
 import keyboard
 import threading
 
+
+
 sys.path.append('C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain')
 import calc_strain_
 
@@ -19,7 +21,7 @@ class Instron_cam:
         # print("0")
         self.TEST_NUMBER = 1  #Define the test number
         ##set recording parameters
-        self.fps = 3  #10 is enough for long cable given max is 18 but not recommended #먼저 그냥 녹화해보고 fps를 check 해볼 것
+        self.fps = 5  #10 is enough for long cable given max is 18 but not recommended #먼저 그냥 녹화해보고 fps를 check 해볼 것
         #Debug camera frame timing.py 이용해서 check하고 fps 설정할 것
         self.spf = int(1000/self.fps)  ##in milli sec
 
@@ -37,10 +39,10 @@ class Instron_cam:
         self.start_time = time.time()
         ##setup key input
         self.start_sig = False
-        self.finish_sig = 0
+        self.finish_sig = False
 
         self.button = ''
-        self.subject_name = 'base'                 
+        self.subject_name = 'base3'                 
 
         # print("1")
         self.thread_2 = threading.Thread(target=self.KeyInterrupt)
@@ -49,18 +51,21 @@ class Instron_cam:
         # print("2")
 
         self.cal_result = calc_strain_.calc_strain()
+        
 
+    def stopsig(self):
 
+        return self.finish_sig
     
     def trigger(self,bullet, name):
         self.subject_name = name
         self.button = bullet
 
+
     def KeyInterrupt(self):
         while True:
             ## define variable for image array
             self.img_arr = []
-            self.frameCount = 0
             self.button_flage = 1
 
 
@@ -75,6 +80,8 @@ class Instron_cam:
                     self.start_sig = 1
                     self.keypresstime = time.time()
                     self.button_flage = 0
+                    self.frameCount = 0
+
                     
                     ## set path
                     self.newpath = "C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain/result/" + str(self.subject_name + "/pics")#+str(self.TEST_NUMBER)
@@ -115,7 +122,7 @@ class Instron_cam:
             # self.fourcc = cv2.VideoWriter_fourcc(*'h264')
 
             # out = cv2.VideoWriter('strain_result_and_video\\fps10_keyboardwrite.avi', fourcc, fps, (3840,2160))
-            self.out = cv2.VideoWriter(self. vidfilename, self.fourcc, self.fps, (1920,1080)) # set video
+            self.out = cv2.VideoWriter(self.vidfilename, self.fourcc, self.fps, (1920,1080)) # set video
 
             #구한 fps를 이용해서 타이밍 맞춰서 영상을 제작
             for i in range(0,self.frameCount):
@@ -133,7 +140,9 @@ class Instron_cam:
            
             self.cal_result.Runcal(self.subject_name)
 
+
             self.subject_name = ''
+            self.finish_sig = True
 
 
 
