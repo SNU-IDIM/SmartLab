@@ -19,21 +19,25 @@ sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu
 from datasql import mysql
 
 
-class measureStation(object):
-    def __init__(self, device_name = 'MS', port_ = 'None'):
+class DeviceClass_OMM(object):
+    def __init__(self, device_name = 'omm', port_ = 'None'):
         self.port = port_
         self.device_id = device_name
+
+        ## Device status dictionary
         self.status = dict()
-        self.result = dict()
-        self.status['device_type'] = 'Measurement Station'
+        self.status['device_type'] = 'OMM'
         self.status['device_name'] = device_name
-        self.status['connection'] = 'disconnected'
+        self.status['connection'] = False
         self.status['status'] = ''
         self.status['recent_work'] = ''
+
+        ## Result dictionary
+        self.result = dict()
         self.result['subject_name'] =''
-        self.result['Thickness'] = 0
-        self.result['Length'] = 0
-        self.result['Width'] = 0
+        self.result['thickness'] = 0
+        self.result['length'] = 0
+        self.result['width'] = 0
 
         self.sql = mysql(user=self.device_id, host = '192.168.0.81')
 
@@ -74,10 +78,10 @@ class measureStation(object):
             #     elif cmd_dict[key] == False and self.status['connection'].find('Offline') == -1: 
             #         self.disconnectDevice()
             elif cmd_keys[key] == 'connection':
-                if self.status['connection'] == 'disconnected':
+                if self.status['connection'] == False:
                     self.connectDevice()
                 
-                elif self.status['connection'] == 'connected':
+                elif self.status['connection'] == True:
                     self.disconnectDevice()
 
             elif cmd_keys[key] == 'wake':
@@ -89,15 +93,15 @@ class measureStation(object):
             elif cmd_keys[key] == 'measure_thickness':
                 self.status['status'] = 'G30 : Measure Thickness'
                 self.send_zPosition()
-                self.result['Thickness'] = self.readline_zPosition()
-                self.status['status'] = 'Ready'
+                self.result['thickness'] = self.readline_zPosition()
+                self.status['status'] = 'Idle'
             elif cmd_keys[key] == 'measure_dimension':
                 self.status['status'] = 'Measure Size'
                 self.send_GCode('G0 X143 Y140 Z125')
                 print("---------------------------")
                 time.sleep(15)
-                self.result['Length'], self.result['Width'] = self.measure_dimension()
-                self.status['status'] = 'Ready'
+                self.result['length'], self.result['width'] = self.measure_dimension()
+                self.status['status'] = 'Idle'
             elif cmd_keys[key] == 'readline':
                 self.status['status'] = 'read_line'
                 self.readline()
@@ -107,13 +111,11 @@ class measureStation(object):
                 
                 self.sql.send('smartlab_result', 'MS', self.result)
                 # self.save_result(specimen_name,result_enc)
-
-            
             else:
                 print(" wrong command!! ")
 
         self.status['recent_work'] = self.status['status']
-        # self.status['status'] = 'Ready'
+        # self.status['status'] = 'Idle'
     
 
     def wakeDevice(self):
@@ -124,10 +126,10 @@ class measureStation(object):
     def disconnectDevice(self):
         try:
             self.serial.close()
-            self.status['connection'] = 'disconnected'
+            self.status['connection'] = False
             print 'Measurement Station DISCONNECTED'
         except:
-            self.status['connection'] = 'connected'
+            self.status['connection'] = True
             pass
 
     def connectDevice(self):
@@ -137,10 +139,11 @@ class measureStation(object):
                 bytesize=serial.EIGHTBITS,
                 parity=serial.PARITY_NONE,
                 stopbits=serial.STOPBITS_ONE)
-            self.status['connection'] = 'connected'
+            self.status['connection'] = True
+            self.status['status'] = 'Idle'
             print("Measurement Station CONNECTED")
         except:
-                self.status['connection'] = 'disconnected'
+                self.status['connection'] = False
                 print 'Measurement Station Connection Fail'
                 pass
             
@@ -516,7 +519,7 @@ class measureStation(object):
 
 
 if __name__ =='__main__':
-    temp = measureStation()
+    temp = DeviceClass_OMM()
     temp.connectDevice()
 
     while True:

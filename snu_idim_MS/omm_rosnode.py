@@ -11,13 +11,13 @@ import time
 sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__),'../snu_idim_device_manager')) )
 
 from DevicePluginToROS import DevicePluginToROS
-from DeviceClass_MS_dimension import measureStation
+from DeviceClass_MS_dimension import DeviceClass_OMM
 
 
 if __name__ == "__main__":
     device_name = 'MS'
 
-    measurement_node = DevicePluginToROS(device_name=device_name, device_class=measureStation(device_name, port_='/dev/ttyUSB0'))
+    measurement_node = DevicePluginToROS(device_name=device_name, device_class=DeviceClass_OMM(device_name, port_='/dev/ttyUSB0'))
 
 
     specimen_name = '20210302t1'
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     
 
     while True:
-        if measurement_node.getStatus()['connection'] == 'connected':
+        if measurement_node.getStatus()['connection'] == True:
             print('\n debugging start \n')
             del(cmd_dict['connection'])
             cmd_dict['measure_thickness'] = specimen_name
@@ -40,8 +40,8 @@ if __name__ == "__main__":
             continue
 
     while True:
-        if measurement_node.getStatus()['status'] == 'Ready':
-        # if measurement_node.getStatus()['connection'] == 'connected':
+        if measurement_node.getStatus()['status'] == 'Idle':
+        # if measurement_node.getStatus()['connection'] == True:
             print('\n measure debugging \n')
             del(cmd_dict['measure_thickness'])
             # del(cmd_dict['connection'])
@@ -54,7 +54,7 @@ if __name__ == "__main__":
             continue
     
     while True:
-        if measurement_node.getStatus()['status'] == 'Ready':
+        if measurement_node.getStatus()['status'] == 'Idle':
             del(cmd_dict['measure_dimension'])
             cmd_dict['save_result'] = specimen_name
             measurement_node.sendCommand(cmd_dict)

@@ -228,35 +228,61 @@ class DeviceManager():
             sleep(hold_time)
 
 
-    def makeRobotTaskQueue(self, printer_id='printer1', task_type='specimen_task'):
-        if task_type == 'specimen_task':
+    def makeRobotTaskQueue(self, printer_id='printer0', task_type='specimen_task'):
+        if task_type == 'bed_from_printer_to_robot':
             printer_number = int(printer_id.split('printer')[1])
-            sensor_number = printer_number  ## 임시 (로봇쪽 sensor number 작업 필요)
+            task_tool_change_0_to_1 = [ACTION_HOME, ACTION_TOOLCHANGE_1_ATTACH, ACTION_HOME]
+            task_get_bed = [ACTION_HOME, TASK_3DP_BED_OUT - printer_number, ACTION_HOME]
+            self.cobot_recent_work = TASK_3DP_BED_OUT - printer_number
+            robot_task_queue = task_tool_change_0_to_1 + task_get_bed
+            return robot_task_queue
+        
+        elif task_type == 'bed_from_robot_to_omm':
+            task_place_bed = [ACTION_HOME, TASK_3DP_BED_IN, ACTION_HOME]
+            self.cobot_recent_work = TASK_3DP_BED_IN
+            robot_task_queue = task_place_bed
+            return robot_task_queue
+        
+        elif task_type == 'bed_from_omm_to_robot':
+            task_get_bed = [ACTION_HOME, TASK_3DP_BED_OUT, ACTION_HOME]
+            self.cobot_recent_work = TASK_3DP_BED_OUT
+            robot_task_queue = task_get_bed
+            return robot_task_queue
 
-            task_get_bed = [ACTION_HOME, ACTION_TOOLCHANGE_1_ATTACH, TASK_3DP_BED_OUT - printer_number, ACTION_HOME]
-            task_detach_specimen = [ACTION_TOOLCHANGE_1_DETACH, ACTION_TOOLCHANGE_2_ATTACH, ACTION_HOME, TASK_DETACH_SPECIMEN]
-            task_specimen_to_rack = [TASK_SPECIMEN_TO_RACK, TASK_RACK_ALIGN, ACTION_HOME]
-            task_return_bed = [ACTION_TOOLCHANGE_2_DETACH, ACTION_TOOLCHANGE_1_ATTACH, TASK_3DP_BED_IN + printer_number, ACTION_HOME, ACTION_TOOLCHANGE_1_DETACH]
-            self.cobot_recent_work = ACTION_TOOLCHANGE_1_DETACH
-            robot_task_queue = task_get_bed + task_detach_specimen + task_specimen_to_rack + task_return_bed
+        elif task_type == 'specimen_handling':
+            task_tool_change_1_to_2 = [ACTION_HOME, ACTION_TOOLCHANGE_1_DETACH, ACTION_TOOLCHANGE_2_ATTACH, ACTION_HOME]
+            task_detach_specimen = [ACTION_HOME, TASK_DETACH_SPECIMEN, ACTION_HOME]
+            task_specimen_to_rack = [ACTION_HOME, TASK_SPECIMEN_TO_RACK, TASK_RACK_ALIGN, ACTION_HOME]
+            self.cobot_recent_work = TASK_RACK_ALIGN
+            robot_task_queue = task_tool_change_1_to_2 + task_detach_specimen + task_specimen_to_rack
+            return robot_task_queue
+        
+        elif task_type == 'bed_from_robot_to_printer':
+            printer_number = int(printer_id.split('printer')[1])
+            task_tool_change_2_to_1 = [ACTION_HOME, ACTION_TOOLCHANGE_2_DETACH, ACTION_TOOLCHANGE_1_ATTACH, ACTION_HOME]
+            task_return_bed = [ACTION_HOME, TASK_3DP_BED_IN + printer_number, ACTION_HOME]
+            self.cobot_recent_work = TASK_3DP_BED_IN + printer_number
+            robot_task_queue = task_tool_change_2_to_1 + task_return_bed
             return robot_task_queue
 
         elif task_type == 'feed_specimen':
-            task_feed_specimen = [ACTION_TOOLCHANGE_2_ATTACH, ACTION_HOME, TASK_SPECIMEN_FROM_RACK, ACTION_HOME, TASK_INSTRON_SEARCH]
+            task_tool_change_1_to_2 = [ACTION_HOME, ACTION_TOOLCHANGE_1_DETACH, ACTION_TOOLCHANGE_2_ATTACH, ACTION_HOME]
+            task_feed_specimen = [ACTION_HOME, TASK_SPECIMEN_FROM_RACK, ACTION_HOME, TASK_INSTRON_SEARCH]
             self.cobot_recent_work = TASK_INSTRON_SEARCH
-            robot_task_queue = task_feed_specimen
+            robot_task_queue = task_tool_change_1_to_2 + task_feed_specimen
             return robot_task_queue
 
-        elif task_type == 'watch_specimen':
-            task_watch_specimen = [TASK_INSTRON_MOVEOUT]
+        elif task_type == 'monitor_experiment':
+            task_monitor_experiment = [TASK_INSTRON_MOVEOUT]
             self.cobot_recent_work = TASK_INSTRON_MOVEOUT
-            robot_task_queue = task_watch_specimen
+            robot_task_queue = task_monitor_experiment
             return robot_task_queue
 
-        elif task_type == 'finish':
-            task_finish_experiment = [ACTION_HOME, ACTION_TOOLCHANGE_2_DETACH, ACTION_HOME]
-            self.cobot_recent_work = ACTION_HOME
-            robot_task_queue = task_finish_experiment
+        elif task_type == 'finish_experiment':
+            task_finish_experiment = [] # TODO: 로봇 작업 추가 필요
+            task_tool_change_2_to_0 = [ACTION_HOME, ACTION_TOOLCHANGE_2_DETACH, ACTION_HOME]
+            self.cobot_recent_work = ACTION_TOOLCHANGE_2_DETACH
+            robot_task_queue = task_finish_experiment + task_tool_change_2_to_0
             return robot_task_queue
 
 
@@ -278,17 +304,39 @@ class DeviceManager():
 
 
     '''#####################################################################################################
+        On-Machine Measurment (OMM) related
+    '''
+    def executeOMM(self, subject_name, command_type, debug=False):
+        if debug == False:
+            sleep(2.0)
+            self.waitDeviceStatus(device_name='omm', status_value='Idle')
+            if command_type == 'measure_dimension':
+                self.device_dict['omm'].sendCommand({command_type: subject_name})
+                print("[OMM - Real mode] Measuring dimension ({}) ...".format(subject_name))
+            elif command_type == 'save_result':
+                self.device_dict['omm'].sendCommand({command_type: subject_name})
+                print("[OMM - Real mode] Saving results ({}) ...".format(subject_name))
+
+        elif debug == True:
+            if command_type == 'measure_dimension':
+                print("[OMM - Debug mode] Measuring dimension ({}) ...".format(subject_name))
+                sleep(1.0)
+            elif command_type == 'save_result':
+                print("[OMM - Debug mode] Saving results ({}) ...".format(subject_name))
+                sleep(1.0)
+
+    '''#####################################################################################################
         Instron related
     '''
     def executeInstron(self, subject_name, command_type, debug=False):
         if debug == False:
             if command_type == 'setup':
                 self.waitDeviceStatus(device_name='instron', status_value='Idle')
-                self.device_dict['instron'].sendCommand({'setup': subject_name})
+                self.device_dict['instron'].sendCommand({command_type: subject_name})
                 print("[Instron - Real mode] Test Initializing ({}) ...".format(subject_name))
             elif command_type == 'execute':
                 self.waitDeviceStatus(device_name='instron', status_value='Ready')
-                self.device_dict['instron'].sendCommand({'execute': subject_name})
+                self.device_dict['instron'].sendCommand({command_type: subject_name})
                 print("[Instron - Real mode] Test Start ({}) !!!".format(subject_name))
         
         elif debug == True:
@@ -299,27 +347,7 @@ class DeviceManager():
                 print("[Instron - Debug mode] Test Start ({}) !!!".format(subject_name))
                 sleep(1.0)
 
-        # if command_type == 'setup':
-        #     if self.instron_save_flag == True:
-        #         self.waitDeviceStatus(device_name='instron', status_value='data_sent')
-        #         self.device_dict['instron'].sendCommand({'setup': subject_name})
-        #         self.instron_save_flag = False
-        #     else:
-        #         self.waitDeviceStatus(device_name='instron', status_value='Idle')
-        #         self.device_dict['instron'].sendCommand({'setup': subject_name})
 
-        # elif command_type == 'execute':
-        #     self.waitDeviceStatus(device_name='instron', status_value='Ready')
-        #     self.device_dict['instron'].sendCommand({'execute': subject_name})
-        #     print("[Instron] Test Start ({}) !!!".format(subject_name))
-
-        # elif command_type == 'result':
-        #     self.waitDeviceStatus(device_name='instron', status_value='Idle')
-        #     self.device_dict['instron'].sendCommand({'result': subject_name})
-        #     print("[Instron] Result file saving ... ({}) !!!".format(subject_name))
-        #     self.instron_save_flag = True
-            
-        
     '''#####################################################################################################
         Execution manager related
     ''' 
@@ -366,7 +394,7 @@ class DeviceManager():
                     self.executeAMR(spot_name=printer_id, target_pose=amr_pos_3dp, hold_time=0.0, debug=debug)
 
                     print("[Execution Manager] Step 2-1 (2 of 2). Robot task start !!! (3DP bed: {} -> Robot)".format(printer_id))
-                    robot_task_queue = self.makeRobotTaskQueue(printer_id, task_type='bed_from_printer_to_robot')
+                    robot_task_queue = self.makeRobotTaskQueue(printer_id, task_type='bed_from_printer_to_robot') # TODO: Robot task queue 짜야함 (bed_from_printer_to_robot)
                     self.executeCobot(robot_task_queue, debug=debug)
                     step = 2
                 
@@ -380,10 +408,10 @@ class DeviceManager():
                     self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
 
                     print("[Execution Manager] Step 2-2 (3 of 4). Measuring a dimension of specimen ({})".format(subject_id))
-                    # TODO: OMM 신호 보내는 코드 삽입
+                    self.executeOMM(subject_name=subject_id, command_type='measure_dimension')
 
                     print("[Execution Manager] Step 2-2 (4 of 4). Robot task start !!! (3DP bed: OMM -> Robot)")
-                    robot_task_queue = self.makeRobotTaskQueue(task_type='bed_from_omm_to_robot')
+                    robot_task_queue = self.makeRobotTaskQueue(task_type='bed_from_omm_to_robot') # TODO: Robot task queue 짜야함 (bed_from_omm_to_robot)
                     self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
                     step = 3
                 
@@ -397,7 +425,7 @@ class DeviceManager():
                     self.executeAMR(spot_name=printer_id, target_pose=amr_pos_3dp, hold_time=0.0, debug=debug)
                                         
                     print("[Execution Manager] Step 2-3 (3 of 3). Robot task start !!! (3DP bed: Robot -> {})".format(printer_id))
-                    robot_task_queue = self.makeRobotTaskQueue(printer_id, task_type='bed_from_robot_to_printer')
+                    robot_task_queue = self.makeRobotTaskQueue(printer_id, task_type='bed_from_robot_to_printer') # TODO: Robot task queue 짜야함 (bed_from_robot_to_printer)
                     self.executeCobot(robot_task_queue, debug=debug)
                     self.printer_list_robot_done.append(printer_id)
                     step = 4
@@ -408,7 +436,7 @@ class DeviceManager():
                     self.executeAMR(spot_name='instron', target_pose=AMR_POS_INSTRON, hold_time=0.0, debug=debug)
 
                     print("[Execution Manager] Step 3-1 (2 of 2). Robot task start !!! (Feeding specimen: {})".format(subject_id))
-                    robot_task_queue = self.makeRobotTaskQueue(task_type='feed_specimen')
+                    robot_task_queue = self.makeRobotTaskQueue(task_type='feed_specimen') # TODO: Robot task queue 짜야함 (feed_specimen)
                     self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
                     step = 5
                 
@@ -418,7 +446,7 @@ class DeviceManager():
                     self.executeInstron(subject_id, command_type='setup');   sleep(10.0)
 
                     print("[Execution Manager] Step 3-2 (2 of 2). Robot task start !!! (Monitor experiment: {})".format(subject_id))
-                    robot_task_queue = self.makeRobotTaskQueue(task_type='watch_specimen')
+                    robot_task_queue = self.makeRobotTaskQueue(task_type='monitor_experiment') # TODO: Robot task queue 짜야함 (monitor_experiment)
                     self.executeCobot(robot_task_queue, debug=debug)
                     step = 6
                 
@@ -428,7 +456,7 @@ class DeviceManager():
                     self.executeInstron(subject_id, command_type='execute')
 
                     print("[Execution Manager] Step 3-3 (1 of 2). Robot task start !!! (Finnishing experiment: {})".format(subject_id))
-                    robot_task_queue = self.makeRobotTaskQueue(task_type='finish')
+                    robot_task_queue = self.makeRobotTaskQueue(task_type='finish_experiment') # TODO: Robot task queue 짜야함 (finish_experiment)
                     self.executeCobot(robot_task_queue, debug=debug)
                     step = 7 if len(self.printer_list_finished) == 0 else 0
                 
