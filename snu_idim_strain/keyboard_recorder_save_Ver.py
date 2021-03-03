@@ -11,8 +11,7 @@ import pandas as pd
 import keyboard
 import threading
 
-sys.path.append('C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_common/src')
-import datasql
+
 
 sys.path.append('C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain')
 import calc_strain_
@@ -40,7 +39,7 @@ class Instron_cam:
         self.start_time = time.time()
         ##setup key input
         self.start_sig = False
-        self.finish_sig = 0
+        self.finish_sig = False
 
         self.button = ''
         self.subject_name = 'base3'                 
@@ -52,13 +51,16 @@ class Instron_cam:
         # print("2")
 
         self.cal_result = calc_strain_.calc_strain()
-        self.sql = datasql.mysql()
+        
 
+    def stopsig(self):
 
+        return self.finish_sig
     
     def trigger(self,bullet, name):
         self.subject_name = name
         self.button = bullet
+
 
     def KeyInterrupt(self):
         while True:
@@ -138,9 +140,9 @@ class Instron_cam:
            
             self.cal_result.Runcal(self.subject_name)
 
-            self.sql.send_data(self.frameCount-1, self.subject_name)
 
             self.subject_name = ''
+            self.finish_sig = True
 
 
 
