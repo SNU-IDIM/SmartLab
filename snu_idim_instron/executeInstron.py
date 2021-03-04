@@ -6,17 +6,25 @@ sys.dont_write_bytecode = True
 HOME_DIR = os.getenv('HOME')
 sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_common/src")) )
 from autoRun import *
+from datasql import mysql
 
 import time
 import serial
 import sys
 import json
+import pandas as pd
+from PIL import Image
+import base64
+from io import BytesIO
+
+sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_strain")) )
+import keyboard_recorder_save_Ver
 
 
 
 class autoInstron:
 
-	def __init__(self, port='COM4', baud=115200, folder_dir='src'):
+	def __init__(self, port='COM8', baud=115200, folder_dir='src'):
 		self.serial_port = serial.Serial(port=port,
 										 baudrate=baud,
 										 bytesize=serial.EIGHTBITS,
@@ -35,22 +43,67 @@ class autoInstron:
 		self.message['message'] = ''
 		self.subject_name  = None
 		self.checklist = ['online','start','setting','experiment_start','running','finish','send_data','data_saved']
-		
+		self.result = dict()
+		self.result['subject_name'] = 'None'
+		self.result['Raw_data'] = ''
+		self.result['start_pic'] = ''
+		self.result['finish_pic'] = ''
+		self.result['Vision_data'] = ''
+
+		self.record = keyboard_recorder_save_Ver.Instron_cam()
+		self.sql = mysql(user = 'IDIM-Instron', host = '192.168.0.81')
 
 	def write_data(self, msg):
+		# print("writeerror")
+
 		# print(msg)
 		msg = json.dumps(msg)+str('\n')
 		# print(msg)
 		msg = msg.encode('utf-8')
 		self.serial_port.write(msg)
+		# print("writeerrorfinish")
 
 
-	def data_send(self,name):
-		with open ('C:\\Users\\IDIM-Instron\\Desktop\\Smart Laboratory\\' + str(name) + ".is_tens_RawData"+"\\Specimen_RawData_1.csv" ,"r") as res:
-			self.raw_data = res.readlines()
-			print(self.raw_data)
-			self.json_raw_data = json.dumps(self.raw_data)
-			self.status['result'] = self.json_raw_data
+	def file_name(self,test_name):
+		last_frame = len(os.listdir('C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain/result/' + test_name + '/pics')) -1
+		try:
+			self.raw_file = 'C:/Users/IDIM-Instron/Desktop/Smart Laboratory/' + test_name + '.is_tens_RawData/Specimen_RawData_1.csv'
+			self.vision_file = 'C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain/result/' + test_name + '/' + test_name + '__vision___.xlsx'
+			self.start_file = 'C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain/result/' + test_name + '/pics/calibrate_img0.png'
+			self.finish_file = 'C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain/result/' + test_name + '/pics/calibrate_img' + str(last_frame) + '.png'
+
+		except:
+			print("file is not exist")
+
+	def read_data(self):
+		data = []
+		binary_image = [0,0,0,0]
+		with open(self.raw_file, 'rb') as r1:
+			data.append(r1.read())
+			r1.close()
+		with open(self.vision_file, 'rb') as r2:
+			data.append(r2.read())
+			r2.close()
+		with open(self.start_file, 'rb') as r3:
+			data.append(r3.read())
+			r3.close()
+		with open(self.finish_file, 'rb') as r4:
+			data.append(r4.read())
+			r4.close()
+
+		for i in range(0,4):
+			binary_image[i] = base64.b64encode(data[i])
+			binary_image[i] = binary_image[i].decode('UTF-8')
+
+		
+		self.result['subject_name'] = self.subject_name
+		self.result['Raw_data'] = binary_image[0]
+		self.result['Vision_data'] = binary_image[1]
+		self.result['start_pic'] = binary_image[2]
+		self.result['finish_pic'] = binary_image[3]
+
+
+
 
 
 	def execute(self, scripts=''):
@@ -62,7 +115,9 @@ class autoInstron:
 				time.sleep(0.5)
 
 				if self.serial_port.inWaiting() > 0:
+
 					data = self.serial_port.readline().decode('utf-8').split('\n')[0]
+					print("debug: {}".format(data))
 					self.message = json.loads(data)
 
 					time.sleep(0.1)
@@ -89,22 +144,29 @@ class autoInstron:
 						self.status['status'] = 'Testing'			# status : Testing
 
 					elif self.message['message'] == 'running':						
+						
+						self.record.trigger('recordstart',self.subject_name)
 						self.autoRun.execute(scripts[1])
+						self.record.trigger('recordstop',self.subject_name)
 						self.status['status'] = 'Done'			# status : Done
 
-					elif self.message['message'] == 'finish':						
-						self.status['status']= 'Idle'			# status : Idle
-						self.message['subject_name'] = 'NONE'
+					elif self.message['message'] == 'finish':	
+						while True:
+							if self.record.stopsig() == False:
+								pass
+							elif self.record.stopsig() == True:
+								break
+						self.file_name(self.message['subject_name'])
+						self.read_data()
+						self.sql.send('smartlab_result','Instron',self.result)
+						self.status['status'] = 'Idle'
 
-					elif self.message['message'] =='send_data':
-						self.data_send(self.message['subject_name'])
 						# time.sleep(.5)
-						self.status['status'] = 'data_sent'
+						# self.status['status'] = 'data_sent'
 
 					elif self.message['message'] == 'data_saved':
 						if 'result' in self.status.keys():
 							self.status['subject_name'] = 'NONE'
-
 							del(self.status['result'])
 						self.status['status'] = 'Idle'
 						
@@ -116,7 +178,6 @@ class autoInstron:
 						self.status['status'] = 'Serial_error'
 					
 					print('[DEBUG] sent data: {}'.format(self.status))
-
 				self.write_data(self.status)
 
 			except KeyboardInterrupt:
@@ -141,7 +202,7 @@ if __name__=='__main__':
 	print("[DEBUG] Instron Automation Started !!!")
 
 	## Serial communication setting
-	port = 'COM5'
+	port = 'COM8'
 	baud = 115200
 	
 	## Automation program setting

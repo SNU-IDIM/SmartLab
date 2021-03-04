@@ -33,15 +33,17 @@ from selenium.webdriver.common.by import By
 
 
 class DeviceClass_3DP:
-    def __init__(self, device_name='printer0', ip_=None, port_=None):
+    def __init__(self, device_name='printer0', ip_=None, port_=None, usb_port_=None):
         ## Common init for all devices
-        self.device_id = int(device_name.split('printer')[1])
+        self.device_id = int(device_name.split('printer')[1]) if usb_port_ == None else usb_port_
+        
         self.ip = '0.0.0.0' if ip_ == None else ip_
         self.port = 5000 + self.device_id if port_ == None else int(port_)
 
         self.status = dict()
         self.status['ip_port'] = 'http://{}:{}/?#temp'.format(self.ip, self.port)
-        self.status['device_type'] = '3D Printer'
+        print(self.status['ip_port'])
+        self.status['device_type'] = 'Printer'
         self.status['device_name'] = device_name
         self.status['connection'] = ''
         self.status['subject_name'] = ''
@@ -62,14 +64,16 @@ class DeviceClass_3DP:
         except:
             pass
 
-        thread_1 = Thread(target=self.updateStatus)
-        thread_1.start()
+        self.thread_1 = Thread(target=self.updateStatus)
+        self.thread_1.start()
+
+        # self.connectDevice()
 
 
     def __del__(self):
         ## Specialized del for the device (in this case, 3D printer)
         self.driver.close()
-        thread_1.terminate()
+        self.thread_1.terminate()
 
 
     def updateStatus(self):
@@ -215,6 +219,13 @@ class DeviceClass_3DP:
             try:
                 self.waitUntilLoaded(by=By.CLASS_NAME, name='title clickable')
                 folders = self.driver.find_element(By.XPATH, "//*[@class='gcode_files']/*[@class='scroll-wrapper']//*[@class='title clickable']").click()
+                files = self.driver.find_elements(By.XPATH, "//*[@class='gcode_files']//*[@class='title clickable']")
+                for f in files:
+                    if f.text == file_name:
+                        print("[INFO] G-code file '{}' is selected".format(file_name))
+                        f.click()
+                        flag = True
+                        break
             except:
                 if flag == False:
                     files = self.driver.find_elements(By.XPATH, "//*[@class='gcode_files']//*[@class='title clickable']")
@@ -241,7 +252,7 @@ class DeviceClass_3DP:
                             flag = True
                             break
 
-        self.waitUntilLoaded(by=By.CLASS_NAME, name='search-clear');     sleep(1.0)
+        self.waitUntilLoaded(by=By.CLASS_NAME, name='search-clear');     sleep(2.0)
         self.driver.find_element(By.CLASS_NAME, 'search-clear').click()
         
 
@@ -263,13 +274,13 @@ class DeviceClass_3DP:
 
 if __name__ == '__main__':  
 
-    printer = DeviceClass_3DP(device_name='printer0')
+    printer = DeviceClass_3DP(device_name='printer0', ip_='192.168.0.81', port_=5002, usb_port_=1)
     
     print("[DEBUG] 1. Connect printer")
     printer.command({'connection': True})
 
     print("[DEBUG] 2. Print start")
-    printer.command({'print': '201122_feedrate_test'})
+    printer.command({'print': 'demo_0'})
 
     print("[DEBUG] 3. Cancel printing")
     printer.command({'cancel': True})
