@@ -549,16 +549,36 @@ class DeviceClass_Cobot():
         if get_tool_digital_output(2) == 0:
             set_tool_digital_output(2, 1)
 
+    
+    def searchARTagFromRight(self):
+        self.setVelAcc(50, 50, [100,50], [100,50])
+        movej(Q_SEARCH_3DP_RIGHT)
+        for i in range(4):
+            tag_id = i + 1
+            if self.ARsearchFromEEF(tag_id) == True:
+                movej(Q_TOP_PLATE)
+                return tag_id
+        movej(Q_TOP_PLATE)
+        return None
 
-    def getBedFromPrinterToJig(self, printer_number):
-        bed_number = printer_number + 4
+    def searchARTagFromRobot(self):
+        self.setVelAcc(50, 50, [100,50], [100,50])
+        movej(Q_TOP_PLATE)
+        for i in range(4):
+            tag_id = i + 1
+            if self.ARsearchFromEEF(tag_id) == True:
+                return tag_id
+        return None
+
+
+    def moveBedFromStageToRobot(self, tag_id_bed, tag_id_stage=None):
         self.setVelAcc(50, 50, [100,50], [100,50])
         self.jig_x_open();  self.jig_y_open();  rospy.sleep(1)
         movej(Q_SEARCH_3DP_RIGHT)
 
         self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
-        if self.ARsearchFromEEF(bed_number) == True:
-            self.ARsetReference(bed_number, 5)
+        if self.ARsearchFromEEF(tag_id_bed) == True:
+            self.ARsetReference(tag_id_bed, 5)
             self.status['gripper_angle'] = 225
 
             waypoint_1 = self.calcRelMove([50, 0, -100, 0, 0, self.status['gripper_angle']], False)
@@ -584,15 +604,20 @@ class DeviceClass_Cobot():
             self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0)
 
 
-    def getBedFromJigToPrinter(self, printer_number):
-        bed_number = printer_number + 4
+    def moveBedFromRobotToStage(self, tag_id_bed, tag_id_stage):
         self.setVelAcc(50, 50, [100,100], [100,100])
         self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
         movej(Q_TOP_PLATE)
 
-        self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
+        if self.ARsearchFromEEF(tag_id_bed) == True: ## when AR tag is detected, execute the following codes
+            movej(Q_SEARCH_3DP_RIGHT)
+            if self.ARsearchFromEEF(tag_id_stage) == True:
+                self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
+                movej(Q_TOP_PLATE)
+            else:
+                movej(Q_HOME)
+                return -1
 
-        if self.ARsearchFromEEF(bed_number) == True: ## when AR tag is detected, execute the following codes
             waypoint_0 = deepcopy(Q_SEARCH_3DP_PLATE)
             movej(waypoint_0)
             self.movel_z(105)
@@ -602,8 +627,8 @@ class DeviceClass_Cobot():
         
             movej(Q_SEARCH_3DP_RIGHT)
 
-            if self.ARsearchFromEEF(printer_number) == True:
-                self.ARsetReference(printer_number, 4)
+            if self.ARsearchFromEEF(tag_id_stage) == True:
+                self.ARsetReference(tag_id_stage, 4)
                 self.status['gripper_angle'] = 223
                 waypoint_1 = self.calcRelMove([0, 90, 0, 0, 0, self.status['gripper_angle']], False)
                 waypoint_2 = self.calcRelMove([-110, -7, 80, 0, 0, 0], True)
@@ -1080,57 +1105,59 @@ class DeviceClass_Cobot():
         elif(self.cmd_protocol == TASK_RACK_ALIGN):
             self.specimenAlign()            
 
+
         # Task [10010]: "TASK_3DP_BED_IN"   - (3DP-#1~4 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_BED_IN):
-            self.setVelAcc(50, 50, [100,50], [100,50])
-            movej(Q_SEARCH_3DP_RIGHT)
-            tag_number = None
-            for i in range(4):
-                if self.ARsearchFromEEF(i+1) == True:
-                    tag_number = i + 1
-                    break
-            if tag_number != None:
-                self.getBedFromJigToPrinter(tag_number)
+            tag_id_bed = self.searchARTagFromRight()
+            if tag_id_bed != None:
+                self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=None)
 
         # Task [-10010]: "TASK_3DP_BED_OUT" - (3DP-#1~4 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_BED_OUT):
-            self.setVelAcc(50, 50, [100,50], [100,50])
-            movej(Q_TOP_PLATE)
-            tag_number = None
-            for i in range(4):
-                if self.ARsearchFromEEF(i+1) == True:
-                    tag_number = i + 1
-                    break
-            if tag_number != None:
-                self.getBedFromPrinterToJig(tag_number)
+            tag_id_stage = self.self.searchARTagFromRight()
+            tag_id_bed   = self.self.searchARTagFromRobot()
+            if tag_id_stage != None and tag_id_bed != None:
+                self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
 
         # Task [10011]: "TASK_3DP_1_BED_IN"   - (3DP-#1 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_1_BED_IN):
-            self.getBedFromJigToPrinter(1)
+            tag_id_bed = 1
+            tag_id_stage = tag_id_bed + 4
+            self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
         # Task [-10011]: "TASK_3DP_1_BED_OUT" - (3DP-#1 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_1_BED_OUT):
-            self.getBedFromPrinterToJig(1)
+            tag_id_bed = 1
+            self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=None)
 
         # Task [10012]: "TASK_3DP_2_BED_IN"   - (3DP-#2 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_2_BED_IN):
-            self.getBedFromJigToPrinter(2)
+            tag_id_bed = 2
+            tag_id_stage = tag_id_bed + 4
+            self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
         # Task [-10012]: "TASK_3DP_2_BED_OUT" - (3DP-#2 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_2_BED_OUT):
-            self.getBedFromPrinterToJig(2)
+            tag_id_bed = 2
+            self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=None)
 
         # Task [10013]: "TASK_3DP_3_BED_IN"   - (3DP-#3 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_3_BED_IN):
-            self.getBedFromJigToPrinter(3)
+            tag_id_bed = 3
+            tag_id_stage = tag_id_bed + 4
+            self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
         # Task [-10013]: "TASK_3DP_3_BED_OUT" - (3DP-#3 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_3_BED_OUT):
-            self.getBedFromPrinterToJig(3)
+            tag_id_bed = 3
+            self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=None)
 
         # Task [10014]: "TASK_3DP_4_BED_IN"   - (3DP-#4 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_4_BED_IN):
-            self.getBedFromJigToPrinter(4)
+            tag_id_bed = 4
+            tag_id_stage = tag_id_bed + 4
+            self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
         # Task [-10014]: "TASK_3DP_4_BED_OUT" - (3DP-#4 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_4_BED_OUT):
-            self.getBedFromPrinterToJig(4)
+            tag_id_bed = 4
+            self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=None)
 
 
         # Task [10020]: "DEMO_COLOR_SENSOR_HANDLE" - Color sensor handling demo
