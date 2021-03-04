@@ -1,2 +1,2 @@
-if True == False: print('good')
-elif False == False: print('bad')
+for i in range(4):
+    print(i)

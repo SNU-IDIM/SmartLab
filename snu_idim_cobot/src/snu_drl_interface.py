@@ -443,32 +443,20 @@ class DeviceClass_Cobot():
         self.gripper_open()
         movel(posx(0, -40, 40, 0, 0, 0), vel=DSR_DEFAULT_JOG_VELX, acc=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL)
 
-
     def specimen_shaking(self):
         task_compliance_ctrl([10000, 10000, 10000, 1500, 1500, 500])
-        self.movel_z(2)
-        self.gripper_close()
-        self.movel_z(-2)
-        self.rotate_z(10)
-        self.rotate_z(-20)
-        self.rotate_z(10)
-        self.gripper_open()
-        self.movel_z(-2)
+        self.movel_z(2);      self.gripper_close();   self.movel_z(-2)
+        self.rotate_z(10);    self.rotate_z(-20);     self.rotate_z(10)
+        self.gripper_open();  self.movel_z(-2)
+
         self.movel_x_base(120)  
-        self.movel_z(4)
-        self.gripper_close()
-        self.movel_z(-2)
-        self.rotate_z(-10)
-        self.rotate_z(20)
-        self.rotate_z(-10)
+        self.movel_z(4);      self.gripper_close();   self.movel_z(-2)
+        self.rotate_z(-10);   self.rotate_z(20);      self.rotate_z(-10)
         self.gripper_open()
+
         self.movel_x_base(-60)
-        self.movel_z(2)
-        self.gripper_close()
-        self.movel_z(-2)
-        self.rotate_z(-10)
-        self.rotate_z(20)
-        self.rotate_z(-10)
+        self.movel_z(2);      self.gripper_close();   self.movel_z(-2)
+        self.rotate_z(-10);   self.rotate_z(20);      self.rotate_z(-10)
         self.movel_y_base(-20)
 
 
@@ -1092,9 +1080,32 @@ class DeviceClass_Cobot():
         elif(self.cmd_protocol == TASK_RACK_ALIGN):
             self.specimenAlign()            
 
+        # Task [10010]: "TASK_3DP_BED_IN"   - (3DP-#1~4 Bed) Jig -> Printer 
+        elif(self.cmd_protocol == TASK_3DP_BED_IN):
+            self.setVelAcc(50, 50, [100,50], [100,50])
+            movej(Q_SEARCH_3DP_RIGHT)
+            tag_number = None
+            for i in range(4):
+                if self.ARsearchFromEEF(i+1) == True:
+                    tag_number = i + 1
+                    break
+            if tag_number != None:
+                self.getBedFromJigToPrinter(tag_number)
+
+        # Task [-10010]: "TASK_3DP_BED_OUT" - (3DP-#1~4 Bed) Printer -> Jig 
+        elif(self.cmd_protocol == TASK_3DP_BED_OUT):
+            self.setVelAcc(50, 50, [100,50], [100,50])
+            movej(Q_TOP_PLATE)
+            tag_number = None
+            for i in range(4):
+                if self.ARsearchFromEEF(i+1) == True:
+                    tag_number = i + 1
+                    break
+            if tag_number != None:
+                self.getBedFromPrinterToJig(tag_number)
+
         # Task [10011]: "TASK_3DP_1_BED_IN"   - (3DP-#1 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_1_BED_IN):
-            print("test")
             self.getBedFromJigToPrinter(1)
         # Task [-10011]: "TASK_3DP_1_BED_OUT" - (3DP-#1 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_1_BED_OUT):
@@ -1236,7 +1247,7 @@ class DeviceClass_Cobot():
             movej(init_posj,50,50)
 
 
-        # Task [10033]: Move specimen t o the center of the working table
+        # Task [10033]: Move specimen to the center of the working table
         elif(self.cmd_protocol == TASK_SEPCIMEN_TO_CENTER):
             self.setVelAcc(50, 50, [150,50], [150,50])
             
