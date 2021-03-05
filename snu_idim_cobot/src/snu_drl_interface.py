@@ -98,23 +98,23 @@ class DeviceClass_Cobot():
     def publishStatus(self):
         msg_json = json.dumps(self.status)
         self.status_pub.publish(msg_json)
-        print("\n==============================================================")
-        print("[DEBUG] device_type: {}".format(self.status['device_type']))
-        print("[DEBUG] device_name: {}".format(self.status['device_name']))
-        print("[DEBUG] status: {}".format(self.status['status']))
-        print("[DEBUG] current_work: {}".format(self.status['current_work']))
-        print("[DEBUG] recent_work: {}".format(self.status['recent_work']))
-        print("[DEBUG] posj: {}".format(self.status['posj']))
-        print("[DEBUG] posx: {}".format(self.status['posx']))
-        print("[DEBUG] force: {}".format(self.status['force']))
-        print("[DEBUG] torque: {}".format(self.status['torque']))
-        print("[DEBUG] compressor: {}".format(self.status['compressor']))
-        print("[DEBUG] toolchanger: {}".format(self.status['toolchanger']))
-        print("[DEBUG] universal_jig_x: {}".format(self.status['universal_jig_x']))
-        print("[DEBUG] universal_jig_y: {}".format(self.status['universal_jig_y']))
-        print("[DEBUG] gripper_type: {}".format(self.status['gripper_type']))
-        print("[DEBUG] gripper_state_suction: {}".format(self.status['gripper_state_suction']))
-        print("[DEBUG] gripper_state_mech: {}".format(self.status['gripper_state_mech']))
+        # print("\n==============================================================")
+        # print("[DEBUG] device_type: {}".format(self.status['device_type']))
+        # print("[DEBUG] device_name: {}".format(self.status['device_name']))
+        # print("[DEBUG] status: {}".format(self.status['status']))
+        # print("[DEBUG] current_work: {}".format(self.status['current_work']))
+        # print("[DEBUG] recent_work: {}".format(self.status['recent_work']))
+        # print("[DEBUG] posj: {}".format(self.status['posj']))
+        # print("[DEBUG] posx: {}".format(self.status['posx']))
+        # print("[DEBUG] force: {}".format(self.status['force']))
+        # print("[DEBUG] torque: {}".format(self.status['torque']))
+        # print("[DEBUG] compressor: {}".format(self.status['compressor']))
+        # print("[DEBUG] toolchanger: {}".format(self.status['toolchanger']))
+        # print("[DEBUG] universal_jig_x: {}".format(self.status['universal_jig_x']))
+        # print("[DEBUG] universal_jig_y: {}".format(self.status['universal_jig_y']))
+        # print("[DEBUG] gripper_type: {}".format(self.status['gripper_type']))
+        # print("[DEBUG] gripper_state_suction: {}".format(self.status['gripper_state_suction']))
+        # print("[DEBUG] gripper_state_mech: {}".format(self.status['gripper_state_mech']))
 
 
     '''
@@ -559,21 +559,27 @@ class DeviceClass_Cobot():
     def searchARTagFromRight(self):
         self.setVelAcc(50, 50, [100,50], [100,50])
         movej(Q_SEARCH_3DP_RIGHT)
-        for i in range(4):
+        for i in range(8):
             tag_id = i + 1
+            print(self.ARsearchFromEEF(tag_id))
             if self.ARsearchFromEEF(tag_id) == True:
                 movej(Q_TOP_PLATE)
+                print("[DEBUG] AR Tag: {}".format(tag_id))
                 return tag_id
         movej(Q_TOP_PLATE)
+        print("[DEBUG] No AR Tag found")
         return None
 
     def searchARTagFromRobot(self):
         self.setVelAcc(50, 50, [100,50], [100,50])
         movej(Q_TOP_PLATE)
-        for i in range(4):
+        for i in range(8):
             tag_id = i + 1
+            print(self.ARsearchFromEEF(tag_id))
             if self.ARsearchFromEEF(tag_id) == True:
+                print("[DEBUG] AR Tag: {}".format(tag_id))
                 return tag_id
+        print("[DEBUG] No AR Tag found")
         return None
 
 
@@ -1094,55 +1100,55 @@ class DeviceClass_Cobot():
 
         # Task [10010]: "TASK_3DP_BED_IN"   - (3DP-#1~4 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_BED_IN):
-            tag_id_bed = self.searchARTagFromRight()
-            if tag_id_bed != None:
-                self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=None)
+            tag_id_bed   = self.searchARTagFromRobot()
+            tag_id_stage = self.searchARTagFromRight()
+            if tag_id_stage != None and tag_id_bed != None:
+                self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
 
         # Task [-10010]: "TASK_3DP_BED_OUT" - (3DP-#1~4 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_BED_OUT):
-            tag_id_stage = self.self.searchARTagFromRight()
-            tag_id_bed   = self.self.searchARTagFromRobot()
-            if tag_id_stage != None and tag_id_bed != None:
-                self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
+            tag_id_bed = self.searchARTagFromRight()
+            if tag_id_bed != None:
+                self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=None)
 
         # Task [10011]: "TASK_3DP_1_BED_IN"   - (3DP-#1 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_1_BED_IN):
-            tag_id_bed = 1
-            tag_id_stage = tag_id_bed + 4
+            tag_id_stage = 1
+            tag_id_bed = tag_id_stage + 4
             self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
         # Task [-10011]: "TASK_3DP_1_BED_OUT" - (3DP-#1 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_1_BED_OUT):
-            tag_id_bed = 1
+            tag_id_bed = 1 + 4
             self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=None)
 
         # Task [10012]: "TASK_3DP_2_BED_IN"   - (3DP-#2 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_2_BED_IN):
-            tag_id_bed = 2
-            tag_id_stage = tag_id_bed + 4
+            tag_id_stage = 2
+            tag_id_bed = tag_id_stage + 4
             self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
         # Task [-10012]: "TASK_3DP_2_BED_OUT" - (3DP-#2 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_2_BED_OUT):
-            tag_id_bed = 2
+            tag_id_bed = 2 + 4
             self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=None)
 
         # Task [10013]: "TASK_3DP_3_BED_IN"   - (3DP-#3 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_3_BED_IN):
-            tag_id_bed = 3
-            tag_id_stage = tag_id_bed + 4
+            tag_id_stage = 3
+            tag_id_bed = tag_id_stage + 4
             self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
         # Task [-10013]: "TASK_3DP_3_BED_OUT" - (3DP-#3 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_3_BED_OUT):
-            tag_id_bed = 3
+            tag_id_bed = 3 + 4
             self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=None)
 
         # Task [10014]: "TASK_3DP_4_BED_IN"   - (3DP-#4 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_4_BED_IN):
-            tag_id_bed = 4
-            tag_id_stage = tag_id_bed + 4
+            tag_id_stage = 4
+            tag_id_bed = tag_id_stage + 4
             self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
         # Task [-10014]: "TASK_3DP_4_BED_OUT" - (3DP-#4 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_4_BED_OUT):
-            tag_id_bed = 4
+            tag_id_bed = 4 + 4
             self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=None)
 
 
@@ -1517,7 +1523,7 @@ class DeviceClass_Cobot():
 
 if __name__=='__main__':
     cobot = DeviceClass_Cobot(device_name="cobot")
-    
+    sleep(3.0)
     while not rospy.is_shutdown():
         cobot.publishStatus()
         sleep(0.5)
