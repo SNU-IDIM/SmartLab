@@ -53,6 +53,8 @@ class DeviceManager():
         self.device_dict = dict() # for device manager
         self.device_info = dict() # to send data to client via ZMQ
         
+        self.bool_auto_mode = True
+
         ## for 3DP Manager
         self.printing_queue            = list()
         self.printer_list_idle         = list()
@@ -227,7 +229,7 @@ class DeviceManager():
         elif debug == True:
             print("[AMR - Debug mode] AMR Start Moving ... (target pose = {})".format(target_pose))
             sleep(1.0)
-            print("[AMR - Real mode] Arrived at [{}] !!!".format(target_pose))
+            print("[AMR - Debug mode] Arrived at [{}] !!!".format(target_pose))
             sleep(hold_time)
 
 
@@ -298,6 +300,7 @@ class DeviceManager():
                     print("[Cobot - Real mode] Robot task queue: {}".format(robot_task_queue))
                     sleep(3.0)
         elif debug == True:
+            wait_until_end = False
             while len(robot_task_queue) != 0:
                 next_task = robot_task_queue.pop(0)
                 print("[Cobot - Debug mode] Robot task queue: {}".format(robot_task_queue))
@@ -384,12 +387,14 @@ class DeviceManager():
                 if step == 0: ## Step 0. 시편 제작 완료 시 시작
                     self.checkExecutionMode()
                     print("[Execution Manager] Step 1. Fabricating specimens for experiment... (finnished: {})".format(self.printer_list_finished))
-                    printer_id = self.printer_list_finished.pop(0)
-                    subject_id = self.device_info[printer_id]['subject_name']
-
-                    printer_number = int(printer_id.split('printer')[1])
-                    amr_pos_3dp = copy.deepcopy(AMR_POS_3DP_0);   amr_pos_3dp[1] += printer_number * AMR_OFFSET_3DP
-                    step = 1
+                    try:
+                        printer_id = self.printer_list_finished.pop(0)
+                        subject_id = self.device_info[printer_id]['subject_name']
+                        printer_number = int(printer_id.split('printer')[1])
+                        amr_pos_3dp = deepcopy(AMR_POS_3DP_0);   amr_pos_3dp[1] += printer_number * AMR_OFFSET_3DP
+                        step = 1
+                    except:
+                        pass
 
                 if step == 1: ## Step 2-1. Get printing bed from printer (3DP bed: 3D printer -> Robot)
                     self.checkExecutionMode()
@@ -398,7 +403,7 @@ class DeviceManager():
 
                     print("[Execution Manager] Step 2-1 (2 of 2). Robot task start !!! (3DP bed: {} -> Robot)".format(printer_id))
                     robot_task_queue = self.makeRobotTaskQueue(printer_id, task_type='bed_from_printer_to_robot')
-                    self.executeCobot(robot_task_queue, debug=debug)
+                    self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
                     step = 2
                 
                 if step == 2: ## Step 2-2. Measurement (3DP bed: Robot -> OMM -> Robot)
@@ -411,7 +416,7 @@ class DeviceManager():
                     self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
 
                     print("[Execution Manager] Step 2-2 (3 of 4). Measuring a dimension of specimen ({})".format(subject_id))
-                    self.executeOMM(subject_name=subject_id, command_type='measure_dimension')
+                    self.executeOMM(subject_name=subject_id, command_type='measure_dimension', debug=debug)
 
                     print("[Execution Manager] Step 2-2 (4 of 4). Robot task start !!! (3DP bed: OMM -> Robot)")
                     robot_task_queue = self.makeRobotTaskQueue(task_type='bed_from_omm_to_robot')
@@ -429,7 +434,7 @@ class DeviceManager():
                                         
                     print("[Execution Manager] Step 2-3 (3 of 3). Robot task start !!! (3DP bed: Robot -> {})".format(printer_id))
                     robot_task_queue = self.makeRobotTaskQueue(printer_id, task_type='bed_from_robot_to_printer')
-                    self.executeCobot(robot_task_queue, debug=debug)
+                    self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
                     self.printer_list_robot_done.append(printer_id)
                     step = 4
 
@@ -446,27 +451,27 @@ class DeviceManager():
                 if step == 5: ## Step 3-2. 인장시험 준비 (subject_id)
                     self.checkExecutionMode()
                     print("[Execution Manager] Step 3-2 (1 of 2). Experiment initializing ... (subject: {})".format(subject_id))
-                    self.executeInstron(subject_id, command_type='setup');   sleep(10.0)
+                    self.executeInstron(subject_id, command_type='setup', debug=debug);   sleep(10.0)
 
                     print("[Execution Manager] Step 3-2 (2 of 2). Robot task start !!! (Monitor experiment: {})".format(subject_id))
                     robot_task_queue = self.makeRobotTaskQueue(task_type='monitor_experiment')
-                    self.executeCobot(robot_task_queue, debug=debug)
+                    self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
                     step = 6
                 
                 if step == 6: ## Step 3-3. 인장시험 실행 & 저장 (subject_id)
                     self.checkExecutionMode()
                     print("[Execution Manager] Step 3-3 (1 of 2). Experiment start !!! (subject: {})".format(subject_id))
-                    self.executeInstron(subject_id, command_type='execute')
+                    self.executeInstron(subject_id, command_type='execute', debug=debug)
 
                     print("[Execution Manager] Step 3-3 (1 of 2). Robot task start !!! (Finnishing experiment: {})".format(subject_id))
                     robot_task_queue = self.makeRobotTaskQueue(task_type='finish_experiment')
-                    self.executeCobot(robot_task_queue, debug=debug)
+                    self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
                     step = 7 if len(self.printer_list_finished) == 0 else 0
                 
                 if step == 7: ## Step 4. 수행할 작업 없을 시 AMR -> home으로 이동
                     self.checkExecutionMode()
                     print("[Execution Manager] Step 4. AMR moving... (target: home, {})".format(AMR_POS_ZERO))
-                    if debug == False: self.executeAMR(spot_name='home', target_pose=AMR_POS_ZERO, hold_time=0.0) # target_pose 수정 작업 필요
+                    if debug == False: self.executeAMR(spot_name='home', target_pose=AMR_POS_ZERO, hold_time=0.0, debug=debug) # target_pose 수정 작업 필요
                     step = 0
 
             except:
@@ -484,12 +489,12 @@ if __name__ == '__main__':
 
     rospy.init_node('DeviceManager')
 
-    SERVER_IP = '192.168.0.81'
-    # SERVER_IP = '192.168.60.101'
+    # SERVER_IP = '192.168.0.81'
+    SERVER_IP = '192.168.60.101'
 
     ## User Input (Experiment settings)
     test_setting = {
-                    'header_id': 'demo',
+                    'header_id': 'DRY_TEST',
                     'experiment_type': 'Tensile Test',
                     'factors': [ 
                                  {'factor_name': 'infill_line_distance', 'factor_range': [1, 6]},
@@ -517,12 +522,12 @@ if __name__ == '__main__':
     # manager.addDevice('omm')
 
     manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', ip_=SERVER_IP, port_='5001', usb_port_=0))
-    # manager.addDevice('printer2', DeviceClass_3DP(device_name='printer2', ip_=SERVER_IP, port_='5002', usb_port_=1))
+    manager.addDevice('printer2', DeviceClass_3DP(device_name='printer2', ip_=SERVER_IP, port_='5002', usb_port_=1))
     # manager.addDevice('printer3', DeviceClass_3DP(device_name='printer3', ip_=SERVER_IP, port_='5003', usb_port_=2))
     # manager.addDevice('printer4', DeviceClass_3DP(device_name='printer4', ip_=SERVER_IP, port_='5004', usb_port_=3))
     sleep(3.0)
 
     manager.device_dict['printer1'].sendCommand({"connection": True})
-    # manager.device_dict['printer2'].sendCommand({"connection": True})
+    manager.device_dict['printer2'].sendCommand({"connection": True})
     # manager.device_dict['printer3'].sendCommand({"connection": True})
     # manager.device_dict['printer4'].sendCommand({"connection": True})

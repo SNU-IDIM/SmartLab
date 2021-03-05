@@ -11,7 +11,7 @@ from IDIM_framework import *
 
 class TestDesigner(object):
 
-    def __init__(self, test_setting, ip='192.168.0.81'):
+    def __init__(self, test_setting, ip='192.168.60.101'):
         ## Subject Info. definition
         self.test_info_dict = dict()
         self.header_ = test_setting
@@ -27,13 +27,13 @@ class TestDesigner(object):
             self.context = zmq.Context()
             print("[DEBUG - ZMQ] Connecting...")
             self.socket = self.context.socket(zmq.REQ) # REQuest
-            self.socket.connect("tcp://{}:5555".format(ip)) # Change LocalHost IP 
+            self.socket.connect("tcp://{}:6001".format(ip)) # Change LocalHost IP 
             print("[DEBUG - ZMQ] Client initialized!")
         except:
             print("[ERROR - ZMQ] Client setting error")
 
         self.makeDOE()
-        # self.sendDOE()
+        self.sendDOE()
 
 
     def makeDOE(self):
@@ -105,6 +105,7 @@ class TestDesigner(object):
         self.testsets = testsets.df
         return self.testsets
 
+
     def getTestsetList(self):
         n = len(self.test_info_dict['doe']['NUMBER'])
         testset_list = list()
@@ -151,7 +152,7 @@ if __name__ == '__main__':
     # test_setting['option']          = [[1, 2, 4, 6], [0.1, 0.12, 0.2], [190, 191, 219, 220]]
 
     test_setting = {
-                    'header_id': 'demo',
+                    'header_id': 'TEST',
                     'experiment_type': 'Tensile Test',
                     'factors': [ {'factor_name': 'infill_line_distance', 'factor_range': [1, 6]},
                                  {'factor_name': 'layer_height', 'factor_range': [0.1, 0.2]},
