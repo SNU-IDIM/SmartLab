@@ -55,7 +55,7 @@
                 {
                     "label": "Start G-code",
                     "description": "G-code commands to be executed at the very start - separated by \\n.",
-                    "default_value": "G28 ;Home\n G29 L1 \n G29 A \n M420 L1 s \n G1 Z15.0 F2000 ;Move the platform",
+                    "default_value": "G28 ;Home\n G1 Z15.0 F2000 ;Move the platform",
                     "type": "str",
                     "settable_per_mesh": false,
                     "settable_per_extruder": false,

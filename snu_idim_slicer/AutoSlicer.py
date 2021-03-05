@@ -6,12 +6,12 @@ import zmq
 
 
 class AutoSlicer():
-    def __init__(self, ip='192.168.60.25'):
+    def __init__(self):
 
         ## ZMQ server setting
         context = zmq.Context()
         self.socket = context.socket(zmq.REP)
-        self.socket.bind("tcp://*:5555")
+        self.socket.bind("tcp://*:6001")
 
         ## Test information
         self.testset_dict = dict()
@@ -95,30 +95,37 @@ class AutoSlicer():
             except:
                 pass
 
-            ## Slicer command
-            command = "{} slice -v".format(CURA_ENGINE_DIR)
-            option_json = ' -j "{}"'.format(JSON_FILE_DIR)
-            option_save = ' -o "{}"'.format(os.path.join(SAVE_DIR, "{}_{}.gcode".format(TEST_HEADER_ID, n_test_done)))
-            option_stl  = ' -l "{}"'.format(STL_FILE_DIR)
+            if TEST_HEADER_ID == 'DRY_TEST': # for dry run
+                print('[DEBUG] "{}_{}.gcode"'.format(TEST_HEADER_ID, n_test_done))
+                f = open(os.path.join(SAVE_DIR, "{}_{}.gcode".format(TEST_HEADER_ID, n_test_done)), 'w')
+                f.write('G28')
+                f.close()
+                n_test_done += 1
+            
+            else: # Automatic slicer
+                command = "{} slice -v".format(CURA_ENGINE_DIR)
+                option_json = ' -j "{}"'.format(JSON_FILE_DIR)
+                option_save = ' -o "{}"'.format(os.path.join(SAVE_DIR, "{}_{}.gcode".format(TEST_HEADER_ID, n_test_done)))
+                option_stl  = ' -l "{}"'.format(STL_FILE_DIR)
 
-            command = command + option_json + option_save + option_stl
+                command = command + option_json + option_save + option_stl
 
-            while n_factor_setted < n_factor_unsetted :
+                while n_factor_setted < n_factor_unsetted :
 
-                factor_dict_keys   = list(unit_test_dict.keys())
-                factor_dict_values = list(unit_test_dict.values())
+                    factor_dict_keys   = list(unit_test_dict.keys())
+                    factor_dict_values = list(unit_test_dict.values())
 
-                option_factor = ' -s "{}={}"'.format(str(factor_dict_keys[n_factor_setted]), str(factor_dict_values[n_factor_setted]))
-                command = command + option_factor
+                    option_factor = ' -s "{}={}"'.format(str(factor_dict_keys[n_factor_setted]), str(factor_dict_values[n_factor_setted]))
+                    command = command + option_factor
 
-                n_factor_setted += 1
+                    n_factor_setted += 1
 
 
-            print("[DEBUG] Slicer command(): \n{}".format(n_test_done, command))
-            os.system(command);   del command
-            n_test_done += 1
+                print("[DEBUG] Slicer command(): \n{}".format(n_test_done, command))
+                os.system(command);   del command
+                n_test_done += 1
 
 
 if __name__ == "__main__":
     
-    slicer = AutoSlicer(ip='192.168.0.40')
+    slicer = AutoSlicer()
