@@ -98,23 +98,23 @@ class DeviceClass_Cobot():
     def publishStatus(self):
         msg_json = json.dumps(self.status)
         self.status_pub.publish(msg_json)
-        print("\n==============================================================")
-        print("[DEBUG] device_type: {}".format(self.status['device_type']))
-        print("[DEBUG] device_name: {}".format(self.status['device_name']))
-        print("[DEBUG] status: {}".format(self.status['status']))
-        print("[DEBUG] current_work: {}".format(self.status['current_work']))
-        print("[DEBUG] recent_work: {}".format(self.status['recent_work']))
-        print("[DEBUG] posj: {}".format(self.status['posj']))
-        print("[DEBUG] posx: {}".format(self.status['posx']))
-        print("[DEBUG] force: {}".format(self.status['force']))
-        print("[DEBUG] torque: {}".format(self.status['torque']))
-        print("[DEBUG] compressor: {}".format(self.status['compressor']))
-        print("[DEBUG] toolchanger: {}".format(self.status['toolchanger']))
-        print("[DEBUG] universal_jig_x: {}".format(self.status['universal_jig_x']))
-        print("[DEBUG] universal_jig_y: {}".format(self.status['universal_jig_y']))
-        print("[DEBUG] gripper_type: {}".format(self.status['gripper_type']))
-        print("[DEBUG] gripper_state_suction: {}".format(self.status['gripper_state_suction']))
-        print("[DEBUG] gripper_state_mech: {}".format(self.status['gripper_state_mech']))
+        # print("\n==============================================================")
+        # print("[DEBUG] device_type: {}".format(self.status['device_type']))
+        # print("[DEBUG] device_name: {}".format(self.status['device_name']))
+        # print("[DEBUG] status: {}".format(self.status['status']))
+        # print("[DEBUG] current_work: {}".format(self.status['current_work']))
+        # print("[DEBUG] recent_work: {}".format(self.status['recent_work']))
+        # print("[DEBUG] posj: {}".format(self.status['posj']))
+        # print("[DEBUG] posx: {}".format(self.status['posx']))
+        # print("[DEBUG] force: {}".format(self.status['force']))
+        # print("[DEBUG] torque: {}".format(self.status['torque']))
+        # print("[DEBUG] compressor: {}".format(self.status['compressor']))
+        # print("[DEBUG] toolchanger: {}".format(self.status['toolchanger']))
+        # print("[DEBUG] universal_jig_x: {}".format(self.status['universal_jig_x']))
+        # print("[DEBUG] universal_jig_y: {}".format(self.status['universal_jig_y']))
+        # print("[DEBUG] gripper_type: {}".format(self.status['gripper_type']))
+        # print("[DEBUG] gripper_state_suction: {}".format(self.status['gripper_state_suction']))
+        # print("[DEBUG] gripper_state_mech: {}".format(self.status['gripper_state_mech']))
 
 
     '''
@@ -421,14 +421,19 @@ class DeviceClass_Cobot():
         movel(posx(x, y, z, 0, 0, 0), vel=velx, acc=accx, ref=ref, mod=mod)
     def movel_xyzjoint(self,x,y,z,jz1,jy,jz2,velx=DSR_DEFAULT_JOG_VELX, accx=DSR_DEFAULT_JOG_ACCX, ref=DR_TOOL, mod=DR_MV_MOD_REL): # distance [mm], angle [degree]
         movel(posx(x, y, z, jz1, jy, jz2), vel=velx, acc=accx, ref=ref, mod=mod)
+
+    # rotate z refer to base
     def rotate_z(self, jz, velx=DSR_DEFAULT_JOG_VELX, accx=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL):
         movel(posx(0,0,0,0,0,jz), vel=velx, acc=accx, ref=ref, mod=mod)
+
+    # move x, y, z refer to base
     def movel_y_base(self, distance, velx=DSR_DEFAULT_JOG_VELX, accx=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL): # distance [mm]
         movel(posx(0, distance, 0, 0, 0, 0), vel=velx, acc=accx, ref=ref, mod=mod)
     def movel_x_base(self, distance, velx=DSR_DEFAULT_JOG_VELX, accx=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL): # distance [mm]
         movel(posx(distance, 0, 0, 0, 0, 0), vel=velx, acc=accx, ref=ref, mod=mod)
     def movel_z_base(self, distance, velx=DSR_DEFAULT_JOG_VELX, accx=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL): # distance [mm]
         movel(posx(0, 0, distance, 0, 0, 0), vel=velx, acc=accx, ref=ref, mod=mod)
+
 
     def move_lack_pick(self):
         self.gripper_open()
@@ -437,27 +442,28 @@ class DeviceClass_Cobot():
         movel(posx(0, -2, 2, 0, 0, 0), vel=DSR_DEFAULT_JOG_VELX, acc=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL)
         movel(posx(0, 40, 40, 0, 0, 0), vel=DSR_DEFAULT_JOG_VELX, acc=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL)
 
+
     def move_lack_place(self):
         self.gripper_close()
         movel(posx(0, -20, -20, 0, 0, 0), vel=DSR_DEFAULT_JOG_VELX, acc=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL)
         self.gripper_open()
         movel(posx(0, -40, 40, 0, 0, 0), vel=DSR_DEFAULT_JOG_VELX, acc=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL)
 
+
     def specimen_shaking(self):
         task_compliance_ctrl([10000, 10000, 10000, 1500, 1500, 500])
-        self.movel_z(2);      self.gripper_close();   self.movel_z(-2)
-        self.rotate_z(10);    self.rotate_z(-20);     self.rotate_z(10)
-        self.gripper_open();  self.movel_z(-2)
+        self.movel_z(2);      self.gripper_close();  self.movel_z(-2)
+        self.rotate_z(10);    self.rotate_z(-20);    self.rotate_z(10)
 
-        self.movel_x_base(120)  
-        self.movel_z(4);      self.gripper_close();   self.movel_z(-2)
-        self.rotate_z(-10);   self.rotate_z(20);      self.rotate_z(-10)
-        self.gripper_open()
+        self.gripper_open();  self.movel_z(-2);      self.movel_y(120)
+        self.movel_z(4);      self.gripper_close();  self.movel_z(-2)
+        self.rotate_z(-10);   self.rotate_z(20);     self.rotate_z(-10)
 
-        self.movel_x_base(-60)
-        self.movel_z(2);      self.gripper_close();   self.movel_z(-2)
-        self.rotate_z(-10);   self.rotate_z(20);      self.rotate_z(-10)
-        self.movel_y_base(-20)
+        self.gripper_open();  self.movel_y(-60)
+        self.movel_z(2);      self.gripper_close();  self.movel_z(-2)
+        self.rotate_z(-10);   self.rotate_z(20);     self.rotate_z(-10)
+
+        self.movel_x(-20)
 
 
     '''
@@ -553,21 +559,27 @@ class DeviceClass_Cobot():
     def searchARTagFromRight(self):
         self.setVelAcc(50, 50, [100,50], [100,50])
         movej(Q_SEARCH_3DP_RIGHT)
-        for i in range(4):
+        for i in range(8):
             tag_id = i + 1
+            print(self.ARsearchFromEEF(tag_id))
             if self.ARsearchFromEEF(tag_id) == True:
                 movej(Q_TOP_PLATE)
+                print("[DEBUG] AR Tag: {}".format(tag_id))
                 return tag_id
         movej(Q_TOP_PLATE)
+        print("[DEBUG] No AR Tag found")
         return None
 
     def searchARTagFromRobot(self):
         self.setVelAcc(50, 50, [100,50], [100,50])
         movej(Q_TOP_PLATE)
-        for i in range(4):
+        for i in range(8):
             tag_id = i + 1
+            print(self.ARsearchFromEEF(tag_id))
             if self.ARsearchFromEEF(tag_id) == True:
+                print("[DEBUG] AR Tag: {}".format(tag_id))
                 return tag_id
+        print("[DEBUG] No AR Tag found")
         return None
 
 
@@ -945,20 +957,14 @@ class DeviceClass_Cobot():
 
         # Task [10004]: SEARCH AND APPROACH TO ''MULTIPLE'' SPECIMENS AND DETACH TO THE BED
         elif(self.cmd_protocol == TASK_DETACH_SPECIMEN):
-            # self.setVelAcc(50, 50, [150,100], [150,100])
             self.setVelAcc(30, 30, [30,30], [30,30])
-            # movel([-357.0, 165.0, 322.0, -181.3, -180.0, 0.0])
             movej(Q_MULSPECIMEN_SEARCH)
-
             self.gripper_open()
-            # self.jig_x_open();  self.jig_y_open();  rospy.sleep(2)
-            # self.jig_x_close(); self.jig_y_close(); rospy.sleep(2)
 
             object_count=1
             
             ## Publish Flag to 'snu_2d_vision.py' node
             self.vision_pub.publish(30002)
-            rospy.sleep(17) #In order to change previous specimen TF
 
             while True:
                 try:
@@ -969,7 +975,7 @@ class DeviceClass_Cobot():
                     print("Reference frame: " + reference_frame_name)
                     print "Trying to search the specimen: %s ..."%target_frame_name
 
-                    self.listener.waitForTransform(reference_frame_name, target_frame_name, rospy.Time(), rospy.Duration(5.0))
+                    self.listener.waitForTransform(reference_frame_name, target_frame_name, rospy.Time(), rospy.Duration(8.0))
                     (trans,rot) = self.listener.lookupTransform(reference_frame_name, target_frame_name, rospy.Time())
                     print(trans, rot)
                     self.update_target_pose(trans, rot)
@@ -979,14 +985,15 @@ class DeviceClass_Cobot():
 
                     print('search complete')
                     movel(self.drl_pose)
+                    specimen_angle = self.drl_pose[5]
                     #SHAKING
-                    self.movel_x_base(-60)
+                    self.movel_y(-60)
                     self.movel_z(102, [100, 100], [100, 100]) #go down 94 for debug T4 -> 103mm
                     while True:
                         self.specimen_shaking()
                         if self.status['force'][1] > 30:
                             self.gripper_open()
-                            self.movel_x_base(-50)
+                            self.movel_y(-60)
                             continue
                         else :
                             self.gripper_open()
@@ -997,13 +1004,10 @@ class DeviceClass_Cobot():
                     self.gripper_close()
                     self.movel_z(-102,[100, 100], [100, 100]) #go up
                     movej(Q_MULSPECIMEN_SEARCH)
-                    
-                    # self.setVelAcc(100, 100, [500,100], [500,100])
 
                     if object_count == 1:
                         break
 
-                    # self.gripper_open()
                     object_count= object_count+1
 
                 except (Exception):
@@ -1011,28 +1015,16 @@ class DeviceClass_Cobot():
                     print("Specimen count :{}".format(object_count-1))
                     break
 
-            # self.jig_x_open();  self.jig_y_open()
-
-
         # Task [10005]: SEARCH ONE SPECIMEN AND PICK UP
         elif(self.cmd_protocol == TASK_SEARCH_PICK_SPECIMEN):
             self.gripper_open()
-            # rospy.sleep(5)
-            # self.gripper_close()
-            
             self.setVelAcc(30, 30, [50,50], [50,50])
-            # movel([-357.0, 165.0, 322.0, -181.3, -180.0, 0.0])
             movej(Q_MULSPECIMEN_SEARCH)
-
-            # self.gripper_open()
-            # self.jig_x_open();  self.jig_y_open();  rospy.sleep(2)
-            # self.jig_x_close(); self.jig_y_close(); rospy.sleep(2)
 
             object_count=1
             
             ## Publish Flag to 'snu_2d_vision.py' node
             self.vision_pub.publish(30002)
-            rospy.sleep(20) #In order to change previous specimen TF
 
             target_frame_name = 'specimen_table_' + str(object_count)
             reference_frame_name = 'base_0'
@@ -1108,55 +1100,55 @@ class DeviceClass_Cobot():
 
         # Task [10010]: "TASK_3DP_BED_IN"   - (3DP-#1~4 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_BED_IN):
-            tag_id_bed = self.searchARTagFromRight()
-            if tag_id_bed != None:
-                self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=None)
+            tag_id_bed   = self.searchARTagFromRobot()
+            tag_id_stage = self.searchARTagFromRight()
+            if tag_id_stage != None and tag_id_bed != None:
+                self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
 
         # Task [-10010]: "TASK_3DP_BED_OUT" - (3DP-#1~4 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_BED_OUT):
-            tag_id_stage = self.self.searchARTagFromRight()
-            tag_id_bed   = self.self.searchARTagFromRobot()
-            if tag_id_stage != None and tag_id_bed != None:
-                self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
+            tag_id_bed = self.searchARTagFromRight()
+            if tag_id_bed != None:
+                self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=None)
 
         # Task [10011]: "TASK_3DP_1_BED_IN"   - (3DP-#1 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_1_BED_IN):
-            tag_id_bed = 1
-            tag_id_stage = tag_id_bed + 4
+            tag_id_stage = 1
+            tag_id_bed = tag_id_stage + 4
             self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
         # Task [-10011]: "TASK_3DP_1_BED_OUT" - (3DP-#1 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_1_BED_OUT):
-            tag_id_bed = 1
+            tag_id_bed = 1 + 4
             self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=None)
 
         # Task [10012]: "TASK_3DP_2_BED_IN"   - (3DP-#2 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_2_BED_IN):
-            tag_id_bed = 2
-            tag_id_stage = tag_id_bed + 4
+            tag_id_stage = 2
+            tag_id_bed = tag_id_stage + 4
             self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
         # Task [-10012]: "TASK_3DP_2_BED_OUT" - (3DP-#2 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_2_BED_OUT):
-            tag_id_bed = 2
+            tag_id_bed = 2 + 4
             self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=None)
 
         # Task [10013]: "TASK_3DP_3_BED_IN"   - (3DP-#3 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_3_BED_IN):
-            tag_id_bed = 3
-            tag_id_stage = tag_id_bed + 4
+            tag_id_stage = 3
+            tag_id_bed = tag_id_stage + 4
             self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
         # Task [-10013]: "TASK_3DP_3_BED_OUT" - (3DP-#3 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_3_BED_OUT):
-            tag_id_bed = 3
+            tag_id_bed = 3 + 4
             self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=None)
 
         # Task [10014]: "TASK_3DP_4_BED_IN"   - (3DP-#4 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_4_BED_IN):
-            tag_id_bed = 4
-            tag_id_stage = tag_id_bed + 4
+            tag_id_stage = 4
+            tag_id_bed = tag_id_stage + 4
             self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
         # Task [-10014]: "TASK_3DP_4_BED_OUT" - (3DP-#4 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_4_BED_OUT):
-            tag_id_bed = 4
+            tag_id_bed = 4 + 4
             self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=None)
 
 
@@ -1531,7 +1523,7 @@ class DeviceClass_Cobot():
 
 if __name__=='__main__':
     cobot = DeviceClass_Cobot(device_name="cobot")
-    
+    sleep(3.0)
     while not rospy.is_shutdown():
         cobot.publishStatus()
         sleep(0.5)
