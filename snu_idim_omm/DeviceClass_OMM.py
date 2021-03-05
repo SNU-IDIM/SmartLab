@@ -53,7 +53,7 @@ class DeviceClass_OMM(object):
 
     def updateStatus(self):
         while True:
-            print(self.status)
+            # print(self.status)
             
             time.sleep(2)
 

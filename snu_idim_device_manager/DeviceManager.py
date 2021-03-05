@@ -54,6 +54,7 @@ class DeviceManager():
         self.device_info = dict() # to send data to client via ZMQ
         
         self.bool_auto_mode = True
+        self.step_flag = False
 
         ## for 3DP Manager
         self.printing_queue            = list()
@@ -74,16 +75,16 @@ class DeviceManager():
         self.instron_save_flag = False
 
         ## for AMR Manager
-        # self.client = actionlib.SimpleActionClient('/R_001/WAS', WorkFlowAction)
-        # self.client.wait_for_server(timeout=rospy.Duration(1))
-        # self.amr = WorkFlowGoal()
-        # self.amr_param = [Param('max_trans_vel','float','0.3'),
-        #                   Param('max_rot_vel','float','0.25'), 
-        #                   Param('xy_goal_tolerance','float','0.20'),
-        #                   Param('yaw_goal_tolerance','float','0.05')]
-        # self.amr.work = []
-        # self.amr.work_id = 'amr'
-        # self.amr.loop_flag = 1  # default: 1 (no repeat)
+        self.client = actionlib.SimpleActionClient('/R_001/WAS', WorkFlowAction)
+        self.client.wait_for_server(timeout=rospy.Duration(1))
+        self.amr = WorkFlowGoal()
+        self.amr_param = [Param('max_trans_vel','float','0.3'),
+                          Param('max_rot_vel','float','0.25'), 
+                          Param('xy_goal_tolerance','float','0.20'),
+                          Param('yaw_goal_tolerance','float','0.05')]
+        self.amr.work = []
+        self.amr.work_id = 'amr'
+        self.amr.loop_flag = 1  # default: 1 (no repeat)
         
         ## 3DP Manager thread
         self.thread_1 = Thread(target=self.manager3DP)
@@ -292,9 +293,10 @@ class DeviceManager():
 
 
     def executeCobot(self, robot_task_queue, wait_until_end=False, debug=False):
-        if debug == False:
+        if debug != True:
             while len(robot_task_queue) != 0:
                 if self.device_dict['R_001/cobot'].getStatus()['status'] == 'Standby':
+                    print('DDDDDDDDDDDDDDDDd')
                     next_task = robot_task_queue.pop(0)
                     self.device_dict['R_001/cobot'].sendCommand({'command': next_task})
                     print("[Cobot - Real mode] Robot task queue: {}".format(robot_task_queue))
@@ -380,7 +382,7 @@ class DeviceManager():
 
     def executionManager(self):
         step = 0 #; printer_id = 'printer2'; subject_id = 'test2'
-        debug = True
+        debug = False
         
         while True:
             try:
@@ -517,7 +519,7 @@ if __name__ == '__main__':
     manager = DeviceManager()
     manager.addPrintingQueue(test_id_list)
 
-    # manager.addDevice('R_001/cobot', device_class=None)
+    manager.addDevice('R_001/cobot', device_class=None)
     manager.addDevice('instron')
     # manager.addDevice('MS')
     manager.addDevice('MS', DeviceClass_OMM(device_name='MS', port_='/dev/ttyUSB0'))
