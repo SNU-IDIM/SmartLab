@@ -100,7 +100,7 @@ AMR_DIR_RIGHT =  math.pi / 2.0   # CNC 방향 (오른쪽)
 
 AMR_POS_ZERO      = [ 2.214, -0.407,  AMR_DIR_UP]
 AMR_POS_HOME      = [ 1.465, -1.654,  AMR_DIR_LEFT]
-AMR_POS_3DP_0     = [ 3.005, -3.268, -1.610];   AMR_OFFSET_3DP = 0.3073
+AMR_POS_3DP_0     = [ 3.005, -3.526, -1.610];   AMR_OFFSET_3DP = 0.3373
 AMR_POS_INSTRON   = [ 3.005, -3.268, -1.610]
 AMR_POS_OMM       = [ 3.081,  0.714,  1.564]
 AMR_POS_DOOR      = [ 7.402, -0.140,  AMR_DIR_RIGHT]
