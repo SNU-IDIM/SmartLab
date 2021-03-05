@@ -39,7 +39,7 @@ class DeviceClass_OMM(object):
         self.result['length'] = 0
         self.result['width'] = 0
 
-        self.sql = mysql(user=self.device_id, host = '192.168.0.81')
+        self.sql = mysql(user=self.device_id, host = '192.168.60.101')
 
         self.thread_1 = Thread(target=self.updateStatus)
         self.thread_1.start()

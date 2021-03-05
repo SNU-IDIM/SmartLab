@@ -11,12 +11,12 @@ import time
 sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__),'../snu_idim_device_manager')) )
 
 from DevicePluginToROS import DevicePluginToROS
-from DeviceClass_MS_dimension import DeviceClass_OMM
+from DeviceClass_OMM import DeviceClass_OMM
 
 
 if __name__ == "__main__":
     device_name = 'MS'
-
+    rospy.init_node(device_name)
     measurement_node = DevicePluginToROS(device_name=device_name, device_class=DeviceClass_OMM(device_name, port_='/dev/ttyUSB0'))
 
 
