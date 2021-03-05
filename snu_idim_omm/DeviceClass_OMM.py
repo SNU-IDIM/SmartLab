@@ -92,6 +92,7 @@ class DeviceClass_OMM(object):
                 # self.send_GCode('G0 Z25')
             elif cmd_keys[key] == 'measure_thickness':
                 self.status['status'] = 'G30 : Measure Thickness'
+                self.send_GCode('G0 X120 Y165 Z30')
                 self.send_zPosition()
                 self.result['thickness'] = self.readline_zPosition()
                 self.status['status'] = 'Idle'
@@ -101,6 +102,8 @@ class DeviceClass_OMM(object):
                 print("---------------------------")
                 time.sleep(15)
                 self.result['length'], self.result['width'] = self.measure_dimension()
+                self.send_GCode('G0 X143 Y220 Z240')
+                time.sleep(10)
                 self.status['status'] = 'Idle'
             elif cmd_keys[key] == 'readline':
                 self.status['status'] = 'read_line'
