@@ -29,38 +29,38 @@ if __name__ == "__main__":
 
     
 
-    while True:
-        if measurement_node.getStatus()['connection'] == True:
-            print('\n debugging start \n')
-            del(cmd_dict['connection'])
-            cmd_dict['measure_thickness'] = specimen_name
-            measurement_node.sendCommand(cmd_dict)
-            break
-        else:
-            continue
+    # while True:
+    #     if measurement_node.getStatus()['connection'] == True:
+    #         print('\n debugging start \n')
+    #         del(cmd_dict['connection'])
+    #         cmd_dict['measure_thickness'] = specimen_name
+    #         measurement_node.sendCommand(cmd_dict)
+    #         break
+    #     else:
+    #         continue
 
-    while True:
-        if measurement_node.getStatus()['status'] == 'Idle':
-        # if measurement_node.getStatus()['connection'] == True:
-            print('\n measure debugging \n')
-            del(cmd_dict['measure_thickness'])
-            # del(cmd_dict['connection'])
+    # while True:
+    #     if measurement_node.getStatus()['status'] == 'Idle':
+    #     # if measurement_node.getStatus()['connection'] == True:
+    #         print('\n measure debugging \n')
+    #         del(cmd_dict['measure_thickness'])
+    #         # del(cmd_dict['connection'])
             
-            cmd_dict['measure_dimension'] = specimen_name
-            measurement_node.sendCommand(cmd_dict)
-            time.sleep(2)
-            break
-        else:
-            continue
+    #         cmd_dict['measure_dimension'] = specimen_name
+    #         measurement_node.sendCommand(cmd_dict)
+    #         time.sleep(2)
+    #         break
+    #     else:
+    #         continue
     
-    while True:
-        if measurement_node.getStatus()['status'] == 'Idle':
-            del(cmd_dict['measure_dimension'])
-            cmd_dict['save_result'] = specimen_name
-            measurement_node.sendCommand(cmd_dict)
-            break
-        else:
-            continue
+    # while True:
+    #     if measurement_node.getStatus()['status'] == 'Idle':
+    #         del(cmd_dict['measure_dimension'])
+    #         cmd_dict['save_result'] = specimen_name
+    #         measurement_node.sendCommand(cmd_dict)
+    #         break
+    #     else:
+    #         continue
     
             
         
