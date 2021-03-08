@@ -296,7 +296,6 @@ class DeviceManager():
         if debug != True:
             while len(robot_task_queue) != 0:
                 if self.device_dict['R_001/cobot'].getStatus()['status'] == 'Standby':
-                    print('DDDDDDDDDDDDDDDDd')
                     next_task = robot_task_queue.pop(0)
                     self.device_dict['R_001/cobot'].sendCommand({'command': next_task})
                     print("[Cobot - Real mode] Robot task queue: {}".format(robot_task_queue))
@@ -381,7 +380,7 @@ class DeviceManager():
 
 
     def executionManager(self):
-        step = 0 #; printer_id = 'printer2'; subject_id = 'test2'
+        step = 0 #; printer_id = 'printer2';   subject_id = 'test2';   printer_number = 2;   amr_pos_3dp = [0, 0, 0]
         debug = False
         
         while True:
