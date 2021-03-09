@@ -218,7 +218,7 @@ class DeviceManager():
     '''#####################################################################################################
         Robot related
     '''
-    def executeAMR(self, target_pose, spot_name="default", hold_time=0.0, debug=False):
+    def executeAMR(self, target_pose, spot_name="default", wait_until_end=True, hold_time=0.0, debug=False):
         cmd_dict = {'spot_name': spot_name, 
                     'target_pose': target_pose, 
                     'hold_time': hold_time, }
@@ -229,9 +229,12 @@ class DeviceManager():
 
         elif debug == True:
             print("[AMR - Debug mode] AMR Start Moving ... (target pose = {})".format(target_pose))
+            wait_until_end = False
             sleep(1.0)
             print("[AMR - Debug mode] Arrived at [{}] !!!".format(target_pose))
             sleep(hold_time)
+
+        if wait_until_end == True: self.waitDeviceStatus(device_name='R_001/amr', status_key='status', status_value='Idle')
 
 
     def makeRobotTaskQueue(self, printer_id='printer0', task_type='specimen_task'):
@@ -368,6 +371,7 @@ class DeviceManager():
 
 
     def waitDeviceStatus(self, device_name, status_key='status', status_value=''):
+        sleep(3.0)
         while True:
             try:
                 status_int = int(status_value)
@@ -380,7 +384,7 @@ class DeviceManager():
 
 
     def executionManager(self):
-        step = 0 #; printer_id = 'printer2';   subject_id = 'test2';   printer_number = 2;   amr_pos_3dp = [0, 0, 0]
+        step = 2; printer_id = 'printer2';   subject_id = 'test2';   printer_number = 2;   amr_pos_3dp = [0, 0, 0]
         debug = False
         
         while True:

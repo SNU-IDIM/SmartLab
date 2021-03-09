@@ -26,6 +26,8 @@ class DeviceClass_AMR:
 		self.status['status'] = ''
 		self.status['recent_work'] = ''
 
+		self.status['workstatus'] = ''
+
 		## for AMR command
 		self.client = actionlib.SimpleActionClient('/R_001/WAS', WorkFlowAction)
 		self.client.wait_for_server(timeout=rospy.Duration(1))
@@ -46,12 +48,15 @@ class DeviceClass_AMR:
 	def __del__(self):
 		print('[DEBUG] Node is terminated !!!')
 		
+		
 	def publishStatus(self):
 		msg_json = json.dumps(self.status)
 		self.status_pub.publish(msg_json)
 
 
 	def command(self, cmd_dict):
+		self.status['status'] = 'Moving'
+		
 		target_pose = cmd_dict['target_pose']
 		spot_name   = cmd_dict['spot_name']
 		hold_time   = cmd_dict['hold_time']
@@ -61,6 +66,7 @@ class DeviceClass_AMR:
 		self.amr.work_id = spot_name
 		self.client.send_goal(self.amr)
 		self.client.wait_for_result()
+		self.status['status'] = 'Idle'
 		self.amr.work = []
 		sleep(hold_time)
 
@@ -68,13 +74,14 @@ class DeviceClass_AMR:
 	def amr_state_cb(self, msg):
 		if self.flag_connection == False:
 			self.status['connection'] = True
+			self.status['status'] = 'Idle'
 			self.flag_connection = True
 
 		self.status['pose'] = {'x': msg.pose.x,
 							   'y': msg.pose.y,
 							   'theta': msg.pose.theta,}
 
-		self.status['status'] = msg.workstate
+		self.status['workstatus'] = msg.workstate
 		self.status['current_work'] = None
 		self.status['recent_work'] = None
 
@@ -91,9 +98,12 @@ if __name__=='__main__':
 	rospy.init_node('DeviceClass_AMR')
 	amr = DeviceClass_AMR()
 	time.sleep(3.0)
+	p_test = [0.642327308655, 3.86009049416, 0.000707626342773]
+	# p_test = [0, 0, 0]
+
 	cmd_dict = {
 		'spot_name': 'instron', 
-		'target_pose': AMR_POS_INSTRON, 
+		'target_pose': p_test, 
 		'hold_time': 0.0,
 	}
 	
