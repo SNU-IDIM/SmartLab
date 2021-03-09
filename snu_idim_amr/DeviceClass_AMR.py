@@ -33,9 +33,9 @@ class DeviceClass_AMR:
 		self.client.wait_for_server(timeout=rospy.Duration(1))
 		self.amr = WorkFlowGoal()
 		self.amr_param = [Param('max_trans_vel','float','0.3'),
-							Param('max_rot_vel','float','0.25'), 
-							Param('xy_goal_tolerance','float','0.20'),
-							Param('yaw_goal_tolerance','float','0.05')]
+						Param('max_rot_vel','float','0.25'), 
+						Param('xy_goal_tolerance','float','0.20'),
+						Param('yaw_goal_tolerance','float','0.05')]
 		self.amr.work = []
 		self.amr.work_id = ''
 		self.amr.loop_flag = 1  # default: 1 (no repeat)
@@ -56,7 +56,7 @@ class DeviceClass_AMR:
 
 	def command(self, cmd_dict):
 		self.status['status'] = 'Moving'
-		
+
 		target_pose = cmd_dict['target_pose']
 		spot_name   = cmd_dict['spot_name']
 		hold_time   = cmd_dict['hold_time']

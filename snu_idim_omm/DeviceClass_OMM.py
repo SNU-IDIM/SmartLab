@@ -89,6 +89,8 @@ class DeviceClass_OMM(object):
             elif cmd_keys[key] == 'home':
                 self.status['status'] = 'G28 : Home Position'
                 self.send_home()
+                # self.status['status'] = 'Idle'
+
                 # self.send_GCode('G0 Z25')
             elif cmd_keys[key] == 'measure_thickness':
                 self.status['status'] = 'G30 : Measure Thickness'
@@ -311,6 +313,11 @@ class DeviceClass_OMM(object):
         return edge_img
 
     def edge2contour(self, img):
+        # img_ = copy.deepcopy(img)
+        # kernel = np.ones((3, 3), np.uint8)
+        # erosion_image = cv2.erode(img_, kernel, iterations=10)
+        # plt.imshow(erosion_image)
+        # plt.show()
         _, contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         count = np.shape(contours)[0]
         # print(count)
@@ -336,6 +343,7 @@ class DeviceClass_OMM(object):
         cv2.drawContours(img2,[approx],0,(255,255,50),cv2.FILLED)
 
         single_contour = [approx]
+
 
         # print("num : {}".format(len(contours)))
 
@@ -444,7 +452,7 @@ class DeviceClass_OMM(object):
         try:
     
             #135 pixel per 13.64mm
-            pix2mm= 13.64/136.00                 #fix value after height fixed
+            pix2mm= 13.64/135            #fix value after height fixed
             x_dir_distance = 160.0 #mm
             y_dir_distance = 30.0  #mm
 
@@ -454,7 +462,7 @@ class DeviceClass_OMM(object):
             while True:
         ##------------------------left corner-----------------------
                 if flag == 0:
-                    
+                    print("in flag")
                     color = self.capture()
                     gray = self.color2gray(color)
                     contour_img,_ = self.edge2contour(gray)
