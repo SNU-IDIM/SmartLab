@@ -19,9 +19,7 @@ class DeviceClass_Cobot():
         self.listener = tf.TransformListener()
         rospy.Subscriber("cobot/command", String, self.pnp_cb, queue_size=1)
         rospy.Subscriber("dsr/state", RobotState, self.dsr_state_cb, queue_size=1)
-        rospy.Subscriber("/R_001/robot_state", SysconRobotState, self.amr_state_cb, queue_size=1)
-        
-        self.amr_status_pub = rospy.Publisher("amr/status", String, queue_size=1)
+
         self.cobot_status_pub = rospy.Publisher("cobot/status", String, queue_size=1)
         self.image_sub = rospy.Subscriber("/R_001/camera/color/image_raw",Image,self.vision_cb)
         self.vision_pub = rospy.Publisher("vision_2d_flag",Int32, queue_size=1)
@@ -119,23 +117,6 @@ class DeviceClass_Cobot():
         # print("[DEBUG] gripper_state_mech: {}".format(self.status['gripper_state_mech']))
 
 
-    def amr_state_cb(self, msg):
-        
-        pose = {
-            'x': msg.pose.x,
-            'y': msg.pose.y,
-            'theta': msg.pose.theta,
-        }
-
-        amr_status = dict()
-        amr_status['device_type'] = 'AMR'
-        amr_status['device_name'] = 'R_001/amr'
-        amr_status['status'] = msg.workstate
-        amr_status['current_work'] = None
-        amr_status['recent_work'] = None
-
-        msg_json = json.dumps(amr_status)
-        self.amr_status_pub.publish(msg_json)
 
 
     '''

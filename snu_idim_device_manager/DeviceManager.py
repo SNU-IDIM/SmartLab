@@ -20,6 +20,9 @@ from IDIM_framework import *
 
 from DevicePluginToROS import DevicePluginToROS
 
+sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_amr")) )
+from DeviceClass_AMR import DeviceClass_AMR
+
 sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_3dp")) )
 from DeviceClass_3DP import DeviceClass_3DP
 
@@ -216,16 +219,13 @@ class DeviceManager():
         Robot related
     '''
     def executeAMR(self, target_pose, spot_name="default", hold_time=0.0, debug=False):
+        cmd_dict = {'spot_name': spot_name, 
+                    'target_pose': target_pose, 
+                    'hold_time': hold_time, }
         if debug == False:
             print("[AMR - Real mode] AMR Start Moving ... (target pose = {})".format(target_pose))
-            work = Action(SYSCON_WAYPOINT, target_pose, self.amr_param)
-            self.amr.work.append(work)
-            self.amr.work_id = spot_name
-            self.client.send_goal(self.amr)
-            self.client.wait_for_result()
-            print("[AMR - Real mode] Arrived at [{}] !!!".format(target_pose))
-            self.amr.work = []
-            sleep(hold_time)
+            self.device_dict['R_001/amr'].sendCommand(cmd_dict)
+            print("[AMR - Real mode] Arrived at [{}] !!!".format(cmd_dict['target_pose']))
 
         elif debug == True:
             print("[AMR - Debug mode] AMR Start Moving ... (target pose = {})".format(target_pose))
@@ -293,7 +293,7 @@ class DeviceManager():
 
 
     def executeCobot(self, robot_task_queue, wait_until_end=False, debug=False):
-        if debug != True:
+        if debug == False:
             while len(robot_task_queue) != 0:
                 if self.device_dict['R_001/cobot'].getStatus()['status'] == 'Standby':
                     next_task = robot_task_queue.pop(0)
@@ -517,10 +517,10 @@ if __name__ == '__main__':
     ## Device Manager
     manager = DeviceManager()
     manager.addPrintingQueue(test_id_list)
-
+    manager.addDevice('R_001/amr', device_class=DeviceClass_AMR(device_name='R_001/amr'))
     manager.addDevice('R_001/cobot', device_class=None)
     manager.addDevice('instron')
-    # manager.addDevice('MS')
+    manager.addDevice('MS')
     manager.addDevice('MS', DeviceClass_OMM(device_name='MS', port_='/dev/ttyUSB0'))
 
     manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', ip_=SERVER_IP, port_='5001', usb_port_=0))
