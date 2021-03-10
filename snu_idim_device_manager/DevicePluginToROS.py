@@ -23,7 +23,7 @@ class DevicePluginToROS:
         4. Subscribe topic: "{device_name}/command" 
             - data format: ROS String -> string -> json -> python dict
     '''
-    def __init__(self, device_name='device_name', device_class=None):
+    def __init__(self, device_name='MS', device_class=None):
         self.device_name = device_name
         self.device_status = dict()
 

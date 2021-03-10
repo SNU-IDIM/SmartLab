@@ -21,6 +21,19 @@ def M2MM(meter):
 
 def MM2M(milimeter):
     return (1.0/1000.0)*milimeter
+
+##################################################################################################################################################
+'''
+    DOE Types
+'''
+DOE_TWO_LEVEL_FULL_FACTORIAL       = 1
+DOE_THREE_LEVEL_FULL_FACTORIAL     = 2
+DOE_GENERALIZED_FACTORIAL          = 3
+DOE_TWO_LEVEL_FRACTIONAL_FACTORIAL = 4
+DOE_PLACKETT_BURMAN                = 5
+DOE_BOX_BEHNKEN                    = 6
+DOE_CENTRAL_COMPOSITE              = 7
+
 ##################################################################################################################################################
 '''
     Current End-effector number (Tool changer)
@@ -80,28 +93,17 @@ SYSCON_URMISSION = 0x05
         @ DIR_AMR_[방향]: IDIM testbed 기준
         @ P_AMR_[이름(장비 ...)]  : Target Pose [ X[m], Y[m], Theta[rad] ]
 '''
-DIR_AMR_UP    =  0.0             # 앞쪽 문 방향
-DIR_AMR_DOWN  =  math.pi         # 뒷쪽 문 방향
-DIR_AMR_LEFT  = -math.pi / 2.0   # Instron 방향 (왼쪽)
-DIR_AMR_RIGHT =  math.pi / 2.0   # CNC 방향 (오른쪽)
+AMR_DIR_UP    =  0.0             # Instron 방향 (왼쪽)
+AMR_DIR_DOWN  =  math.pi         # 뒷쪽 문 방향
+AMR_DIR_LEFT  = -math.pi / 2.0   # CNC 방향 (오른쪽)
+AMR_DIR_RIGHT =  math.pi / 2.0   # 앞쪽 문 방향
 
-P_AMR_ZERO      = [ 0.000,   0.000,  DIR_AMR_UP]
-P_AMR_HOME      = [ 1.465,  -1.654,  DIR_AMR_LEFT]
-P_AMR_DOOR      = [ 7.402,  -0.140,  DIR_AMR_RIGHT]
-P_AMR_TABLE_1   = [ 7.071,  -2.000,  DIR_AMR_UP]
-P_AMR_TABLE_2   = [ 5.346,  -2.000,  DIR_AMR_UP]
-P_AMR_DYNAMO    = [ 4.410,  -2.300,  DIR_AMR_UP]
-P_AMR_INSTRON   = [ 2.457,  -2.488,  DIR_AMR_UP]
-P_AMR_LOCKER    = [ 3.163,  -0.073,  DIR_AMR_LEFT]
-P_AMR_SEWING    = [ 2.061,  -0.078,  DIR_AMR_UP]
-P_AMR_CNC       = [ 0.888,  -0.238,  DIR_AMR_UP]
-P_AMR_TABLE_3   = [-1.401,  -0.060,  DIR_AMR_DOWN]
-P_AMR_JUSTEK    = [-2.917,  -0.590,  DIR_AMR_DOWN]
-P_AMR_LASER     = [-4.510,  -0.801,  DIR_AMR_DOWN]
-P_AMR_DAEGON    = [-5.571,  -0.777,  DIR_AMR_LEFT]
-P_AMR_INJECTION = [-3.575,  -2.460,  DIR_AMR_UP]
-P_AMR_PROFILER  = [-1.684,  -2.565,  DIR_AMR_UP]
-P_AMR_SINDOH3DP = [-0.134,  -2.565,  DIR_AMR_UP]
+
+AMR_POS_HOME      = [ 0.000,  0.000,  0.000]
+AMR_POS_3DP_0     = [ 1.037, -2.793, -1.560];   AMR_OFFSET_3DP = 0.4676
+AMR_POS_INSTRON   = [ 0.928, -2.729, -1.570]
+AMR_POS_OMM       = [ 0.804,  1.621,  1.617]
+
 ##################################################################################################################################################
 
 
@@ -250,7 +252,7 @@ Q_MULSPECIMEN_SEARCH   = [-19.77288246154785, 5.743539333343506, -131.4672698974
 Q_SEARCH_3DP_PLATE     = [-4.7292633056640625, -2.0135130882263184, -124.34613037109375, 0.9737170934677124, -53.63304138183594, 129.6439666748047]
 Q_UNIVERSALJIG_3DP_BED = [-4.624578952789307, -9.224052429199219, -130.3548126220703, 2.0381743907928467, -39.747581481933594, 38.829227447509766]
 # Q_SEARCH_3DP_RIGHT     = [-103.04147338867188, -6.241026401519775, -128.091552734375, 0.265263170003891, -42.99394607543945, 163.57440185546875]
-Q_SEARCH_3DP_RIGHT     = [-91.33081817626953, 28.66701316833496, -117.30398559570312, -0.7131907939910889, -66.74654388427734, -178.08468627929688]
+Q_SEARCH_3DP_RIGHT     = [-89.74018096923828, 31.135026931762695, -118.15650177001953, -0.22129933536052704, -55.051727294921875, 181.1175994873047]
 Q_COLOR_SENSOR_TRAY_RETRACT = [-14.852486610412598, 11.348645210266113, -140.4371795654297, -0.0, -50.91157913208008, -104.8525161743164]
 Q_PLACE_INITIAL        = [25.24275016784668, 14.780960083007812, -138.33627319335938, -0.0, -56.44465637207031, -154.7573699951172+360]
 ## Task Space Coordinates (P)

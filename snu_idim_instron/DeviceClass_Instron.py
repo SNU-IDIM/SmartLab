@@ -123,7 +123,7 @@ class DeviceClass_Instron:
 	def __init__(self, device_name='instron'):
 		## Common init for all devices
 		self.status = dict()
-		self.status['device_type'] = 'Universal Testing Machine'
+		self.status['device_type'] = 'Universal_Testing_Machine'
 		self.status['device_name'] = device_name
 		self.status['connection'] = ''
 		self.status['subject_name'] = ''
