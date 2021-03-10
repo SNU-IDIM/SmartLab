@@ -29,7 +29,6 @@ class UART:
 		self.message = dict()  # message from Jetson to Instron
 		self.message['message'] = 'online'
 		self.message['subject_name'] = ''
-		self.message['line'] = 0
 		
 		self.newstatus = dict()
 
@@ -131,7 +130,7 @@ class DeviceClass_Instron:
 		self.status['status'] = ''
 		self.status['recent_work'] = ''
 
-		## Jetson nano board setting for digital I/O
+		# # Jetson nano board setting for digital I/O
 		# GPIO.cleanup()
 		# GPIO.setwarnings(False)
 
@@ -204,12 +203,12 @@ class DeviceClass_Instron:
 				self.uart.goal_status = 'Done'									# wait until status = Done 
 				self.uart.waitStatus()											# status : Done
 
-				self.uart.message['message'] = 'finish'
-				self.uart.write_data(self.uart.message)                         # tell Instron 'gripper closed'
-				
 				GPIO.output(self.PIN, False)
 				time.sleep(0.5)													# wait for gripper open
-								
+
+				self.uart.message['message'] = 'finish'
+				self.uart.write_data(self.uart.message)                         # tell Instron 'gripper closed'
+							
 				self.uart.goal_status = 'Idle'									# wait until status = Idle
 				self.uart.waitStatus()											# status : Idle
 
