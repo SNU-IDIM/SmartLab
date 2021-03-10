@@ -7,6 +7,7 @@ import os
 from matplotlib import pyplot as plt
 import pandas as pd
 import time
+from plt_str import plotter
 # import natsort
 # from scipy import signal
 
@@ -22,8 +23,8 @@ class calc_strain:
         self.initial_perp = 0
 
         TEST_NUMBER =5
-        self.cut_frame = 0 #test1: 44        #test2:100      #test3:117 # test5: 55
-        self.final_frame = 550 #test1: 270      #test2: 329   #test3:350   #test5:550
+        self.cut_frame = 0
+        self.final_frame = 280
         TEST_NUMBER_=TEST_NUMBER
         # self.Runcal('0122test5')
 
@@ -88,21 +89,7 @@ class calc_strain:
         return [0, 0]
 
 
-    def load_instron_data(TEST_NUMBER_):
-        xlsxpath = "result_1201\\sample" + str(TEST_NUMBER_) + "\\sample" + str(TEST_NUMBER_) + ".xlsx"
-        print("read file", xlsxpath)
-        sgdata = pd.read_excel(xlsxpath)
-        sgdata = sgdata.dropna()
-        axialsg = sgdata[['axial_strain(%)']].to_numpy()
-        perpsg = sgdata[['horizontal_strain(%)']].to_numpy()
-        axialsg = sgdata[['axial_strain(%)']].to_numpy()
-        perpsg = sgdata[['horizontal_strain(%)']].to_numpy()
-
-        axialsg_s = axialsg[0:len(axialsg)].reshape(-1, 1)
-        horizsg_s = perpsg[0:len(perpsg)].reshape(-1, 1)
-
-        return axialsg, horizsg_s
-
+    
     def two_pdispstrain(self, centroid):
         axial1 = round(centroid[2][1]-centroid[0][1],self.round_n)
         axial2 = round(centroid[5][1]-centroid[3][1],self.round_n)
@@ -115,7 +102,7 @@ class calc_strain:
         perp3 = round(centroid[5][0] - centroid[6][0], self.round_n)
         perp = (perp1+perp2+perp3)/3
 
-        return [round(axial ,self.round_n), round(perp,self.round_n)]
+        return [abs(round(axial ,self.round_n)), abs(round(perp,self.round_n))]
 
     def two_strain(self, displacement,init_axial_length):
         # init_axial_length = 111.33333333-49.8622449
@@ -318,6 +305,8 @@ class calc_strain:
                 if frame_count==self.cut_frame:
                     center_x, center_y = self.template_match(img)
                     w = 130;  h = 150; # 경험적으로 구함
+                    w = 130;  h = 220; # 경험적으로 구함
+
                     x = int(center_x-w/2); y = int(center_y-h/2);
 
                 iterdilate = 1
@@ -329,9 +318,9 @@ class calc_strain:
                 # gray = cv2.cvtColor(c_img, cv2.COLOR_BGR2GRAY)
                 #TODO: Filter out noise(이부분에서 iteration 수를 조정할 것)
                 kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (4, 4))
-                img_mask = cv.morphologyEx(c_img, cv.MORPH_DILATE, kernel, iterations=1) #for test10 it is 1 else 2
+                img_mask = cv.morphologyEx(c_img, cv.MORPH_DILATE, kernel, iterations=2) #for test10 it is 1 else 2
                 img_mask = cv.morphologyEx(img_mask, cv.MORPH_ERODE, kernel, iterations=2)
-                img_mask = cv.morphologyEx(img_mask, cv.MORPH_DILATE, kernel, iterations=2)
+                # img_mask = cv.morphologyEx(img_mask, cv.MORPH_DILATE, kernel, iterations=2)
                 # displayplt(c_img)
 
 
@@ -440,6 +429,8 @@ class calc_strain:
         
         except:
             print("broken")
+            cv2.imshow("bin",bin)
+            cv2.waitKey()
 
         # 데이터 타입 변환
         displist1 = np.asarray(displist)
@@ -486,8 +477,13 @@ class calc_strain:
 
         print("finish")
 
+        c = plotter(name)
+
 
 if __name__ == "__main__":
     cal = calc_strain()
     time.sleep(1)
     pass
+
+    subject_name = "test2"
+    cal.Runcal(subject_name)

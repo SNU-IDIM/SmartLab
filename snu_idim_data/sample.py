@@ -39,10 +39,19 @@ sql = "INSERT INTO Instron (Test_name,Result) VALUES ('Test2',"+"'" + binary_ima
 
 cur.execute(sql)
 
-
-sql = "SELECT Result FROM Instron;"
-cur.execute(sql)
+##  -------------------------------------
+subject_name = '1'
+sql1 = "USE smartlab_result"
+sql2 = "SELECT Thickness FROM Instron WHERE subject_name={};".format(subject_name)
+cur.execute(sql1)
+cur.execute(sql2)
 con.commit()
+data = cur.fetchone()
+thickness = data['Thickness']
+##  -------------------------------------
+
+
+
 
 result = cur.fetchone()
 # result = pd.DataFrame(result)
