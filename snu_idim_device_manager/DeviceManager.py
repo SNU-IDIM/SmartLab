@@ -283,7 +283,7 @@ class DeviceManager():
 
         elif task_type == 'monitor_experiment':
             task_monitor_experiment = [TASK_INSTRON_MOVEOUT]
-            self.cobot_recent_work = ACTION_HOME
+            self.cobot_recent_work = TASK_INSTRON_MOVEOUT
             robot_task_queue = task_monitor_experiment
             return robot_task_queue
 
@@ -320,7 +320,10 @@ class DeviceManager():
         if debug == False:
             sleep(2.0)
             self.waitDeviceStatus(device_name='MS', status_value='Idle')
-            if command_type == 'measure_dimension':
+            if command_type == 'measure_thickness':
+                print("[OMM - Real mode] Measuring thickness ({}) ...".format(subject_name))
+                self.device_dict['MS'].sendCommand({command_type: subject_name})
+            elif command_type == 'measure_dimension':
                 print("[OMM - Real mode] Measuring dimension ({}) ...".format(subject_name))
                 self.device_dict['MS'].sendCommand({command_type: subject_name})
             elif command_type == 'save_result':
@@ -384,7 +387,7 @@ class DeviceManager():
 
 
     def executionManager(self):
-        step = 2;  printer_id = 'printer2';   subject_id = 'test2';   printer_number = 2;    amr_pos_3dp = deepcopy(AMR_POS_3DP_0);   amr_pos_3dp[1] += printer_number * AMR_OFFSET_3DP
+        step = 0 #;  printer_id = 'printer2';   subject_id = 'test2';   printer_number = 2;    amr_pos_3dp = deepcopy(AMR_POS_3DP_0);   amr_pos_3dp[1] += printer_number * AMR_OFFSET_3DP
         debug = False
         
         while True:
@@ -413,14 +416,15 @@ class DeviceManager():
                 
                 if step == 2: ## Step 2-2. Measurement (3DP bed: Robot -> OMM -> Robot)
                     self.checkExecutionMode()
-                    # print("[Execution Manager] Step 2-2 (1 of 4). AMR moving... (target: OMM, {})".format(AMR_POS_OMM))
-                    # self.executeAMR(spot_name='omm', target_pose=AMR_POS_OMM, hold_time=0.0, debug=debug)
+                    print("[Execution Manager] Step 2-2 (1 of 4). AMR moving... (target: OMM, {})".format(AMR_POS_OMM))
+                    self.executeAMR(spot_name='omm', target_pose=AMR_POS_OMM, hold_time=0.0, debug=debug)
                     
-                    # print("[Execution Manager] Step 2-2 (2 of 4). Robot task start !!! (3DP bed: Robot -> OMM)")
-                    # robot_task_queue = self.makeRobotTaskQueue(task_type='bed_from_robot_to_omm')
-                    # self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
+                    print("[Execution Manager] Step 2-2 (2 of 4). Robot task start !!! (3DP bed: Robot -> OMM)")
+                    robot_task_queue = self.makeRobotTaskQueue(task_type='bed_from_robot_to_omm')
+                    self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
 
                     print("[Execution Manager] Step 2-2 (3 of 4). Measuring a dimension of specimen ({})".format(subject_id))
+                    self.executeOMM(subject_name=subject_id, command_type='measure_thickness', debug=debug)
                     self.executeOMM(subject_name=subject_id, command_type='measure_dimension', debug=debug)
 
                     print("[Execution Manager] Step 2-2 (4 of 4). Robot task start !!! (3DP bed: OMM -> Robot)")
