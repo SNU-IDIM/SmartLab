@@ -19,8 +19,8 @@ class DeviceClass_Cobot():
         self.listener = tf.TransformListener()
         rospy.Subscriber("cobot/command", String, self.pnp_cb, queue_size=1)
         rospy.Subscriber("dsr/state", RobotState, self.dsr_state_cb, queue_size=1)
-        
-        self.status_pub = rospy.Publisher("cobot/status", String, queue_size=1)
+
+        self.cobot_status_pub = rospy.Publisher("cobot/status", String, queue_size=1)
         self.image_sub = rospy.Subscriber("/R_001/camera/color/image_raw",Image,self.vision_cb)
         self.vision_pub = rospy.Publisher("vision_2d_flag",Int32, queue_size=1)
         self.gripper_pub = rospy.Publisher("PC_to_GRIPPER", String, queue_size=1)
@@ -97,7 +97,7 @@ class DeviceClass_Cobot():
 
     def publishStatus(self):
         msg_json = json.dumps(self.status)
-        self.status_pub.publish(msg_json)
+        self.cobot_status_pub.publish(msg_json)
         # print("\n==============================================================")
         # print("[DEBUG] device_type: {}".format(self.status['device_type']))
         # print("[DEBUG] device_name: {}".format(self.status['device_name']))
@@ -115,6 +115,8 @@ class DeviceClass_Cobot():
         # print("[DEBUG] gripper_type: {}".format(self.status['gripper_type']))
         # print("[DEBUG] gripper_state_suction: {}".format(self.status['gripper_state_suction']))
         # print("[DEBUG] gripper_state_mech: {}".format(self.status['gripper_state_mech']))
+
+
 
 
     '''
