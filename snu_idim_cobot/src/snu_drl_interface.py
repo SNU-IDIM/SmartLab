@@ -16,7 +16,6 @@ class DeviceClass_Cobot():
     def __init__(self, device_name="cobot"):
         rospy.init_node(device_name, anonymous=True)
         
-        self.listener = tf.TransformListener()
         rospy.Subscriber("cobot/command", String, self.pnp_cb, queue_size=1)
         rospy.Subscriber("dsr/state", RobotState, self.dsr_state_cb, queue_size=1)
 
@@ -123,33 +122,36 @@ class DeviceClass_Cobot():
         dsr_state_cb: "~/dsr/state" topic callback function (update dsr_status)
     '''
     def dsr_state_cb(self, msg):
-        self.status['status'] = self.enum_robot_state[str(msg.robot_state)]
-        self.status['status'] = "Moving" if self.status_overwrite == "Moving" else self.status['status']
+        try:
+            self.status['status'] = self.enum_robot_state[str(msg.robot_state)]
+            self.status['status'] = "Moving" if self.status_overwrite == "Moving" else self.status['status']
 
-        self.status['posx'] = msg.current_posx
-        self.status['posj'] = msg.current_posj
-        self.status['force'] = msg.actual_ett
-        self.status['torque'] = msg.actual_ejt
+            self.status['posx'] = msg.current_posx
+            self.status['posj'] = msg.current_posj
+            self.status['force'] = msg.actual_ett
+            self.status['torque'] = msg.actual_ejt
 
-        io_ctrlbox_status = msg.ctrlbox_digital_output
-        self.status['compressor'] = 'On' if io_ctrlbox_status[0] == 1 else 'Off'
-        self.status['toolchanger'] = 'Detach' if io_ctrlbox_status[1] == 1 else 'Attach'
-        self.status['universal_jig_x'] = 'Close' if io_ctrlbox_status[4] == 1 else 'Open'
-        self.status['universal_jig_y'] = 'Close' if io_ctrlbox_status[5] == 1 else 'Open'
-        self.status['gripper_state_suction'] = 'On' if io_ctrlbox_status[7] == 1 else 'Off'
+            io_ctrlbox_status = msg.ctrlbox_digital_output
+            self.status['compressor'] = 'On' if io_ctrlbox_status[0] == 1 else 'Off'
+            self.status['toolchanger'] = 'Detach' if io_ctrlbox_status[1] == 1 else 'Attach'
+            self.status['universal_jig_x'] = 'Close' if io_ctrlbox_status[4] == 1 else 'Open'
+            self.status['universal_jig_y'] = 'Close' if io_ctrlbox_status[5] == 1 else 'Open'
+            self.status['gripper_state_suction'] = 'On' if io_ctrlbox_status[7] == 1 else 'Off'
 
-        io_flange_status = msg.flange_digital_output
-        self.status['gripper_state_mech'] = 'Close' if io_flange_status[1] == 1 else 'Open'
+            io_flange_status = msg.flange_digital_output
+            self.status['gripper_state_mech'] = 'Close' if io_flange_status[1] == 1 else 'Open'
 
-        ## Initialize Maximum tool force
-        if not self.toolforce_max_flag:
-            self.toolforce_max = self.status['force'][2]
-            self.toolforce_max_flag = True
-        
-        ## Capture Maximum tool force
-        if self.toolforce_max < self.status['force'][2]:
-            self.toolforce_max = self.status['force'][2]
-            # print(self.toolforce_max)
+            ## Initialize Maximum tool force
+            if not self.toolforce_max_flag:
+                self.toolforce_max = self.status['force'][2]
+                self.toolforce_max_flag = True
+            
+            ## Capture Maximum tool force
+            if self.toolforce_max < self.status['force'][2]:
+                self.toolforce_max = self.status['force'][2]
+                # print(self.toolforce_max)
+        except:
+            pass
     
     
     def calcRelMove(self, waypoint, eef_flag):
@@ -233,8 +235,9 @@ class DeviceClass_Cobot():
         listener = tf.TransformListener()
         try:
             # print "Trying to search the target: %s ..."%target_frame_name
-            self.listener.waitForTransform(reference_frame_name, target_frame_name, rospy.Time(), rospy.Duration(1.0))
-            (trans,rot) = self.listener.lookupTransform(reference_frame_name, target_frame_name, rospy.Time(0))
+            listener = tf.TransformListener()
+            listener.waitForTransform(reference_frame_name, target_frame_name, rospy.Time(), rospy.Duration(1.0))
+            (trans,rot) = listener.lookupTransform(reference_frame_name, target_frame_name, rospy.Time(0))
 
             self.target_pose.position.x    = M2MM(trans[0])# + self.offset_x) # 보정 @(arm -> 측면)
             self.target_pose.position.y    = M2MM(trans[1])# + self.offset_y) # 보정 @(arm -> 정면)
@@ -251,6 +254,7 @@ class DeviceClass_Cobot():
             print "[ERROR]: The Target(TF) is not Detected !!!"
             return False
 
+
     def ARsearchFromEEF(self, ar_tag_number):
         target_frame_name = 'ar_target_' + str(ar_tag_number)
         reference_frame_name = 'link6'
@@ -260,11 +264,12 @@ class DeviceClass_Cobot():
         listener = tf.TransformListener()
         try:
             # print "Trying to search the target: %s ..."%target_frame_name
-            self.listener.waitForTransform(reference_frame_name, target_frame_name, rospy.Time(), rospy.Duration(1.0))
-            (trans,rot) = self.listener.lookupTransform(reference_frame_name, target_frame_name, rospy.Time(0))
+            listener.waitForTransform(reference_frame_name, target_frame_name, rospy.Time(), rospy.Duration(1.0))
+            (trans,rot) = listener.lookupTransform(reference_frame_name, target_frame_name, rospy.Time(0))
+            print("[DEBUG] Trans: {}, Rot: {}".format(trans, rot))
 
             self.target_pose.position.x    = M2MM(trans[0])# + self.offset_x) # 보정 @(arm -> 측면)
-            self.target_pose.position.y    = M2MM(trans[1])# + self.offset_y) # 보정 @(arm -> 정면)
+            self.target_pose.position.y    = M2MM(trans[1])#f + self.offset_y) # 보정 @(arm -> 정면)
             self.target_pose.position.z    = M2MM(trans[2])# + self.offset_z)
             self.target_pose.orientation.x = rot[0]
             self.target_pose.orientation.y = rot[1]
@@ -342,12 +347,14 @@ class DeviceClass_Cobot():
             # print("Pitch: {}".format(RAD2DEG(self.orient_pitch)))
             # print("Yaw: {}".format(RAD2DEG(self.orient_yaw)))
             
+            
     def ARalignMove(self, ar_tag_number):
         # self.ARcheckFlipped(ar_tag_number)
         self.updateEulZYZ()
         pos = self.target_pose.position;   ori = self.eulerZYZ
         self.drl_pose = deepcopy(posx(pos.x, pos.y, pos.z ,ori[0], ori[1], ori[2]))
         movel(self.drl_pose, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+
 
     def ARsetReference(self, ar_tag_number, iter=1):
         self.ARsearchFromEEF(ar_tag_number)
@@ -596,7 +603,7 @@ class DeviceClass_Cobot():
             self.status['gripper_angle'] = 225
 
             waypoint_1 = self.calcRelMove([50, 0, -100, 0, 0, self.status['gripper_angle']], False)
-            waypoint_2 = self.calcRelMove([-210, 0, 172, 0, 0, 0], True)
+            waypoint_2 = self.calcRelMove([-215, 0, 172, 0, 0, 0], True)
             waypoint_3 = self.calcRelMove([0, 0, 43, 0, 0, 0], True)
             waypoint_4 = self.calcRelMove([0, 0, -80, 0, 0, 0], True)
             waypoint_5 = self.calcRelMove([300, 0, 0, 0, 0, 0], True)
@@ -967,7 +974,7 @@ class DeviceClass_Cobot():
             
             ## Publish Flag to 'snu_2d_vision.py' node
             self.vision_pub.publish(30002)
-
+            listener = tf.TransformListener()
             while True:
                 try:
                     target_frame_name = 'specimen_table_' + str(object_count)
@@ -977,8 +984,8 @@ class DeviceClass_Cobot():
                     print("Reference frame: " + reference_frame_name)
                     print "Trying to search the specimen: %s ..."%target_frame_name
 
-                    self.listener.waitForTransform(reference_frame_name, target_frame_name, rospy.Time(), rospy.Duration(8.0))
-                    (trans,rot) = self.listener.lookupTransform(reference_frame_name, target_frame_name, rospy.Time())
+                    listener.waitForTransform(reference_frame_name, target_frame_name, rospy.Time(), rospy.Duration(8.0))
+                    (trans,rot) = listener.lookupTransform(reference_frame_name, target_frame_name, rospy.Time())
                     print(trans, rot)
                     self.update_target_pose(trans, rot)
                     self.updateEulZYZ()
@@ -1027,6 +1034,7 @@ class DeviceClass_Cobot():
             
             ## Publish Flag to 'snu_2d_vision.py' node
             self.vision_pub.publish(30002)
+            listener = tf.TransformListener()
 
             target_frame_name = 'specimen_table_' + str(object_count)
             reference_frame_name = 'base_0'
@@ -1034,8 +1042,8 @@ class DeviceClass_Cobot():
             print("Target frame: "    + target_frame_name)
             print("Reference frame: " + reference_frame_name)
             print "Trying to search the specimen: %s ..."%target_frame_name
-            self.listener.waitForTransform(reference_frame_name, target_frame_name, rospy.Time(), rospy.Duration(5.0))
-            (trans,rot) = self.listener.lookupTransform(reference_frame_name, target_frame_name, rospy.Time(0))
+            listener.waitForTransform(reference_frame_name, target_frame_name, rospy.Time(), rospy.Duration(5.0))
+            (trans,rot) = listener.lookupTransform(reference_frame_name, target_frame_name, rospy.Time(0))
             self.update_target_pose(trans, rot)
             self.updateEulZYZ()
             self.drl_pose = deepcopy(posx(self.target_pose.position.x, self.target_pose.position.y, 332 , -181.3, -180, -self.eulerZYZ[2]-self.eulerZYZ[0]))
@@ -1104,12 +1112,14 @@ class DeviceClass_Cobot():
         elif(self.cmd_protocol == TASK_3DP_BED_IN):
             tag_id_bed   = self.searchARTagFromRobot()
             tag_id_stage = self.searchARTagFromRight()
+            print("[DEBUG] Bed: {}, Stage: {}".format(tag_id_bed, tag_id_stage))
             if tag_id_stage != None and tag_id_bed != None:
                 self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
 
         # Task [-10010]: "TASK_3DP_BED_OUT" - (3DP-#1~4 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_BED_OUT):
             tag_id_bed = self.searchARTagFromRight()
+            print("[DEBUG] Bed: {}".format(tag_id_bed))
             if tag_id_bed != None:
                 self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=None)
 
