@@ -2,8 +2,8 @@
 <launch>
 
   <include file="$(find snu_idim_cobot)/launch/dsr_moveit.launch" ns="$(env RID)"/>
-  <include file="$(find rospy_websocker_client)/launch/Publisher.launch" ns="$(env RID)"/>
-  <include file="$(find rospy_websocker_client)/launch/Subscriber.launch" ns="$(env RID)"/>
+  <!-- <include file="$(find rospy_websocker_client)/launch/Publisher.launch" ns="$(env RID)"/> -->
+  <!-- <include file="$(find rospy_websocker_client)/launch/Subscriber.launch" ns="$(env RID)"/> -->
   <include file="$(find snu_idim_cobot)/launch/demo.launch"/>
   
   <!--<node pkg="snu_idim_cobot" type="snu_moveit_commander.py" name="snu_moveit_commander" ns="$(env RID)"/>-->
