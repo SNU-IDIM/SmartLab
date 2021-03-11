@@ -1,0 +1,17 @@
+<launch>
+
+  <arg name="model" />
+  <arg name="gui" default="False" />
+  <param name="amr/robot_description" textfile="$(find snu_idim_amr)/urdf/snu_idim_amr.urdf"/>
+  <param name="use_gui" value="$(arg gui)" />
+
+  <node pkg="tf" type="static_transform_publisher" name="amr2amr" args="0 0 0.23 0 0 0 R_001/base_link base_link 10" />
+  <node pkg="tf" type="static_transform_publisher" name="base2laser" args="0 0 0 0 0 0 R_001/base_link R_001/base_laser_link 10" />
+
+
+  
+  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" ns="amr"/>
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher"  ns="amr"/>
+  <!--<node name="rviz" pkg="rviz" type="rviz" args="-d $(find snu_idim_amr)/urdf.rviz" />-->
+
+</launch>
