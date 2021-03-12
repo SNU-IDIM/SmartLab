@@ -6,4 +6,5 @@
 	<node pkg="master_sync_fkie" type="master_sync" name="master_sync" output="screen"/>
 	<node pkg="snu_idim_xmanager" type="amr_initializer.py" name="amr_initializer" ns="R_001" output="screen"/>
 	<node pkg="snu_idim_xmanager" type="snu_joy.py" name="snu_joystick_controller" ns="R_001" output="screen"/>
+	<include file="$(find snu_idim_amr)/launch/display.launch"/>
 </launch>
