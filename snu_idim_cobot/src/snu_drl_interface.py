@@ -652,14 +652,26 @@ class DeviceClass_Cobot():
                 self.ARsetReference(tag_id_stage, 4)
                 self.status['gripper_angle'] = 223
                 waypoint_1 = self.calcRelMove([0, 90, 0, 0, 0, self.status['gripper_angle']], False)
-                waypoint_2 = self.calcRelMove([-110, -7, 80, 0, 0, 0], True)
-                waypoint_3 = self.calcRelMove([0, 0, 20, 0, 0, 0], True)
+                waypoint_2 = self.calcRelMove([-90, -7, 80, 0, 0, 0], True)
+                waypoint_3_left = self.calcRelMove([-6, -5, 0, 0, 0, 0], True)
+                waypoint_3_right = self.calcRelMove([-6, +5, 0, 0, 0, 0], True)
+                waypoint_3_right2 = self.calcRelMove([-6, +10, 0, 0, 0, 0], True)
+                waypoint_3_down = self.calcRelMove([-6,  0, 20, 0, 0, 0], True)
                 waypoint_4 = self.calcRelMove([0, 0, -50, 0, 0, 0], True)
                 waypoint_5 = self.calcRelMove([200, 0, -50, 0, 0, 0], True)
 
                 movel(waypoint_1, ref=DR_TOOL, mod=DR_MV_MOD_REL)
                 movel(waypoint_2, ref=DR_TOOL, mod=DR_MV_MOD_REL)
-                movel(waypoint_3, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+
+                task_compliance_ctrl([10, 10, 10000, 10, 10, 10])
+                movel(waypoint_3_left, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+                movel(waypoint_3_right2, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+                for i in range(3):
+                    movel(waypoint_3_left, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+                    movel(waypoint_3_right, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+                movel(waypoint_3_down, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+                release_compliance_ctrl()
+
                 self.suction_cup_off();  rospy.sleep(1)
                 movel(waypoint_4, ref=DR_TOOL, mod=DR_MV_MOD_REL)
                 movel(waypoint_5, ref=DR_TOOL, mod=DR_MV_MOD_REL)
