@@ -29,29 +29,45 @@ if __name__ == "__main__":
 
     
 
+
+
     # while True:
     #     if measurement_node.getStatus()['connection'] == True:
     #         print('\n debugging start \n')
     #         del(cmd_dict['connection'])
-    #         cmd_dict['measure_thickness'] = specimen_name
+    #         cmd_dict['home'] = specimen_name
     #         measurement_node.sendCommand(cmd_dict)
+            
     #         break
     #     else:
     #         continue
 
     # while True:
-    #     if measurement_node.getStatus()['status'] == 'Idle':
+    #     if measurement_node.getStatus()['status'] == 'G28 : Home Position':
     #     # if measurement_node.getStatus()['connection'] == True:
     #         print('\n measure debugging \n')
-    #         del(cmd_dict['measure_thickness'])
+    #         del(cmd_dict['home'])
     #         # del(cmd_dict['connection'])
             
-    #         cmd_dict['measure_dimension'] = specimen_name
+    #         cmd_dict['measure_thickness'] = specimen_name
     #         measurement_node.sendCommand(cmd_dict)
     #         time.sleep(2)
     #         break
     #     else:
     #         continue
+    while True:
+        # if measurement_node.getStatus()['status'] == 'Idle':
+        if measurement_node.getStatus()['connection'] == True:
+            print('\n measure debugging \n')
+            # del(cmd_dict['measure_thickness'])
+            # del(cmd_dict['connection'])
+            
+            cmd_dict['measure_dimension'] = specimen_name
+            measurement_node.sendCommand(cmd_dict)
+            time.sleep(2)
+            break
+        else:
+            continue
     
     # while True:
     #     if measurement_node.getStatus()['status'] == 'Idle':
