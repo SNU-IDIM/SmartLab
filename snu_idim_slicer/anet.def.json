@@ -65,7 +65,7 @@
                 {
                     "label": "End G-code",
                     "description": "G-code commands to be executed at the very end - separated by \\n.",
-                    "default_value": "M104 S0\nM140 S0\nG92 E0\nG1 E-10 F2000\nG28 X0 Y0\nM84",
+                    "default_value": "M104 S0\nM140 S0\nG92 E0\nG1 E-10 F2000\nG28 X0 Y0\nM84\nM17",
                     "type": "str",
                     "settable_per_mesh": false,
                     "settable_per_extruder": false,
