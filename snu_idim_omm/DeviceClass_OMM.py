@@ -39,7 +39,7 @@ class DeviceClass_OMM(object):
         self.result['length'] = 0
         self.result['width'] = 0
 
-        self.sql = mysql(user=self.device_id, host = '192.168.0.81')
+        self.sql = mysql(user=self.device_id, host = '192.168.60.101')
 
         self.thread_1 = Thread(target=self.updateStatus)
         self.thread_1.start()
@@ -53,7 +53,7 @@ class DeviceClass_OMM(object):
 
     def updateStatus(self):
         while True:
-            print(self.status)
+            # print(self.status)
             
             time.sleep(2)
 
@@ -92,6 +92,7 @@ class DeviceClass_OMM(object):
                 # self.send_GCode('G0 Z25')
             elif cmd_keys[key] == 'measure_thickness':
                 self.status['status'] = 'G30 : Measure Thickness'
+                self.send_GCode('G0 X120 Y165 Z30')
                 self.send_zPosition()
                 self.result['thickness'] = self.readline_zPosition()
                 self.status['status'] = 'Idle'
@@ -101,6 +102,8 @@ class DeviceClass_OMM(object):
                 print("---------------------------")
                 time.sleep(15)
                 self.result['length'], self.result['width'] = self.measure_dimension()
+                self.send_GCode('G0 X143 Y220 Z240')
+                time.sleep(10)
                 self.status['status'] = 'Idle'
             elif cmd_keys[key] == 'readline':
                 self.status['status'] = 'read_line'

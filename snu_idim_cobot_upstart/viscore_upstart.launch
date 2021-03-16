@@ -1,6 +1,14 @@
 <?xml version="1.0"?>
 <launch>
+
   <node name="VISCoRE" pkg="snu_idim_cobot_upstart" type="VISCoRE" output="screen"/>
+
+	<node pkg="master_discovery_fkie" type="master_discovery" name="master_discovery" output="screen">
+		<param name="mcast_group" value="224.0.0.1"/>
+		<!-- <rosparam param="robot_hosts">[R_005, R_006]</rosparam> -->
+	</node>
+	<node pkg="master_sync_fkie" type="master_sync" name="master_sync" output="screen"/>
 
 </launch>
 
+  

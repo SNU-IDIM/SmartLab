@@ -27,6 +27,7 @@ import tf, tf2_ros
 import moveit_commander
 import moveit_msgs.msg
 from syscon_msgs.msg import URStatus
+from syscon_msgs.msg import RobotState as SysconRobotState
 from dsr_msgs.msg import RobotState
 from tf.transformations import *
 from std_msgs.msg import String, Header, Int32, Float32MultiArray

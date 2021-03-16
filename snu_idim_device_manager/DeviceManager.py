@@ -20,6 +20,9 @@ from IDIM_framework import *
 
 from DevicePluginToROS import DevicePluginToROS
 
+sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_amr")) )
+from DeviceClass_AMR import DeviceClass_AMR
+
 sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_3dp")) )
 from DeviceClass_3DP import DeviceClass_3DP
 
@@ -54,6 +57,7 @@ class DeviceManager():
         self.device_info = dict() # to send data to client via ZMQ
         
         self.bool_auto_mode = True
+        self.step_flag = False
 
         ## for 3DP Manager
         self.printing_queue            = list()
@@ -74,16 +78,16 @@ class DeviceManager():
         self.instron_save_flag = False
 
         ## for AMR Manager
-        # self.client = actionlib.SimpleActionClient('/R_001/WAS', WorkFlowAction)
-        # self.client.wait_for_server(timeout=rospy.Duration(1))
-        # self.amr = WorkFlowGoal()
-        # self.amr_param = [Param('max_trans_vel','float','0.3'),
-        #                   Param('max_rot_vel','float','0.25'), 
-        #                   Param('xy_goal_tolerance','float','0.20'),
-        #                   Param('yaw_goal_tolerance','float','0.05')]
-        # self.amr.work = []
-        # self.amr.work_id = 'amr'
-        # self.amr.loop_flag = 1  # default: 1 (no repeat)
+        self.client = actionlib.SimpleActionClient('/R_001/WAS', WorkFlowAction)
+        self.client.wait_for_server(timeout=rospy.Duration(1))
+        self.amr = WorkFlowGoal()
+        self.amr_param = [Param('max_trans_vel','float','0.3'),
+                          Param('max_rot_vel','float','0.25'), 
+                          Param('xy_goal_tolerance','float','0.20'),
+                          Param('yaw_goal_tolerance','float','0.05')]
+        self.amr.work = []
+        self.amr.work_id = 'amr'
+        self.amr.loop_flag = 1  # default: 1 (no repeat)
         
         ## 3DP Manager thread
         self.thread_1 = Thread(target=self.manager3DP)
@@ -215,16 +219,13 @@ class DeviceManager():
         Robot related
     '''
     def executeAMR(self, target_pose, spot_name="default", hold_time=0.0, debug=False):
+        cmd_dict = {'spot_name': spot_name, 
+                    'target_pose': target_pose, 
+                    'hold_time': hold_time, }
         if debug == False:
             print("[AMR - Real mode] AMR Start Moving ... (target pose = {})".format(target_pose))
-            work = Action(SYSCON_WAYPOINT, target_pose, self.amr_param)
-            self.amr.work.append(work)
-            self.amr.work_id = spot_name
-            self.client.send_goal(self.amr)
-            self.client.wait_for_result()
-            print("[AMR - Real mode] Arrived at [{}] !!!".format(target_pose))
-            self.amr.work = []
-            sleep(hold_time)
+            self.device_dict['R_001/amr'].sendCommand(cmd_dict)
+            print("[AMR - Real mode] Arrived at [{}] !!!".format(cmd_dict['target_pose']))
 
         elif debug == True:
             print("[AMR - Debug mode] AMR Start Moving ... (target pose = {})".format(target_pose))
@@ -379,8 +380,8 @@ class DeviceManager():
 
 
     def executionManager(self):
-        step = 0 #; printer_id = 'printer2'; subject_id = 'test2'
-        debug = True
+        step = 0 #; printer_id = 'printer2';   subject_id = 'test2';   printer_number = 2;   amr_pos_3dp = [0, 0, 0]
+        debug = False
         
         while True:
             try:
@@ -516,18 +517,20 @@ if __name__ == '__main__':
     ## Device Manager
     manager = DeviceManager()
     manager.addPrintingQueue(test_id_list)
-
-    # manager.addDevice('R_001/cobot', device_class=None)
-    # manager.addDevice('instron')
-    # manager.addDevice('omm')
+    manager.addDevice('R_001/amr', device_class=DeviceClass_AMR(device_name='R_001/amr'))
+    manager.addDevice('R_001/cobot', device_class=None)
+    manager.addDevice('instron')
+    manager.addDevice('MS')
+    manager.addDevice('MS', DeviceClass_OMM(device_name='MS', port_='/dev/ttyUSB0'))
 
     manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', ip_=SERVER_IP, port_='5001', usb_port_=0))
     manager.addDevice('printer2', DeviceClass_3DP(device_name='printer2', ip_=SERVER_IP, port_='5002', usb_port_=1))
-    # manager.addDevice('printer3', DeviceClass_3DP(device_name='printer3', ip_=SERVER_IP, port_='5003', usb_port_=2))
+    manager.addDevice('printer3', DeviceClass_3DP(device_name='printer3', ip_=SERVER_IP, port_='5003', usb_port_=2))
     # manager.addDevice('printer4', DeviceClass_3DP(device_name='printer4', ip_=SERVER_IP, port_='5004', usb_port_=3))
     sleep(3.0)
 
+    manager.device_dict['MS'].sendCommand({"connection": True})
     manager.device_dict['printer1'].sendCommand({"connection": True})
     manager.device_dict['printer2'].sendCommand({"connection": True})
-    # manager.device_dict['printer3'].sendCommand({"connection": True})
+    manager.device_dict['printer3'].sendCommand({"connection": True})
     # manager.device_dict['printer4'].sendCommand({"connection": True})

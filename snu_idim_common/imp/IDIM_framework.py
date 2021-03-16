@@ -93,30 +93,17 @@ SYSCON_URMISSION = 0x05
         @ DIR_AMR_[방향]: IDIM testbed 기준
         @ P_AMR_[이름(장비 ...)]  : Target Pose [ X[m], Y[m], Theta[rad] ]
 '''
-AMR_DIR_UP    =  0.0             # 앞쪽 문 방향
+AMR_DIR_UP    =  0.0             # Instron 방향 (왼쪽)
 AMR_DIR_DOWN  =  math.pi         # 뒷쪽 문 방향
-AMR_DIR_LEFT  = -math.pi / 2.0   # Instron 방향 (왼쪽)
-AMR_DIR_RIGHT =  math.pi / 2.0   # CNC 방향 (오른쪽)
+AMR_DIR_LEFT  = -math.pi / 2.0   # CNC 방향 (오른쪽)
+AMR_DIR_RIGHT =  math.pi / 2.0   # 앞쪽 문 방향
 
-AMR_POS_ZERO      = [ 2.214, -0.407,  AMR_DIR_UP]
-AMR_POS_HOME      = [ 1.465, -1.654,  AMR_DIR_LEFT]
-AMR_POS_3DP_0     = [ 3.005, -3.268, -1.610];   AMR_OFFSET_3DP = 0.47
-AMR_POS_INSTRON   = [ 3.005, -3.268, -1.610]
-AMR_POS_OMM       = []
-AMR_POS_DOOR      = [ 7.402, -0.140,  AMR_DIR_RIGHT]
-AMR_POS_TABLE_1   = [ 7.071, -2.000,  AMR_DIR_UP]
-AMR_POS_TABLE_2   = [ 5.346, -2.000,  AMR_DIR_UP]
-AMR_POS_DYNAMO    = [ 4.410, -2.300,  AMR_DIR_UP]
-AMR_POS_LOCKER    = [ 3.163, -0.073,  AMR_DIR_LEFT]
-AMR_POS_SEWING    = [ 2.061, -0.078,  AMR_DIR_UP]
-AMR_POS_CNC       = [ 0.888, -0.238,  AMR_DIR_UP]
-AMR_POS_TABLE_3   = [-1.401, -0.060,  AMR_DIR_DOWN]
-AMR_POS_JUSTEK    = [-2.917, -0.590,  AMR_DIR_DOWN]
-AMR_POS_LASER     = [-4.510, -0.801,  AMR_DIR_DOWN]
-AMR_POS_DAEGON    = [-5.571, -0.777,  AMR_DIR_LEFT]
-AMR_POS_INJECTION = [-3.575, -2.460,  AMR_DIR_UP]
-AMR_POS_PROFILER  = [-1.684, -2.565,  AMR_DIR_UP]
-AMR_POS_SINDOH3DP = [-0.134, -2.565,  AMR_DIR_UP]
+
+AMR_POS_HOME      = [ 0.000,  0.000,  0.000]
+AMR_POS_3DP_0     = [ 0.837, -2.793, -1.560];   AMR_OFFSET_3DP = 0.4676
+AMR_POS_INSTRON   = [ 0.928, -2.729, -1.570]
+AMR_POS_OMM       = [ 0.704,  1.621,  1.617]
+
 ##################################################################################################################################################
 
 
