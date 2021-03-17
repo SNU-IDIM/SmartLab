@@ -37,7 +37,7 @@ class DeviceClass_3DP:
         ## Common init for all devices
         self.device_id = int(device_name.split('printer')[1]) if usb_port_ == None else usb_port_
         
-        self.ip = '0.0.0.0' if ip_ == None else ip_
+        self.ip = 'localhost' if ip_ == None else ip_
         self.port = 5000 + self.device_id if port_ == None else int(port_)
 
         self.status = dict()
@@ -53,7 +53,7 @@ class DeviceClass_3DP:
         self.status['gcode_file'] = ''
         
         ## Specialized init for the device (in this case, 3D printer)
-        executable_path = os.path.join('../snu_idim_3dp', 'chromedriver_81.0.4044.92')
+        executable_path = os.path.join('../snu_idim_3dp', 'chromedriver88')
         print(executable_path)
         self.driver = webdriver.Chrome(executable_path=executable_path)
         self.driver.get(self.status['ip_port'])
@@ -151,6 +151,7 @@ class DeviceClass_3DP:
             if cmd_keys[i] == 'status':
                 self.status['status'] = cmd_values[i]
             if cmd_keys[i] == 'connection':
+                sleep(5.0)
                 if cmd_values[i] == True and self.status['connection'].find('Offline') != -1: # connect printer
                     self.connectDevice()
                 elif cmd_values[i] == False and self.status['connection'].find('Offline') == -1: # disconnect printer
@@ -274,7 +275,7 @@ class DeviceClass_3DP:
 
 if __name__ == '__main__':  
 
-    printer = DeviceClass_3DP(device_name='printer0', ip_='192.168.0.81', port_=5002, usb_port_=1)
+    printer = DeviceClass_3DP(device_name='printer0', ip_='localhost', port_=5001, usb_port_=0)
     
     print("[DEBUG] 1. Connect printer")
     printer.command({'connection': True})

@@ -1,4 +1,5 @@
-#! usr/bin/python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import sys, os, json
 from threading import Thread
@@ -85,8 +86,9 @@ class AutoSlicer():
             n_factor_unsetted = len(unit_test_dict)
 
             CURA_ENGINE_DIR = os.path.join(os.getenv("HOME"), 'CuraEngine/build/CuraEngine')
-            STL_FILE_DIR = "specimen_3T.stl"
-            JSON_FILE_DIR = 'anet.def.json'
+            SMARTLAB_PATH = os.path.join(os.getenv("HOME"), 'catkin_ws/src/SNU_SmartLAB', 'snu_idim_slicer')
+            STL_FILE_DIR = os.path.join(SMARTLAB_PATH, "specimen_3T.stl")
+            JSON_FILE_DIR = os.path.join(SMARTLAB_PATH, "anet.def.json")
             TEST_HEADER_ID = self.testset_dict['header']['header_id']
             SAVE_DIR = os.path.join(os.getenv("HOME"), '.octoprint/uploads', TEST_HEADER_ID)
 
@@ -98,7 +100,7 @@ class AutoSlicer():
             if TEST_HEADER_ID == 'DRY_TEST': # for dry run
                 print('[DEBUG] "{}_{}.gcode"'.format(TEST_HEADER_ID, n_test_done))
                 f = open(os.path.join(SAVE_DIR, "{}_{}.gcode".format(TEST_HEADER_ID, n_test_done)), 'w')
-                f.write('G28')
+                f.write('G28\nM17')
                 f.close()
                 n_test_done += 1
             

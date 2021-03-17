@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>snu_idim_slicer</name>
+  <version>0.0.0</version>
+  <description>The snu_idim_slicer package</description>
+
+  <license>TODO</license>
+  
+  <maintainer email="wjyun@snu.ac.kr">Won-Jae Yun</maintainer>
+  
+  <author email="wjyun@snu.ac.kr">Won-Jae Yun</author>
+  <author email="hongluck@snu.ac.kr">Sungjin Hong</author>
+  <author email="ksksooo@snu.ac.kr">Kyu-Wha Lee</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <export>
+    <!-- Other tools can request additional information be placed here -->
+  </export>
+
+</package>
