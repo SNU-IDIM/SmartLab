@@ -51,7 +51,7 @@ class autoInstron:
 		self.result['Vision_data'] = ''
 
 		self.record = keyboard_recorder_save_Ver.Instron_cam()
-		self.sql = mysql(user = 'IDIM-Instron', host = '192.168.0.81')
+		self.sql = mysql(user = 'IDIM-Instron', host = '192.168.60.101')
 
 	def write_data(self, msg):
 		# print("writeerror")

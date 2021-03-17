@@ -11,7 +11,7 @@ from IDIM_framework import *
 
 class TestDesigner(object):
 
-    def __init__(self, test_setting, ip='192.168.60.101'):
+    def __init__(self, test_setting, ip='192.168.60.21'):
         ## Subject Info. definition
         self.test_info_dict = dict()
         self.header_ = test_setting

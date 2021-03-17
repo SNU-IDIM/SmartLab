@@ -18,7 +18,7 @@ RAD2DEG = 180.0 / math.pi
 SI2DSR  = 1000.0
 
 CTRL_SWITCH = 'AMR'
-JOY_FLAG = 1
+JOY_FLAG = -1
 print "Joystick Controller: AMR"
 
 JOY2DSR_TRANS  = 0.001 # [0 ~ 1] -> [m] 

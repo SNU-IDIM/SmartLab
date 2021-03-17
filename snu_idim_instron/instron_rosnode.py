@@ -18,9 +18,10 @@ if __name__ == "__main__":
     
     # '''
     rospy.sleep(5.0)
+    specimen_name = 'qwerty'
 
     cmd_dict = dict()
-    cmd_dict['setup'] = 'test5'
+    cmd_dict['setup'] = specimen_name
 
     instron_node.sendCommand(cmd_dict)  #   time.sleep(3)
 
@@ -49,24 +50,24 @@ if __name__ == "__main__":
             continue
     '''
 
-    while True:
-        if instron_node.getStatus()['status'] == 'Ready':
-            print("execute debugging")
-            cmd_dict['execute'] = 'test5'
-            del(cmd_dict['setup'])
-            instron_node.sendCommand(cmd_dict)
-            # breap00-oo00000099e:
-            break
-        else:
-            continue
+    # while True:
+    #     if instron_node.getStatus()['status'] == 'Ready':
+    #         print("execute debugging")
+    #         cmd_dict['execute'] = specimen_name
+    #         del(cmd_dict['setup'])
+    #         instron_node.sendCommand(cmd_dict)
+    #         # breap00-oo00000099e:
+    #         break
+    #     else:
+    #         continue
     
-    while True:
-        if instron_node.getStatus()['status'] =='Idle':
-            print("result debugging")
-            cmd_dict['result'] = 'test5'
-            del(cmd_dict['execute'])
-            instron_node.sendCommand(cmd_dict)
-            break
+    # while True:
+    #     if instron_node.getStatus()['status'] =='Idle':
+    #         print("result debugging")
+    #         cmd_dict['result'] = 'test5'
+    #         del(cmd_dict['execute'])
+    #         instron_node.sendCommand(cmd_dict)
+    #         break
         
-        else:
-            continue
+    #     else:
+    #         continue

@@ -499,7 +499,7 @@ if __name__ == '__main__':
     rospy.init_node('DeviceManager')
 
     # SERVER_IP = '192.168.0.81'
-    SERVER_IP = '192.168.60.101'
+    SERVER_IP = '192.168.60.21'
 
     ## User Input (Experiment settings)
     test_setting = {
@@ -528,8 +528,8 @@ if __name__ == '__main__':
     manager.addDevice('R_001/amr', device_class=DeviceClass_AMR(device_name='R_001/amr'))
     manager.addDevice('R_001/cobot', device_class=None)
     manager.addDevice('instron')
-    # manager.addDevice('MS')
-    manager.addDevice('MS', DeviceClass_OMM(device_name='MS', port_='/dev/ttyUSB0'))
+    manager.addDevice('MS')
+    # manager.addDevice('MS', DeviceClass_OMM(device_name='MS', port_='/dev/ttyUSB0'))
 
     manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', ip_=SERVER_IP, port_='5001', usb_port_=0))
     manager.addDevice('printer2', DeviceClass_3DP(device_name='printer2', ip_=SERVER_IP, port_='5002', usb_port_=1))
