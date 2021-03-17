@@ -39,6 +39,7 @@ class DeviceClass_OMM(object):
         self.result['length'] = 0
         self.result['width'] = 0
 
+
         self.sql = mysql(user=self.device_id, host = '192.168.60.21')
 
         self.thread_1 = Thread(target=self.updateStatus)
@@ -52,10 +53,10 @@ class DeviceClass_OMM(object):
             pass
 
     def updateStatus(self):
-        while True:
-            # print(self.status)
+        # while True:
+        #     print(self.call)
             
-            time.sleep(2)
+        time.sleep(2)
 
 ##--------------------------------------------------------------------------------------------------------------------
 ##----------------------------------------------------need to change--------------------------------------------------
@@ -94,10 +95,11 @@ class DeviceClass_OMM(object):
                 # self.send_GCode('G0 Z25')
             elif cmd_keys[key] == 'measure_thickness':
                 self.status['status'] = 'G30 : Measure Thickness'
-                self.send_GCode('G0 X120 Y165 Z30')
+                self.send_GCode('G0 X120 Y165 Z31')
                 self.send_zPosition()
                 self.result['thickness'] = self.readline_zPosition()
                 self.status['status'] = 'Idle'
+                
             elif cmd_keys[key] == 'measure_dimension':
                 self.status['status'] = 'Measure Size'
                 
@@ -159,12 +161,13 @@ class DeviceClass_OMM(object):
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE)
         self.status['connection'] = True
-        self.status['status'] = 'Idle'
         self.send_GCode('G0 X120 Y165 Z30')
-        self.send_GCode('G28')
+        self.send_home()
+        self.okstop()
         self.send_GCode('G0 X143 Y220 Z240')
         self.send_GCode('M17')
-
+        self.status['status'] = 'Idle'
+        
 
         print("Measurement Station CONNECTED")
         # except:
@@ -178,6 +181,7 @@ class DeviceClass_OMM(object):
         self.serial.write(msg + '\n')
 
     def send_home(self):
+        self.status['status'] = 'going home'
         print 'Sending gcode : G28 -> home position'
         msg = 'G28'
         self.serial.write(msg + '\n')
@@ -217,18 +221,15 @@ class DeviceClass_OMM(object):
         with open(filename, 'w') as w:
             w.write(result)
 
-    def stopsign(self, status):
+    def okstop(self):
+        cnt = 0
         while True:
-            if self.result['thickness'] != 0 and self.flag == 0:
-                self.flag = 1
-                break
-            elif self.result['axial_length'] != 0 and self.flag == 1:
-                self.flag = 2
-                break
-            elif self.result['width'] != 0 and self.flag == 2:
-                break
-        self.status['status'] = status
-
+            line = self.readline()
+            line = line.split('\n')[0]
+            if line == 'ok':
+                cnt += 1
+                if cnt >1:
+                    break
 
     
 #-----------------------------------specimen size measurement---------------------------------------------
