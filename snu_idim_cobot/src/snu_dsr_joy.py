@@ -222,7 +222,7 @@ if __name__ == "__main__":
     rospy.on_shutdown(shutdown)
 
     pub_stop = rospy.Publisher(ROBOT_ID_ +ROBOT_MODEL_+'/stop', RobotStop, queue_size=1)
-    pub_pnp = rospy.Publisher('ur_pnp', String, queue_size=1)
+    pub_pnp = rospy.Publisher('cobot/command', String, queue_size=1)
     sub_joy  = rospy.Subscriber("dsr_cmd", Joy, joy_cb)
     while not rospy.is_shutdown():
         pass

@@ -666,7 +666,7 @@ class DeviceClass_Cobot():
                 task_compliance_ctrl([10, 10, 10000, 10, 10, 10])
                 movel(waypoint_3_left, ref=DR_TOOL, mod=DR_MV_MOD_REL)
                 movel(waypoint_3_right2, ref=DR_TOOL, mod=DR_MV_MOD_REL)
-                for i in range(3):
+                for i in range(2):
                     movel(waypoint_3_left, ref=DR_TOOL, mod=DR_MV_MOD_REL)
                     movel(waypoint_3_right, ref=DR_TOOL, mod=DR_MV_MOD_REL)
                 movel(waypoint_3_down, ref=DR_TOOL, mod=DR_MV_MOD_REL)
