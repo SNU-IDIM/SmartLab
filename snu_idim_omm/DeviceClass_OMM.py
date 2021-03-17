@@ -118,7 +118,7 @@ class DeviceClass_OMM(object):
                 self.send_GCode('G0 X143 Y220 Z240')
                 self.measure_dimension()
                 time.sleep(10)
-                self.send_GCode('M14')
+                self.send_GCode('M17')
                 self.status['status'] = 'Idle'
             
             elif cmd_keys[key] == 'readline':
@@ -160,7 +160,12 @@ class DeviceClass_OMM(object):
             stopbits=serial.STOPBITS_ONE)
         self.status['connection'] = True
         self.status['status'] = 'Idle'
-        self.send_GCode('M14')
+        self.send_GCode('G0 X120 Y165 Z30')
+        self.send_GCode('G28')
+        self.send_GCode('G0 X143 Y220 Z240')
+        self.send_GCode('M17')
+
+
         print("Measurement Station CONNECTED")
         # except:
         #         self.status['connection'] = False
