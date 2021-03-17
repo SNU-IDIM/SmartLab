@@ -27,7 +27,7 @@ if __name__ == "__main__":
     cmd_dict['connection'] = specimen_name
     measurement_node.sendCommand(cmd_dict)
 
-    
+    time.sleep(120.0)
 
 
 
@@ -56,12 +56,13 @@ if __name__ == "__main__":
     #     else:
     #         continue
     while True:
-        # if measurement_node.getStatus()['status'] == 'Idle':
-        if measurement_node.getStatus()['connection'] == True:
+        if measurement_node.getStatus()['status'] == 'Idle':
+        # if measurement_node.getStatus()['connection'] == True:
             print('\n measure debugging \n')
             # del(cmd_dict['measure_thickness'])
-            # del(cmd_dict['connection'])
+            del(cmd_dict['connection'])
             
+
             cmd_dict['measure_dimension'] = specimen_name
             measurement_node.sendCommand(cmd_dict)
             time.sleep(2)
