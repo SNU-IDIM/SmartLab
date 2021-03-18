@@ -429,8 +429,8 @@ class calc_strain:
         
         except:
             print("broken")
-            cv2.imshow("bin",bin)
-            cv2.waitKey()
+            # cv2.imshow("bin",bin)
+            # cv2.waitKey()
 
         # 데이터 타입 변환
         displist1 = np.asarray(displist)
@@ -477,7 +477,7 @@ class calc_strain:
 
         print("finish")
 
-        c = plotter(name)
+        # c = plotter(name)
 
 
 if __name__ == "__main__":

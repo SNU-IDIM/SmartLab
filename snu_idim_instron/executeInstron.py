@@ -51,7 +51,7 @@ class autoInstron:
 		self.result['Vision_data'] = ''
 
 		self.record = keyboard_recorder_save_Ver.Instron_cam()
-		self.sql = mysql(user = 'IDIM-Instron', host = '192.168.60.101')
+		self.sql = mysql(user = 'IDIM-Instron', host = '192.168.60.21')
 
 	def write_data(self, msg):
 		# print("writeerror")
@@ -151,14 +151,21 @@ class autoInstron:
 						self.status['status'] = 'Done'			# status : Done
 
 					elif self.message['message'] == 'finish':	
+						print("jae")
 						while True:
 							if self.record.stopsig() == False:
+								print(self.record.stopsig())
 								pass
 							elif self.record.stopsig() == True:
+								print(self.record.stopsig())
 								break
+						print("an")
 						self.file_name(self.message['subject_name'])
+						print("bn")
 						self.read_data()
-						self.sql.send('smartlab_result','Instron',self.result)
+						print("chock")
+						self.sql.sendResult(self.result)
+						print("nono")
 						self.status['status'] = 'Idle'
 
 						# time.sleep(.5)
@@ -202,7 +209,7 @@ if __name__=='__main__':
 	print("[DEBUG] Instron Automation Started !!!")
 
 	## Serial communication setting
-	port = 'COM8'
+	port = 'COM13'
 	baud = 115200
 	
 	## Automation program setting

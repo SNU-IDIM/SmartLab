@@ -55,18 +55,18 @@ class plotter:
 
     def load_dim(self):
         user='IDIM-Instron'
-        host='192.168.60.101'
+        host='192.168.60.21'
         port = 3306
         password='0000'
-        db='smartlab_result'
+        db='SmartLab'
         charset='utf8'
 
         con = pymysql.connect(user=user, host=host, port=port, password=password,db=db,charset=charset)
         cur = con.cursor(pymysql.cursors.DictCursor)
         subject_name = self.testnumber
 
-        sql1 = "USE smartlab_result"
-        sql2 = "SELECT * FROM MS WHERE subject_name={};".format(subject_name)
+        sql1 = "USE SmartLab"
+        sql2 = "SELECT * FROM result WHERE subject_name='{}';".format(subject_name)
         cur.execute(sql1)
         cur.execute(sql2)
         con.commit()

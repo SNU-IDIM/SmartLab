@@ -48,8 +48,7 @@ class mysql:
         # print("sql1", sql1)
         self.cur.execute(sql1)
         name = "'" + subname + "'"
-        thickness = "'" + "10.0" + "'"
-        sql2 = "INSERT INTO result (subject_name) VALUES (%s) ON DUPLICATE KEY UPDATE subject_name=%s, thickness=%s;" %(name, name, thickness)
+        sql2 = "INSERT INTO result (subject_name) VALUES (%s) ON DUPLICATE KEY UPDATE subject_name=%s;" %(name, name)
         self.cur.execute(sql2)
 
         fields = ','.join(data_keys)
