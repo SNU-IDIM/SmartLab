@@ -277,7 +277,7 @@ class DeviceManager():
         elif task_type == 'feed_specimen':
             task_tool_change_1_to_2 = [ACTION_HOME, ACTION_TOOLCHANGE_1_DETACH, ACTION_TOOLCHANGE_2_ATTACH, ACTION_HOME]
             task_feed_specimen = [ACTION_HOME, TASK_SPECIMEN_FROM_RACK, ACTION_HOME, TASK_INSTRON_SEARCH]
-            self.cobot_recent_work = ACTION_HOME
+            self.cobot_recent_work = TASK_INSTRON_SEARCH
             robot_task_queue = task_tool_change_1_to_2 + task_feed_specimen
             return robot_task_queue
 
@@ -320,22 +320,16 @@ class DeviceManager():
         if debug == False:
             sleep(2.0)
             self.waitDeviceStatus(device_name='MS', status_value='Idle')
-            if command_type == 'measure_thickness':
-                print("[OMM - Real mode] Measuring thickness ({}) ...".format(subject_name))
-                self.device_dict['MS'].sendCommand({command_type: subject_name})
-            elif command_type == 'measure_dimension':
+            if command_type == 'measure_dimension':
                 print("[OMM - Real mode] Measuring dimension ({}) ...".format(subject_name))
                 self.device_dict['MS'].sendCommand({command_type: subject_name})
-            elif command_type == 'save_result':
-                print("[OMM - Real mode] Saving results ({}) ...".format(subject_name))
-                self.device_dict['MS'].sendCommand({command_type: subject_name})
+            sleep(5.0)
+            self.waitDeviceStatus(device_name='MS', status_value='Idle')
+
 
         elif debug == True:
             if command_type == 'measure_dimension':
                 print("[OMM - Debug mode] Measuring dimension ({}) ...".format(subject_name))
-                sleep(1.0)
-            elif command_type == 'save_result':
-                print("[OMM - Debug mode] Saving results ({}) ...".format(subject_name))
                 sleep(1.0)
 
     '''#####################################################################################################
@@ -424,7 +418,6 @@ class DeviceManager():
                     self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
 
                     print("[Execution Manager] Step 2-2 (3 of 4). Measuring a dimension of specimen ({})".format(subject_id))
-                    self.executeOMM(subject_name=subject_id, command_type='measure_thickness', debug=debug)
                     self.executeOMM(subject_name=subject_id, command_type='measure_dimension', debug=debug)
 
                     print("[Execution Manager] Step 2-2 (4 of 4). Robot task start !!! (3DP bed: OMM -> Robot)")
@@ -531,14 +524,14 @@ if __name__ == '__main__':
     manager.addDevice('MS')
     # manager.addDevice('MS', DeviceClass_OMM(device_name='MS', port_='/dev/ttyUSB0'))
 
-    manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', ip_=SERVER_IP, port_='5001', usb_port_=0))
+    # manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', ip_=SERVER_IP, port_='5001', usb_port_=0))
     manager.addDevice('printer2', DeviceClass_3DP(device_name='printer2', ip_=SERVER_IP, port_='5002', usb_port_=1))
-    manager.addDevice('printer3', DeviceClass_3DP(device_name='printer3', ip_=SERVER_IP, port_='5003', usb_port_=2))
+    # manager.addDevice('printer3', DeviceClass_3DP(device_name='printer3', ip_=SERVER_IP, port_='5003', usb_port_=2))
     # manager.addDevice('printer4', DeviceClass_3DP(device_name='printer4', ip_=SERVER_IP, port_='5004', usb_port_=3))
     sleep(3.0)
 
     manager.device_dict['MS'].sendCommand({"connection": True})
-    manager.device_dict['printer1'].sendCommand({"connection": True})
+    # manager.device_dict['printer1'].sendCommand({"connection": True})
     manager.device_dict['printer2'].sendCommand({"connection": True})
-    manager.device_dict['printer3'].sendCommand({"connection": True})
+    # manager.device_dict['printer3'].sendCommand({"connection": True})
     # manager.device_dict['printer4'].sendCommand({"connection": True})
