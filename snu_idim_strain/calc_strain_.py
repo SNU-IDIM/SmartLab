@@ -485,5 +485,5 @@ if __name__ == "__main__":
     time.sleep(1)
     pass
 
-    subject_name = "test2"
-    cal.Runcal(subject_name)
+    # subject_name = "test2"
+    # cal.Runcal(subject_name)

@@ -101,6 +101,7 @@ class autoInstron:
 		self.result['Vision_data'] = binary_image[1]
 		self.result['start_pic'] = binary_image[2]
 		self.result['finish_pic'] = binary_image[3]
+		# self.result['plot'] = binary_image[4]
 
 
 
@@ -163,9 +164,13 @@ class autoInstron:
 						self.file_name(self.message['subject_name'])
 						print("bn")
 						self.read_data()
+<<<<<<< Updated upstream
 						print("chock")
 						self.sql.sendResult(self.result)
 						print("nono")
+=======
+						self.sql.sendResult('Instron',self.result)
+>>>>>>> Stashed changes
 						self.status['status'] = 'Idle'
 
 						# time.sleep(.5)
