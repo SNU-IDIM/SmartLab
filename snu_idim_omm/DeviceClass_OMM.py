@@ -130,7 +130,7 @@ class DeviceClass_OMM(object):
                 self.result['subject_name'] = cmd_values[key]
                 # result_enc = json.load(self.status)
                 
-                self.sql.send('smartlab_result', 'MS', self.result)
+                self.sql.sendResult(self.result)
                 # self.save_result(specimen_name,result_enc)
             else:
                 print(" wrong command!! ")

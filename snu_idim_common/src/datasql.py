@@ -11,7 +11,7 @@ import time
 class mysql:
     def __init__(self, user=None, host=None):
         if user != None:
-            self.con = pymysql.connect(user=user, host=host, port=3306, password='0000',db='smartlab_status', charset='utf8')
+            self.con = pymysql.connect(user=user, host=host, port=3306, password='0000',db='SmartLab', charset='utf8')
             self.cur = self.con.cursor(pymysql.cursors.DictCursor)
             print("\n database connection success \n")
         
@@ -35,19 +35,28 @@ class mysql:
         return sql
 
 
-    def send(self, db, table ,data_dict):
-        data_keys = data_dict.keys()
-        data_values = map(str,data_dict.values())
-        sql1 = "USE " + db
-        #example : "USE smartlab_status"
+    def sendResult(self,data_dict):
+        result = data_dict
+        subject_name = result['subject_name']
+        del(result['subject_name'])
+
+        data_keys = result.keys()
+        data_values = map(str,result.values())
+
+        sql1 = "USE SmartLab"
+        #example : "USE SmartLab"
         # print("sql1", sql1)
         self.cur.execute(sql1)
 
+        sql2 = "INSERT INTO result (subject_name) VALUES (%s) ON DUPLICATE KEY UPDATE subject_name=%s;" %(subject_name,subject_name)
+        self.cur.execute(sql2)
+
+
         fields = ','.join(data_keys)
         contents = "'" + "','".join(data_values) + "'"
-        sql2 = "INSERT INTO %s (%s) VALUES (%s);" %(table,fields,contents)
+        sql3 = "INSERT INTO result (%s) VALUES (%s) WHERE subject_name=%s" %(fields,contents,subject_name)
         # print("sql2", sql2)
-        self.cur.execute(sql2)
+        self.cur.execute(sql3)
 
         self.con.commit()
         self.con.close()
