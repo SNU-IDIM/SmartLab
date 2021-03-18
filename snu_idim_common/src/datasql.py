@@ -37,7 +37,7 @@ class mysql:
 
     def sendResult(self,data_dict):
         result = data_dict
-        subject_name = result['subject_name']
+        subname = result['subject_name']
         del(result['subject_name'])
 
         data_keys = result.keys()
@@ -47,16 +47,17 @@ class mysql:
         #example : "USE SmartLab"
         # print("sql1", sql1)
         self.cur.execute(sql1)
-
-        sql2 = "INSERT INTO result (subject_name) VALUES (%s) ON DUPLICATE KEY UPDATE subject_name=%s;" %(subject_name,subject_name)
+        name = "'" + subname + "'"
+        thickness = "'" + "10.0" + "'"
+        sql2 = "INSERT INTO result (subject_name) VALUES (%s) ON DUPLICATE KEY UPDATE subject_name=%s, thickness=%s;" %(name, name, thickness)
         self.cur.execute(sql2)
-
 
         fields = ','.join(data_keys)
         contents = "'" + "','".join(data_values) + "'"
-        sql3 = "INSERT INTO result (%s) VALUES (%s) WHERE subject_name=%s" %(fields,contents,subject_name)
-        # print("sql2", sql2)
-        self.cur.execute(sql3)
+        for i, field in enumerate(data_keys):
+            sql3 = "UPDATE result SET %s='%s' WHERE subject_name='%s';" %(field, data_values[i], subname)
+            self.cur.execute(sql3)
+
 
         self.con.commit()
         self.con.close()

@@ -20,7 +20,7 @@ from datasql import mysql
 
 
 class DeviceClass_OMM(object):
-    def __init__(self, device_name = 'omm', port_ = 'None'):
+    def __init__(self, device_name='omm', port_='None'):
         self.port = port_
         self.device_id = device_name
 
@@ -36,11 +36,11 @@ class DeviceClass_OMM(object):
         self.result = dict()
         self.result['subject_name'] =''
         self.result['thickness'] = 0
-        self.result['length'] = 0
-        self.result['width'] = 0
+        self.result['Length'] = 0
+        self.result['Width'] = 0
 
 
-        self.sql = mysql(user=self.device_id, host = '192.168.60.21')
+        self.sql = mysql(user=self.device_id, host='192.168.60.21')
 
         self.thread_1 = Thread(target=self.updateStatus)
         self.thread_1.start()
@@ -87,26 +87,25 @@ class DeviceClass_OMM(object):
 
             elif cmd_keys[key] == 'wake':
                 self.wakeDevice()
+                
             elif cmd_keys[key] == 'home':
                 self.status['status'] = 'G28 : Home Position'
                 self.send_home()
                 # self.status['status'] = 'Idle'
 
                 # self.send_GCode('G0 Z25')
-            elif cmd_keys[key] == 'measure_thickness':
+            elif cmd_keys[key] == 'measure_dimension':
                 self.status['status'] = 'G30 : Measure Thickness'
                 self.send_GCode('G0 X120 Y165 Z31')
                 self.send_zPosition()
                 self.result['thickness'] = self.readline_zPosition()
-                self.status['status'] = 'Idle'
-                
-            elif cmd_keys[key] == 'measure_dimension':
+
                 self.status['status'] = 'Measure Size'
                 
                 self.send_GCode('G0 X63 Y134 Z52.1')
                 print("---------------------------")
                 self.cameraOn()
-                time.sleep(4)
+                time.sleep(6)
 
                 self.capture_left = self.capture()
                 self.send_GCode('G0 X142 Y134 Z52.1')
@@ -118,9 +117,13 @@ class DeviceClass_OMM(object):
 
                 self.capture_right = self.capture()
                 self.send_GCode('G0 X143 Y220 Z240')
-                self.measure_dimension()
+                self.result['Length'], self.result['Width'] = self.measure_dimension()
                 time.sleep(10)
                 self.send_GCode('M17')
+
+                self.result['subject_name'] = cmd_values[key]
+                self.sql.sendResult(self.result)
+                
                 self.status['status'] = 'Idle'
             
             elif cmd_keys[key] == 'readline':
@@ -228,6 +231,7 @@ class DeviceClass_OMM(object):
             line = line.split('\n')[0]
             if line == 'ok':
                 cnt += 1
+                print(cnt)
                 if cnt >1:
                     break
 
