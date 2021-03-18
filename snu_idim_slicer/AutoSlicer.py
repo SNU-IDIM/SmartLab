@@ -100,7 +100,15 @@ class AutoSlicer():
             if TEST_HEADER_ID == 'DRY_TEST': # for dry run
                 print('[DEBUG] "{}_{}.gcode"'.format(TEST_HEADER_ID, n_test_done))
                 f = open(os.path.join(SAVE_DIR, "{}_{}.gcode".format(TEST_HEADER_ID, n_test_done)), 'w')
-                f.write('G28\nM17')
+                gcode_home = 'G28\n'
+                gcode_pen_on  = 'G1 E-10 F2000\n;toggle the namepen\nG1 X115 Y110 F1000\nG1 Z148 F1000\nG1 Z168 F100\nG1 Z148 F1000\n'
+                gcode_pattern = 'G1 X108.0Y155.0Z8.5F2000\nG1 X108.0Y155.0Z5.0\nG1 X108.0Y155.0Z8.5\nG1 X108.0Y157.0Z8.5F2000\nG1 X108.0Y157.0Z5.0\nG1 X108.0Y157.0Z8.5\nG1 X108.0Y159.0Z8.5F2000\nG1 X108.0Y159.0Z5.0\nG1 X108.0Y159.0Z8.5\nG1 X110.0Y155.0Z8.5F2000\nG1 X110.0Y155.0Z5.0\nG1 X110.0Y155.0Z8.5\nG1 X110.0Y157.0Z8.5F2000\nG1 X110.0Y157.0Z5.0\nG1 X110.0Y157.0Z8.5\nG1 X110.0Y159.0Z8.5F2000\nG1 X110.0Y159.0Z5.0\nG1 X110.0Y159.0Z8.5\nG1 X112.0Y155.0Z8.5F2000\nG1 X112.0Y155.0Z5.0\nG1 X112.0Y155.0Z8.5\nG1 X112.0Y157.0Z8.5F2000\nG1 X112.0Y157.0Z5.0\nG1 X112.0Y157.0Z8.5\nG1 X112.0Y159.0Z8.5F2000\nG1 X112.0Y159.0Z5.0\nG1 X112.0Y159.0Z8.5'
+                gcode_pen_off = 'G1 X115 Y110 F100\nG1 Z148 F1000\nG1 Z166.5 F100\nG1 Z148 F1000\nG1 Y220 F1000\n'
+                gcode_fix_bed = 'M17\n'
+
+                gcode_merged = gcode_home + gcode_pen_on + gcode_pattern + gcode_pen_off + gcode_fix_bed
+
+                f.write(gcode_merged)
                 f.close()
                 n_test_done += 1
             

@@ -20,64 +20,23 @@ if __name__ == "__main__":
     measurement_node = DevicePluginToROS(device_name=device_name, device_class=DeviceClass_OMM(device_name, port_='/dev/ttyUSB0'))
 
 
-    specimen_name = '20210302t1'
+    specimen_name = 'Debug2'
 
     rospy.sleep(5)
     cmd_dict = dict()
     cmd_dict['connection'] = specimen_name
     measurement_node.sendCommand(cmd_dict)
 
-    time.sleep(120.0)
+    # time.sleep(10.0)
 
-
-
-    # while True:
-    #     if measurement_node.getStatus()['connection'] == True:
-    #         print('\n debugging start \n')
-    #         del(cmd_dict['connection'])
-    #         cmd_dict['home'] = specimen_name
-    #         measurement_node.sendCommand(cmd_dict)
-            
-    #         break
-    #     else:
-    #         continue
-
-    # while True:
-    #     if measurement_node.getStatus()['status'] == 'G28 : Home Position':
-    #     # if measurement_node.getStatus()['connection'] == True:
-    #         print('\n measure debugging \n')
-    #         del(cmd_dict['home'])
-    #         # del(cmd_dict['connection'])
-            
-    #         cmd_dict['measure_thickness'] = specimen_name
-    #         measurement_node.sendCommand(cmd_dict)
-    #         time.sleep(2)
-    #         break
-    #     else:
-    #         continue
     while True:
         if measurement_node.getStatus()['status'] == 'Idle':
-        # if measurement_node.getStatus()['connection'] == True:
             print('\n measure debugging \n')
-            # del(cmd_dict['measure_thickness'])
             del(cmd_dict['connection'])
             
-
             cmd_dict['measure_dimension'] = specimen_name
             measurement_node.sendCommand(cmd_dict)
             time.sleep(2)
             break
         else:
             continue
-    
-    # while True:
-    #     if measurement_node.getStatus()['status'] == 'Idle':
-    #         del(cmd_dict['measure_dimension'])
-    #         cmd_dict['save_result'] = specimen_name
-    #         measurement_node.sendCommand(cmd_dict)
-    #         break
-    #     else:
-    #         continue
-    
-            
-        
