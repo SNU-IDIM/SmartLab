@@ -11,6 +11,7 @@
 		
 
 	<node pkg="snu_idim_slicer" type="AutoSlicer.py" name="AutoSlicer" output="screen"/>
+	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find snu_idim_xmanager)/rviz/SNU.rviz"/>
 	
 	<!-- <node pkg="snu_idim_device_manager" type="DeviceManager.py" name="DeviceManager" output="screen"/> -->
 
