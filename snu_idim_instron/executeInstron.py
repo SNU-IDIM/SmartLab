@@ -42,7 +42,7 @@ class autoInstron:
 		self.message['subject_name'] = None
 		self.message['message'] = ''
 		self.subject_name  = None
-		self.checklist = ['online','start','setting','experiment_start','running','finish','send_data','data_saved']
+		self.checklist = ['online','serial_check','start','setting','experiment_start','running','finish']
 		self.result = dict()
 		self.result['subject_name'] = 'None'
 		self.result['Raw_data'] = ''
@@ -113,8 +113,7 @@ class autoInstron:
 		while True:
 			try:
 				self.serial_port.flushInput()
-				time.sleep(0.5)
-
+				time.sleep(1)
 				if self.serial_port.inWaiting() > 0:
 
 					data = self.serial_port.readline().decode('utf-8').split('\n')[0]
@@ -128,6 +127,10 @@ class autoInstron:
 					if self.message['message'] == 'online':						# connection : online / status : Idle
 						self.status['connection'] = 'Online'
 						self.status['status'] = 'Idle'
+
+					# elif self.message['message'] == 'serial_check':
+					# 	time.sleep(1)
+					# 	self.status['status'] = 'Connected'
 
 
 					elif self.message['message'] == 'start':						
@@ -152,7 +155,6 @@ class autoInstron:
 						self.status['status'] = 'Done'			# status : Done
 
 					elif self.message['message'] == 'finish':	
-						print("jae")
 						while True:
 							if self.record.stopsig() == False:
 								print(self.record.stopsig())
@@ -160,27 +162,18 @@ class autoInstron:
 							elif self.record.stopsig() == True:
 								print(self.record.stopsig())
 								break
-						print("an")
 						self.file_name(self.message['subject_name'])
-						print("bn")
 						self.read_data()
-<<<<<<< Updated upstream
-						print("chock")
 						self.sql.sendResult(self.result)
-						print("nono")
-=======
-						self.sql.sendResult('Instron',self.result)
->>>>>>> Stashed changes
+
 						self.status['status'] = 'Idle'
 
-						# time.sleep(.5)
-						# self.status['status'] = 'data_sent'
 
-					elif self.message['message'] == 'data_saved':
-						if 'result' in self.status.keys():
-							self.status['subject_name'] = 'NONE'
-							del(self.status['result'])
-						self.status['status'] = 'Idle'
+					# elif self.message['message'] == 'data_saved':
+					# 	if 'result' in self.status.keys():
+					# 		self.status['subject_name'] = 'NONE'
+					# 		del(self.status['result'])
+					# 	self.status['status'] = 'Idle'
 						
 
 					elif self.message['message'] not in self.checklist:

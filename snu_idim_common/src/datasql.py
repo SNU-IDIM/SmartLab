@@ -37,15 +37,12 @@ class mysql:
 
     def sendResult(self,data_dict):
         result = data_dict
-<<<<<<< Updated upstream
         subname = result['subject_name']
-=======
-        subject_name = result['subject_name']
->>>>>>> Stashed changes
         del(result['subject_name'])
-
+        # print(result.values())
+        # print(list(map(str,result.values())))
         data_keys = result.keys()
-        data_values = map(str,result.values())
+        data_values = list(map(str,result.values()))
 
         sql1 = "USE SmartLab"
         #example : "USE SmartLab"
@@ -55,22 +52,15 @@ class mysql:
         sql2 = "INSERT INTO result (subject_name) VALUES (%s) ON DUPLICATE KEY UPDATE subject_name=%s;" %(name, name)
         self.cur.execute(sql2)
 
-        sql2 = "INSERT INTO result (subject_name) VALUES (%s) ON DUPLICATE KEY UPDATE subject_name=%s;" %(subject_name,subject_name)
-        self.cur.execute(sql2)
-
-
         fields = ','.join(data_keys)
         contents = "'" + "','".join(data_values) + "'"
-<<<<<<< Updated upstream
+        # print(data_keys)
+        # print(data_values)
+        # print(subname)
         for i, field in enumerate(data_keys):
+            print(field)
             sql3 = "UPDATE result SET %s='%s' WHERE subject_name='%s';" %(field, data_values[i], subname)
             self.cur.execute(sql3)
-
-=======
-        sql3 = "INSERT INTO result (%s) VALUES (%s) WHERE subject_name=%s" %(fields,contents,subject_name)
-        # print("sql2", sql2)
-        self.cur.execute(sql3)
->>>>>>> Stashed changes
 
         self.con.commit()
         self.con.close()
