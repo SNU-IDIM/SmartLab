@@ -71,13 +71,14 @@ class autoInstron:
 			self.vision_file = 'C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain/result/' + test_name + '/' + test_name + '__vision___.xlsx'
 			self.start_file = 'C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain/result/' + test_name + '/pics/calibrate_img0.png'
 			self.finish_file = 'C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain/result/' + test_name + '/pics/calibrate_img' + str(last_frame) + '.png'
+			self.plot_file = 'C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain/result/' + test_name + '/' + test_name + '_plot.png'
 
 		except:
 			print("file is not exist")
 
 	def read_data(self):
 		data = []
-		binary_image = [0,0,0,0]
+		binary_image = [0,0,0,0,0]
 		with open(self.raw_file, 'rb') as r1:
 			data.append(r1.read())
 			r1.close()
@@ -90,8 +91,11 @@ class autoInstron:
 		with open(self.finish_file, 'rb') as r4:
 			data.append(r4.read())
 			r4.close()
+		with open(self.plot_file, 'rb') as r5:
+			data.append(r5.read())
+			r4.close()
 
-		for i in range(0,4):
+		for i in range(0,5):
 			binary_image[i] = base64.b64encode(data[i])
 			binary_image[i] = binary_image[i].decode('UTF-8')
 
@@ -101,7 +105,7 @@ class autoInstron:
 		self.result['Vision_data'] = binary_image[1]
 		self.result['start_pic'] = binary_image[2]
 		self.result['finish_pic'] = binary_image[3]
-		# self.result['plot'] = binary_image[4]
+		self.result['plot'] = binary_image[4]
 
 
 
@@ -155,15 +159,20 @@ class autoInstron:
 						self.status['status'] = 'Done'			# status : Done
 
 					elif self.message['message'] == 'finish':	
+						print("finish in")
 						while True:
 							if self.record.stopsig() == False:
-								print(self.record.stopsig())
+								# print(self.record.stopsig())
 								pass
 							elif self.record.stopsig() == True:
 								print(self.record.stopsig())
 								break
+
+						print("read file name")
 						self.file_name(self.message['subject_name'])
+						print("read data")
 						self.read_data()
+						print("send data")
 						self.sql.sendResult(self.result)
 
 						self.status['status'] = 'Idle'

@@ -29,12 +29,22 @@ class plotter:
 
         thickness= self.load_dim()
         cs_area = thickness
+        print('area', cs_area)
 
         ########################################################################################################################################
-        strain = self.load_strain_data(start_point, end_point)
-        time1, load1 = self.load_instron_data() #this is from vision
-               
+        time1, load1 = self.load_instron_data() #this is from Instron
+        end_point = np.shape(time1)[0]
+
+        strain = self.load_strain_data(start_point, end_point-1) #this is from vision
+        
+        print(np.shape(strain))
+        print(np.shape(time1))
+        print(np.shape(load1))       
+
         resampled_time1, resampled_load1= self.sampling_interpol(time1, load1, 0.2)
+        print("---------------------")
+        print(np.shape(resampled_time1))
+        print(np.shape(resampled_load1))
 
         ####################################################################
         time1 = resampled_time1[start_point:end_point]
@@ -42,7 +52,10 @@ class plotter:
 
         smoother = ConvolutionSmoother(window_len=30, window_type='ones')
         smoother.smooth(strain)
-
+        print("---------------------")
+        print(np.shape(smoother.smooth_data))
+        print(np.shape(smoother.smooth_data[0]))
+        print(np.shape(load1))
         ########################################################################################################################################
         plt.plot(smoother.smooth_data[0], load1/cs_area)
         # plt.plot(strain, load1/cs_area)
@@ -51,7 +64,9 @@ class plotter:
         plt.ylabel("Stress (MPa)")
         plt.title("Stress - Strain curve")
         # plt.legend(['vision'])
-        plt.show()
+        # plt.show()
+        plt.ioff()
+        plt.savefig("C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain/result/" + self.testnumber + "/" + self.testnumber + "_plot.png")
 
     def load_dim(self):
         user='IDIM-Instron'
@@ -66,7 +81,7 @@ class plotter:
         subject_name = self.testnumber
 
         sql1 = "USE SmartLab"
-        sql2 = "SELECT * FROM result WHERE subject_name='{}';".format(subject_name)
+        sql2 = "SELECT Thickness FROM result WHERE subject_name='{}';".format(subject_name)
         cur.execute(sql1)
         cur.execute(sql2)
         con.commit()

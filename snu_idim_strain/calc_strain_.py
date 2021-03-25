@@ -477,7 +477,7 @@ class calc_strain:
 
         print("finish")
 
-        # c = plotter(name)
+        c = plotter(name)
 
 
 if __name__ == "__main__":
