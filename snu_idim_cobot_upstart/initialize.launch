@@ -8,7 +8,9 @@
   
   <!--<node pkg="snu_idim_cobot" type="snu_moveit_commander.py" name="snu_moveit_commander" ns="$(env RID)"/>-->
   <!--<node pkg="snu_idim_cobot" type="snu_dsr_digital_io_controller.py" name="snu_dsr_digital_io_controller" ns="$(env RID)"/>-->
-  <node pkg="snu_idim_cobot" type="snu_drl_interface.py" name="snu_dsr_interface" ns="$(env RID)"/>
+  <node pkg="snu_idim_cobot" type="snu_drl_interface.py" name="snu_dsr_interface" ns="$(env RID)" output='screen'>
+    <param name="velocity_ratio" value='100' type="int"/>  
+  </node>
   <node pkg="snu_idim_cobot" type="snu_dsr_joy.py" name="snu_dsr_joy" ns="$(env RID)"/>
   <!-- <include file="$(find snu_idim_amr)/launch/display.launch"/> -->
 </launch>
