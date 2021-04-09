@@ -42,7 +42,7 @@ class autoInstron:
 		self.message['subject_name'] = None
 		self.message['message'] = ''
 		self.subject_name  = None
-		self.checklist = ['online','start','setting','experiment_start','running','finish','send_data','data_saved']
+		self.checklist = ['online','serial_check','start','setting','experiment_start','running','finish']
 		self.result = dict()
 		self.result['subject_name'] = 'None'
 		self.result['Raw_data'] = ''
@@ -51,7 +51,7 @@ class autoInstron:
 		self.result['Vision_data'] = ''
 
 		self.record = keyboard_recorder_save_Ver.Instron_cam()
-		self.sql = mysql(user = 'IDIM-Instron', host = '192.168.60.101')
+		self.sql = mysql(user = 'IDIM-Instron', host = '192.168.60.21')
 
 	def write_data(self, msg):
 		# print("writeerror")
@@ -71,13 +71,14 @@ class autoInstron:
 			self.vision_file = 'C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain/result/' + test_name + '/' + test_name + '__vision___.xlsx'
 			self.start_file = 'C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain/result/' + test_name + '/pics/calibrate_img0.png'
 			self.finish_file = 'C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain/result/' + test_name + '/pics/calibrate_img' + str(last_frame) + '.png'
+			self.plot_file = 'C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain/result/' + test_name + '/' + test_name + '_plot.png'
 
 		except:
 			print("file is not exist")
 
 	def read_data(self):
 		data = []
-		binary_image = [0,0,0,0]
+		binary_image = [0,0,0,0,0]
 		with open(self.raw_file, 'rb') as r1:
 			data.append(r1.read())
 			r1.close()
@@ -90,8 +91,11 @@ class autoInstron:
 		with open(self.finish_file, 'rb') as r4:
 			data.append(r4.read())
 			r4.close()
+		with open(self.plot_file, 'rb') as r5:
+			data.append(r5.read())
+			r4.close()
 
-		for i in range(0,4):
+		for i in range(0,5):
 			binary_image[i] = base64.b64encode(data[i])
 			binary_image[i] = binary_image[i].decode('UTF-8')
 
@@ -101,6 +105,7 @@ class autoInstron:
 		self.result['Vision_data'] = binary_image[1]
 		self.result['start_pic'] = binary_image[2]
 		self.result['finish_pic'] = binary_image[3]
+		self.result['plot'] = binary_image[4]
 
 
 
@@ -112,8 +117,7 @@ class autoInstron:
 		while True:
 			try:
 				self.serial_port.flushInput()
-				time.sleep(0.5)
-
+				time.sleep(1)
 				if self.serial_port.inWaiting() > 0:
 
 					data = self.serial_port.readline().decode('utf-8').split('\n')[0]
@@ -127,6 +131,10 @@ class autoInstron:
 					if self.message['message'] == 'online':						# connection : online / status : Idle
 						self.status['connection'] = 'Online'
 						self.status['status'] = 'Idle'
+
+					# elif self.message['message'] == 'serial_check':
+					# 	time.sleep(1)
+					# 	self.status['status'] = 'Connected'
 
 
 					elif self.message['message'] == 'start':						
@@ -151,24 +159,30 @@ class autoInstron:
 						self.status['status'] = 'Done'			# status : Done
 
 					elif self.message['message'] == 'finish':	
+						print("finish in")
 						while True:
 							if self.record.stopsig() == False:
+								# print(self.record.stopsig())
 								pass
 							elif self.record.stopsig() == True:
+								print(self.record.stopsig())
 								break
+
+						print("read file name")
 						self.file_name(self.message['subject_name'])
+						print("read data")
 						self.read_data()
-						self.sql.send('smartlab_result','Instron',self.result)
+						print("send data")
+						self.sql.sendResult(self.result)
+
 						self.status['status'] = 'Idle'
 
-						# time.sleep(.5)
-						# self.status['status'] = 'data_sent'
 
-					elif self.message['message'] == 'data_saved':
-						if 'result' in self.status.keys():
-							self.status['subject_name'] = 'NONE'
-							del(self.status['result'])
-						self.status['status'] = 'Idle'
+					# elif self.message['message'] == 'data_saved':
+					# 	if 'result' in self.status.keys():
+					# 		self.status['subject_name'] = 'NONE'
+					# 		del(self.status['result'])
+					# 	self.status['status'] = 'Idle'
 						
 
 					elif self.message['message'] not in self.checklist:
@@ -202,7 +216,7 @@ if __name__=='__main__':
 	print("[DEBUG] Instron Automation Started !!!")
 
 	## Serial communication setting
-	port = 'COM8'
+	port = 'COM13'
 	baud = 115200
 	
 	## Automation program setting

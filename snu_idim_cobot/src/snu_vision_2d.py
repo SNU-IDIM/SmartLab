@@ -40,7 +40,7 @@ class snu_vision_2d():
 
         print(self.vision_status)
 
-        ### Trun on CNN specimen detecion
+        ### Turn on CNN specimen detecion
         os.system('python3 /home/syscon/catkin_ws/src/SNU_SmartLAB/snu_idim_cobot/src/snu_vision_specimen_detection.py')
 
     def vision(self, data):
