@@ -67,8 +67,8 @@ class DeviceClass_OMM(object):
 
 
     def command(self, cmd_dict):
-        cmd_keys = cmd_dict.keys()
-        cmd_values = cmd_dict.values()
+        cmd_keys = list(cmd_dict.keys())
+        cmd_values = list(cmd_dict.values())
 
         for key in range(len(cmd_keys)):
             if cmd_keys[key] == 'status':
@@ -143,61 +143,77 @@ class DeviceClass_OMM(object):
     
 
     def wakeDevice(self):
-        self.serial.write("\r\n\r\n") # Hit enter a few times to wake the Printrbot
+        # self.serial.write("\r\n\r\n") # Hit enter a few times to wake the Printrbot
+        # self.readline()
         time.sleep(2)   # Wait for Printrbot to initialize
         self.serial.flushInput()  # Flush startup text in serial input
+        self.send_GCode('M114')
+        stime = time.time()
+        while True:
+            out = self.readline()
+            if out[0] == 'X':
+                print("OMM woke up")
+                break
+
+            rtime = time.time()
+            if rtime - stime > 5:
+                print("OMM is sleeping")
+                break
+
 
     def disconnectDevice(self):
         try:
             self.serial.close()
             self.status['connection'] = False
-            print 'Measurement Station DISCONNECTED'
+            print('Measurement Station DISCONNECTED')
         except:
             self.status['connection'] = True
             pass
 
     def connectDevice(self):
-        # try:
-        self.serial = serial.Serial(port=self.port,
-            baudrate=115200,
-            bytesize=serial.EIGHTBITS,
-            parity=serial.PARITY_NONE,
-            stopbits=serial.STOPBITS_ONE)
-        self.status['connection'] = True
-        self.send_GCode('G0 X120 Y165 Z30')
-        self.send_home()
-        self.okstop()
-        self.send_GCode('G0 X143 Y220 Z240')
-        self.send_GCode('M17')
-        self.status['status'] = 'Idle'
-        
+        try:
+            self.serial = serial.Serial(port=self.port,
+                baudrate=115200,
+                bytesize=serial.EIGHTBITS,
+                parity=serial.PARITY_NONE,
+                stopbits=serial.STOPBITS_ONE)
+            self.status['connection'] = True
+            self.send_GCode('G0 X120 Y165 Z30')
+            self.send_home()
+            self.okstop()
+            self.send_GCode('G0 X143 Y220 Z240')
+            self.send_GCode('M17')
+            self.status['status'] = 'Idle'
+            
 
-        print("Measurement Station CONNECTED")
-        # except:
-        #         self.status['connection'] = False
-        #         print 'Measurement Station Connection Fail'
-        #         pass
+            print("Measurement Station CONNECTED")
+        except:
+                self.status['connection'] = False
+                print('Measurement Station Connection Fail')
+                pass
             
     def send_GCode(self, gcode):
-        print 'Sending GCode' + gcode
-        msg = gcode
-        self.serial.write(msg + '\n')
+        print('Sending GCode' + gcode)
+        msg = gcode +'\n'
+        self.serial.write(msg.encode())
 
     def send_home(self):
         self.status['status'] = 'going home'
-        print 'Sending gcode : G28 -> home position'
-        msg = 'G28'
-        self.serial.write(msg + '\n')
+        print('Sending gcode : G28 -> home position')
+        msg = 'G28' '\n'
+        self.serial.write(msg.encode())
 
 
     def send_zPosition(self):
-        print 'Sending gcode : G30 -> Z position'
-        msg = 'G30'
-        self.serial.write(msg + '\n')
+        print('Sending gcode : G30 -> Z position')
+        msg = 'G30'+ '\n'
+        self.serial.write(msg.encode())
     
     def readline(self):
         out = self.serial.readline()
+        out = out.decode()
         print("readline " + out)
+
         return out
 
     def readline_zPosition(self):
@@ -206,7 +222,7 @@ class DeviceClass_OMM(object):
             if out[0:3] == 'Bed':
                 break
         thickness = out[-5:]
-        print 'Specimen Thickness :' + str(thickness)
+        print('Specimen Thickness :' + str(thickness))
         thickness = thickness.split('\n')[0]
         return thickness
 
@@ -257,18 +273,17 @@ class DeviceClass_OMM(object):
             frames = self.pipeline.wait_for_frames()
             color_frame = frames.get_color_frame()
             color_image = np.asanyarray(color_frame.get_data())
-            color_image = self.calibration(color_image)
+            # color_image = self.calibration(color_image)
 
-            # plt.imshow(color_image)
-            # plt.show()
+            
             crop_image = color_image[:,400:1400,:]
 
-            cv2.namedWindow('RealSense',cv2.WINDOW_NORMAL)
-            cv2.namedWindow('Realsense', cv2.WINDOW_AUTOSIZE)
+            # cv2.namedWindow('RealSense',cv2.WINDOW_NORMAL)
+            # cv2.namedWindow('Realsense', cv2.WINDOW_AUTOSIZE)
 
-            cv2.imshow('RealSense', crop_image)
-            cv2.imshow('Realsense', np.zeros(np.shape(crop_image)))
-            cv2.waitKey(1)
+            # cv2.imshow('RealSense', crop_image)
+            # cv2.imshow('Realsense', np.zeros(np.shape(crop_image)))
+            # cv2.waitKey(1)
 
             finishTime = time.time()
             if finishTime - startTime > 2:
@@ -282,7 +297,7 @@ class DeviceClass_OMM(object):
 
     def midcrop(self,crop_image):
         w = np.shape(crop_image)[1]
-        mid_image = crop_image[:,w/2 - 40:w/2 + 40,:]
+        mid_image = crop_image[:,int(w/2) - 40:int(w/2) + 40,:]
         return mid_image
 
     def center_ms(self,contour_img):
@@ -317,8 +332,8 @@ class DeviceClass_OMM(object):
         startTime2 = time.time()
         while True:
             
-            cv2.imshow('Realsense', thresh_img)
-            cv2.waitKey(1)
+            # cv2.imshow('Realsense', thresh_img)
+            # cv2.waitKey(1)
 
 
             finishTime2 = time.time()
@@ -333,8 +348,8 @@ class DeviceClass_OMM(object):
         high_threshold = 80
         img = img.astype(np.uint8)
         edge_img = cv2.Canny(img, low_threshold, high_threshold)
-        cv2.imshow("Realsense",edge_img)
-        cv2.waitKey(1)
+        # cv2.imshow("Realsense",edge_img)
+        # cv2.waitKey(1)
         # time.sleep(2)
 
         return edge_img
@@ -365,8 +380,8 @@ class DeviceClass_OMM(object):
 
         # print("num : {}".format(len(contours)))
 
-        cv2.imshow("Realsense", img2)
-        cv2.waitKey(1)
+        # cv2.imshow("Realsense", img2)
+        # cv2.waitKey(1)
         # plt.imshow(img2)
         # plt.show()
 
@@ -387,7 +402,7 @@ class DeviceClass_OMM(object):
         for i in range(l):
             dist[i] = pow(contours[0][i][0][0],2) + pow(contours[0][i][0][1] ,2)
         
-        dist = map(int, dist)
+        dist = list(map(int, dist))
         cnt= dist.index(min(dist))
 
         print("lefttop", str(contours[0][cnt][0]))
@@ -405,7 +420,7 @@ class DeviceClass_OMM(object):
             # print(contours[0][i][0][0],contours[0][i][0][1])
             dist[i] = pow(contours[0][i][0][0],2) + pow(1080 - contours[0][i][0][1] ,2)
         
-        dist = map(int, dist)
+        dist = list(map(int, dist))
         cnt= dist.index(min(dist))
         print("leftbottom", str(contours[0][cnt][0]))
 
@@ -442,7 +457,7 @@ class DeviceClass_OMM(object):
         for i in range(l):
             dist[i] = pow(1000 - contours[0][i][0][0],2) + pow(contours[0][i][0][1] ,2)
         
-        dist = map(int, dist)
+        dist = list(map(int, dist))
         cnt= dist.index(min(dist))
         print("righttop", str(contours[0][cnt][0]))
 
@@ -458,7 +473,7 @@ class DeviceClass_OMM(object):
         for i in range(l):
             dist[i] = pow(1000 - contours[0][i][0][0],2) + pow(1080 - contours[0][i][0][1] ,2)
         
-        dist = map(int, dist)
+        dist = list(map(int, dist))
         cnt= dist.index(min(dist))
         print("rightbottom", str(contours[0][cnt][0]))
 
@@ -548,8 +563,8 @@ class DeviceClass_OMM(object):
                 width = math.cos(theta) * width_pix* pix2mm
 
                 
-                cv2.destroyWindow('Realsense')
-                cv2.destroyWindow('RealSense')
+                # cv2.destroyWindow('Realsense')
+                # cv2.destroyWindow('RealSense')
                 axial_dimension = round(axial_dimension,2)
                 width = round(width,2)
                 print("axial dimension is {}mm, width is {}mm".format(axial_dimension,width))
