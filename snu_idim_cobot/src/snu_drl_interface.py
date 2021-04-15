@@ -15,7 +15,9 @@ from IDIM_framework import *
 class DeviceClass_Cobot():
     def __init__(self, device_name="cobot"):
         rospy.init_node(device_name, anonymous=True)
-        
+
+        rospy.set_param('/R_001/snu_dsr_interface/velocity_ratio', 50)
+
         rospy.Subscriber("cobot/command", String, self.pnp_cb, queue_size=1)
         rospy.Subscriber("dsr/state", RobotState, self.dsr_state_cb, queue_size=1)
 
@@ -482,16 +484,16 @@ class DeviceClass_Cobot():
 
     def specimen_shaking(self):
         task_compliance_ctrl([10000, 10000, 10000, 1500, 1500, 500])
-        self.movel_z(2);      self.gripper_close();  self.movel_z(-2)
-        self.rotate_z(10);    self.rotate_z(-20);    self.rotate_z(10)
+        self.movel_z(2);      time.sleep(0.1);       self.gripper_close();       time.sleep(0.1);        self.movel_z(-2);       time.sleep(0.1)
+        self.rotate_z(10);    time.sleep(0.1);       self.rotate_z(-20);         self.rotate_z(10);      time.sleep(0.1)
 
-        self.gripper_open();  self.movel_z(-2);      self.movel_y(120)
-        self.movel_z(4);      self.gripper_close();  self.movel_z(-2)
-        self.rotate_z(-10);   self.rotate_z(20);     self.rotate_z(-10)
+        self.gripper_open();  time.sleep(0.1);       self.movel_z(-2);           time.sleep(0.1);        self.movel_y(120);      time.sleep(0.1)
+        self.movel_z(4);      time.sleep(0.1);       self.gripper_close();       time.sleep(0.1);        self.movel_z(-2);       time.sleep(0.1)
+        self.rotate_z(-10);   time.sleep(0.1);       self.rotate_z(20);          time.sleep(0.1);        self.rotate_z(-10);     time.sleep(0.1)
 
         self.gripper_open();  self.movel_y(-60)
-        self.movel_z(2);      self.gripper_close();  self.movel_z(-2)
-        self.rotate_z(-10);   self.rotate_z(20);     self.rotate_z(-10)
+        self.movel_z(2);      time.sleep(0.1);       self.gripper_close();       time.sleep(0.1);       self.movel_z(-2);        time.sleep(0.1)
+        self.rotate_z(-10);   time.sleep(0.1);       self.rotate_z(20);          time.sleep(0.1);       self.rotate_z(-10);      time.sleep(0.1)
 
         self.movel_x(-20)
 
@@ -634,6 +636,7 @@ class DeviceClass_Cobot():
 
 
     def moveBedFromStageToRobot(self, tag_id_bed, tag_id_stage=None):
+        self.setVelAcc(50, 50, [100,50], [100,50])
         self.jig_x_open();  self.jig_y_open();  rospy.sleep(1)
         movej(Q_SEARCH_3DP_RIGHT)
         self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
@@ -669,6 +672,7 @@ class DeviceClass_Cobot():
 
 
     def moveBedFromRobotToStage(self, tag_id_bed, tag_id_stage):
+        self.setVelAcc(50, 50, [100,50], [100,50])
         self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
         movej(Q_TOP_PLATE)
 
@@ -710,7 +714,7 @@ class DeviceClass_Cobot():
 
                 self.ARsetReference(tag_id_stage, 4)
 
-                self.status['gripper_angle'] = -135#223
+                self.status['gripper_angle'] = -135 #223
                 self.logging("posj : {}".format(self.status['posj']))
                 # waypoint_1 = self.calcRelMove([0, 90, 0, 0, 0, self.status['gripper_angle']], False)
                
@@ -1044,7 +1048,19 @@ class DeviceClass_Cobot():
             viewpoint = [self.status['posx'][0],self.status['posx'][1],self.status['posx'][2],self.status['posx'][3],self.status['posx'][4]-20,self.status['posx'][5]]
             movel(viewpoint)
 
-
+        # Task [10009]: Place specimen and go to the monitoring position
+        elif(self.cmd_protocol == TASK_INSTRON_CLEAN):
+            self.gripper_open();  rospy.sleep(1.0)
+            self.setVelAcc(100, 100, [50,50], [50,50])
+            viewpoint = [self.status['posx'][0],self.status['posx'][1],self.status['posx'][2],self.status['posx'][3],self.status['posx'][4]+20,self.status['posx'][5]]
+            movel(viewpoint)
+            self.movel_xyz(-100, 200, 100)
+            self.movel_z(100)
+            self.gripper_close();  rospy.sleep(1.0)
+            self.movel_z(-150)
+            self.movel_y(250)
+            self.gripper_open();  rospy.sleep(1.0)
+            self.movel_y(-250)
 
         # Task [10004]: SEARCH AND APPROACH TO ''MULTIPLE'' SPECIMENS AND DETACH TO THE BED
         elif(self.cmd_protocol == TASK_DETACH_SPECIMEN):
@@ -1183,45 +1199,31 @@ class DeviceClass_Cobot():
 
         # Task [10011]: "TASK_3DP_1_BED_IN"   - (3DP-#1 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_1_BED_IN):
-            tag_id_stage = 1
-            # tag_id_bed = tag_id_stage + 4
-            tag_id_bed = 5
-            self.logging("10011 command Bed: {}, Stage: {}".format(tag_id_bed, tag_id_stage))
-            self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
+            self.moveBedFromRobotToStage(tag_id_bed=5, tag_id_stage=1)
         # Task [-10011]: "TASK_3DP_1_BED_OUT" - (3DP-#1 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_1_BED_OUT):
-            tag_id_bed = 1 + 4
-            self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=None)
+            self.moveBedFromStageToRobot(tag_id_bed=5, tag_id_stage=None)
 
         # Task [10012]: "TASK_3DP_2_BED_IN"   - (3DP-#2 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_2_BED_IN):
-            tag_id_stage = 2
-            tag_id_bed = tag_id_stage + 4
-            self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
+            self.moveBedFromRobotToStage(tag_id_bed=6, tag_id_stage=2)
         # Task [-10012]: "TASK_3DP_2_BED_OUT" - (3DP-#2 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_2_BED_OUT):
-            tag_id_bed = 2 + 4
-            self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=None)
+            self.moveBedFromStageToRobot(tag_id_bed=6, tag_id_stage=None)
 
         # Task [10013]: "TASK_3DP_3_BED_IN"   - (3DP-#3 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_3_BED_IN):
-            tag_id_stage = 3
-            tag_id_bed = tag_id_stage + 4
-            self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
+            self.moveBedFromRobotToStage(tag_id_bed=7, tag_id_stage=3)
         # Task [-10013]: "TASK_3DP_3_BED_OUT" - (3DP-#3 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_3_BED_OUT):
-            tag_id_bed = 3 + 4
-            self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=None)
+            self.moveBedFromStageToRobot(tag_id_bed=7, tag_id_stage=None)
 
         # Task [10014]: "TASK_3DP_4_BED_IN"   - (3DP-#4 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_4_BED_IN):
-            tag_id_stage = 4
-            tag_id_bed = tag_id_stage + 4
-            self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
+            self.moveBedFromRobotToStage(tag_id_bed=8, tag_id_stage=4)
         # Task [-10014]: "TASK_3DP_4_BED_OUT" - (3DP-#4 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_4_BED_OUT):
-            tag_id_bed = 4 + 4
-            self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=None)
+            self.moveBedFromStageToRobot(tag_id_bed=8, tag_id_stage=None)
 
 
         # Task [10020]: "DEMO_COLOR_SENSOR_HANDLE" - Color sensor handling demo

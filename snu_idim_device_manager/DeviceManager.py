@@ -288,7 +288,7 @@ class DeviceManager():
             return robot_task_queue
 
         elif task_type == 'finish_experiment':
-            task_finish_experiment = [] # TODO: 로봇 작업 추가 필요
+            task_finish_experiment = [TASK_INSTRON_CLEAN]
             task_tool_change_2_to_0 = [ACTION_HOME, ACTION_TOOLCHANGE_2_DETACH, ACTION_HOME]
             self.cobot_recent_work = ACTION_HOME
             robot_task_queue = task_finish_experiment + task_tool_change_2_to_0
@@ -316,7 +316,7 @@ class DeviceManager():
     '''#####################################################################################################
         On-Machine Measurment (OMM) related
     '''
-    def executeOMM(self, subject_name, command_type, debug=False):
+    def executeOMM(self, subject_name, command_type, wait_until_end=False, debug=False):
         if debug == False:
             sleep(2.0)
             self.waitDeviceStatus(device_name='MS', status_value='Idle')
@@ -335,16 +335,18 @@ class DeviceManager():
     '''#####################################################################################################
         Instron related
     '''
-    def executeInstron(self, subject_name, command_type, debug=False):
+    def executeInstron(self, subject_name, command_type, wait_until_end=False, debug=False):
         if debug == False:
             if command_type == 'setup':
                 self.waitDeviceStatus(device_name='instron', status_value='Idle')
                 self.device_dict['instron'].sendCommand({command_type: subject_name})
                 print("[Instron - Real mode] Test Initializing ({}) ...".format(subject_name))
+                if wait_until_end == True: self.waitDeviceStatus(device_name='instron', status_key='status', status_value='Idle')
             elif command_type == 'execute':
                 self.waitDeviceStatus(device_name='instron', status_value='Ready')
                 self.device_dict['instron'].sendCommand({command_type: subject_name})
                 print("[Instron - Real mode] Test Start ({}) !!!".format(subject_name))
+                if wait_until_end == True: self.waitDeviceStatus(device_name='instron', status_key='status', status_value='Idle')
         
         elif debug == True:
             if command_type == 'setup':
@@ -470,7 +472,7 @@ class DeviceManager():
                 if step == 5: ## Step 3-2. 인장시험 준비 (subject_id)
                     self.checkExecutionMode()
                     print("[Execution Manager] Step 3-2 (1 of 2). Experiment initializing ... (subject: {})".format(subject_id))
-                    self.executeInstron(subject_id, command_type='setup', debug=debug);   sleep(10.0)
+                    self.executeInstron(subject_id, command_type='setup', wait_until_end=True, debug=debug);   sleep(10.0)
 
                     print("[Execution Manager] Step 3-2 (2 of 2). Robot task start !!! (Monitor experiment: {})".format(subject_id))
                     robot_task_queue = self.makeRobotTaskQueue(task_type='monitor_experiment')
@@ -480,7 +482,7 @@ class DeviceManager():
                 if step == 6: ## Step 3-3. 인장시험 실행 & 저장 (subject_id)
                     self.checkExecutionMode()
                     print("[Execution Manager] Step 3-3 (1 of 2). Experiment start !!! (subject: {})".format(subject_id))
-                    self.executeInstron(subject_id, command_type='execute', debug=debug)
+                    self.executeInstron(subject_id, command_type='execute', wait_until_end=True, debug=debug)
 
                     print("[Execution Manager] Step 3-3 (1 of 2). Robot task start !!! (Finnishing experiment: {})".format(subject_id))
                     robot_task_queue = self.makeRobotTaskQueue(task_type='finish_experiment')
