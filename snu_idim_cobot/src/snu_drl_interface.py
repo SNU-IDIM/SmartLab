@@ -15,7 +15,9 @@ from IDIM_framework import *
 class DeviceClass_Cobot():
     def __init__(self, device_name="cobot"):
         rospy.init_node(device_name, anonymous=True)
-        
+
+        rospy.set_param('/R_001/snu_dsr_interface/velocity_ratio', 50)
+
         rospy.Subscriber("cobot/command", String, self.pnp_cb, queue_size=1)
         rospy.Subscriber("dsr/state", RobotState, self.dsr_state_cb, queue_size=1)
 
@@ -643,7 +645,7 @@ class DeviceClass_Cobot():
             if self.ARsearchFromEEF(tag_id_bed) == True:
                 mwait(0)
                 self.ARsetReference(tag_id_bed, 5)
-                self.status['gripper_angle'] = 225
+                self.status['gripper_angle'] = -135
                 
                 waypoint_1 = self.calcRelMove([50, 0, -100, 0, 0, self.status['gripper_angle']], False)
                 waypoint_2 = self.calcRelMove([-215, 0, 172, 0, 0, 0], True)
