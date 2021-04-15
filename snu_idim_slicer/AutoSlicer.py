@@ -107,7 +107,7 @@ class AutoSlicer():
                 gcode_pen_off = 'G1 X115 Y110 F1000\nG1 Z148 F1000\nG1 Z169 F100\nG1 Z148 F1000\nG1 Y220 F1000\n'
                 gcode_fix_bed = 'M17\n'
 
-                gcode_merged = gcode_home + gcode_pen_on + gcode_pattern + gcode_pen_off + gcode_fix_bed
+                gcode_merged = gcode_home #+ gcode_pen_on + gcode_pattern + gcode_pen_off + gcode_fix_bed
 
                 f.write(gcode_merged)
                 f.close()
