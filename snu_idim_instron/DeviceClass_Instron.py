@@ -12,6 +12,7 @@ import threading
 class UART:
 
 	def __init__(self, port_="/dev/ttyTHS1", baudrate_=115200):
+
 		self.serial = serial.Serial(port=port_,
 									baudrate=baudrate_,
 									bytesize=serial.EIGHTBITS,
@@ -48,7 +49,11 @@ class UART:
 			self.continue_flag = 0
 			if 'result' in self.status.keys():
 				del(self.status['result'])
-
+		elif self.status['status'] == 'Serial_error1':
+			print('serialerror1')
+			self.continue_flag = 0
+			if 'result' in self.status.keys():
+				del(self.status['result'])
 		else:
 			self.continue_flag = -1
 
@@ -94,6 +99,7 @@ class UART:
 			
 			else:
 				# print("Waiting for the next step\n")
+				# self.write_data(self.message)
 				continue
 
 	def datacollect(self):
@@ -131,12 +137,10 @@ class DeviceClass_Instron:
 		self.status['recent_work'] = ''
 
 		# # Jetson nano board setting for digital I/O
-		# GPIO.cleanup()
-		# GPIO.setwarnings(False)
-
 		self.PIN = 15
 		GPIO.setmode(GPIO.BOARD)
 		GPIO.setup(self.PIN, GPIO.OUT, initial=GPIO.LOW)
+
 
 
 		## UART communication with Instron PC
@@ -164,11 +168,20 @@ class DeviceClass_Instron:
 
 
 	def command(self, cmd_dict):
+
 		cmd_keys = cmd_dict.keys()
 		cmd_values = cmd_dict.values()
 
 		print('[DEBUG] Instron command: {}'.format(cmd_dict))
 		for i in range(len(cmd_keys)):
+			# if cmd_keys[i] == "serial_check":
+			# 	self.uart.message['message'] = 'online'
+			# 	self.uart.write_data(self.uart.message)			                # send instron 'serial_check'
+			# 	self.uart.goal_status = 'connected'
+			# 	print("waiting")
+			# 	self.uart.waitStatus()
+			# 	print("serial_connected")
+			# 	self.uart.status['status'] = 'Idle'
 
 			if cmd_keys[i] == "setup":                         			# experiment setup trigger
 				self.uart.status['subject_name'] = cmd_values[i]
@@ -203,39 +216,19 @@ class DeviceClass_Instron:
 				self.uart.goal_status = 'Done'									# wait until status = Done 
 				self.uart.waitStatus()											# status : Done
 
-				GPIO.output(self.PIN, False)
-				time.sleep(0.5)													# wait for gripper open
+				GPIO.output(self.PIN, GPIO.LOW)
+				# time.sleep(0.5)												# wait for gripper open
 
 				self.uart.message['message'] = 'finish'
 				self.uart.write_data(self.uart.message)                         # tell Instron 'gripper closed'
-							
 				self.uart.goal_status = 'Idle'									# wait until status = Idle
 				self.uart.waitStatus()											# status : Idle
-
-			if cmd_keys[i] =='result':
-				self.uart.message['subject_name'] = cmd_values[i]
-				self.uart.message['message'] = 'send_data'
-				self.uart.write_data(self.uart.message)
-
-				self.uart.goal_status = 'sending_data'
-				self.uart.waitStatus()
-				
-				self.uart.datacollect()
-
-				self.uart.message['message'] = 'data_saved'
-				self.uart.write_data(self.uart.message)
-				
-				with open(self.uart.message['subject_name'] + '.txt','w') as exp:
-					exp.writelines(self.uart.result)
-				time.sleep(0.1)
-				del(self.uart.status['result'])
-
-				self.uart.goal_status = 'Idle'
-				self.uart.waitStatus()		
-				# time.sleep(0.5)
-				# self.uart.serial.flushInput()
 		
-								
+		GPIO.cleanup()
+
+		
+
+							
 
 		
 

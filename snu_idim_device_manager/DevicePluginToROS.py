@@ -26,7 +26,6 @@ class DevicePluginToROS:
     def __init__(self, device_name='device_name', device_class=None):
         self.device_name = device_name
         self.device_status = dict()
-
         ## [Integrated driver] DeviceManager = DeviceClass (publish status from integrated DeviceClass)
         if device_class != None:
             self.device_class = device_class
