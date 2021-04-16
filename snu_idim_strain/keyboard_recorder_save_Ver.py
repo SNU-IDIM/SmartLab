@@ -143,6 +143,7 @@ class Instron_cam:
 
             self.subject_name = ''
             self.finish_sig = True
+            print("finish_sig",self.finish_sig)
 
 
 

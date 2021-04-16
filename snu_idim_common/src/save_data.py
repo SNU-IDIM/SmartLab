@@ -24,10 +24,11 @@ class mysql():
         user='root'
         self.Device = 'idim3D'        
 
-        self.con = pymysql.connect(user=user, host='localhost', port=3306, password='0000',db='SNU_smartlab',charset='utf8',cursorclass = pymysql.cursors.DictCursor)
+        self.con = pymysql.connect(user=user, host='localhost', port=3306, password='0000',db='SmartLab',charset='utf8',cursorclass = pymysql.cursors.DictCursor)
         # self.cur = self.con.cursor(pymysql.cursors.DictCursor)
         self.cur = self.con.cursor()
-        self.save_data('test1003')
+        self.save_data('calb')
+        print("f")
 
 
 
@@ -52,15 +53,15 @@ class mysql():
 
 
     def save_data(self, test_name):
-        sql1 = "SELECT * FROM Instron WHERE Test_name='"+test_name+"';"
+        sql1 = "SELECT * FROM result WHERE subject_name='" + test_name + "';"
         #example : "SELECT * FROM Instron WHERE Test_naame='specimen1';"
         self.cur.execute(sql1)
         result = self.cur.fetchall()
         # result = dict(result)
         # print(result['Test_name'])
-        print(type(result))
+        # print(type(result))
         result = result[0]
-        print(type(result))
+        # print(type(result))
         # df = pd.DataFrame(result)
 
         for k in result.keys():
@@ -72,7 +73,7 @@ class mysql():
                 print("made_directory=",newpath)
             print(k)
             
-            if k == 'Test_name':
+            if k == 'subject_name' or k == 'Thickness' or k == 'Length' or k == 'Width':
                 continue
             elif k == 'Raw_data':
                 filename = newpath + '/' + k +'.csv'
@@ -85,11 +86,14 @@ class mysql():
 
             elif k == 'finish_pic':
                 filename = newpath + '/' + k +'.png'
+            
+            elif k == 'plot':
+                filename = newpath + '/' + k +'.png'
+            
                 
             # print('filename',filename)
             
-            with open(filename , 'wb') as w:
-                print(k)
+            with open(filename, 'wb') as w:
                 recieved = base64.b64decode(result[k])
                 w.write(recieved)
 
