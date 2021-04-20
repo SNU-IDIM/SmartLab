@@ -287,11 +287,16 @@ class DeviceManager():
             robot_task_queue = task_monitor_experiment
             return robot_task_queue
 
+        elif task_type == 'remove_specimen':
+            task_remove_specimen = [TASK_INSTRON_CLEAN]
+            self.cobot_recent_work = TASK_INSTRON_CLEAN
+            robot_task_queue = task_remove_specimen
+            return robot_task_queue
+        
         elif task_type == 'finish_experiment':
-            task_finish_experiment = [TASK_INSTRON_CLEAN]
             task_tool_change_2_to_0 = [ACTION_HOME, ACTION_TOOLCHANGE_2_DETACH, ACTION_HOME]
             self.cobot_recent_work = ACTION_HOME
-            robot_task_queue = task_finish_experiment + task_tool_change_2_to_0
+            robot_task_queue = task_tool_change_2_to_0
             return robot_task_queue
 
 
@@ -341,11 +346,18 @@ class DeviceManager():
                 self.waitDeviceStatus(device_name='instron', status_value='Idle')
                 self.device_dict['instron'].sendCommand({command_type: subject_name})
                 print("[Instron - Real mode] Test Initializing ({}) ...".format(subject_name))
-                if wait_until_end == True: self.waitDeviceStatus(device_name='instron', status_key='status', status_value='Idle')
+                if wait_until_end == True: self.waitDeviceStatus(device_name='instron', status_key='status', status_value='Ready')
+                print("[DEBBBBBBBBBBBBBBBBB]")
             elif command_type == 'execute':
                 self.waitDeviceStatus(device_name='instron', status_value='Ready')
                 self.device_dict['instron'].sendCommand({command_type: subject_name})
                 print("[Instron - Real mode] Test Start ({}) !!!".format(subject_name))
+                if wait_until_end == True: self.waitDeviceStatus(device_name='instron', status_key='status', status_value='Done')
+            elif command_type == 'open':
+                self.waitDeviceStatus(device_name='instron', status_value='Done')
+                self.device_dict['instron'].sendCommand({command_type: subject_name})
+                sleep(30.0)
+                print("[Instron - Real mode] Analizing Start ({}) !!!".format(subject_name))
                 if wait_until_end == True: self.waitDeviceStatus(device_name='instron', status_key='status', status_value='Idle')
         
         elif debug == True:
@@ -384,9 +396,9 @@ class DeviceManager():
 
 
     def executionManager(self):
-        step = 0#;   printer_id = 'printer3';   subject_id = 'D30_A45_135';   printer_number = 3;    amr_pos_3dp = deepcopy(AMR_POS_3DP_0);   amr_pos_3dp[1] += printer_number * AMR_OFFSET_3DP
+        step = 4;   printer_id = 'printer3';   subject_id = 'yun_7';   printer_number = 3;    amr_pos_3dp = deepcopy(AMR_POS_3DP_0);   amr_pos_3dp[1] += printer_number * AMR_OFFSET_3DP
         debug = False
-        debug_withoutAMR = False #True
+        debug_withoutAMR = True #True
 
         while True:
             try:
@@ -472,7 +484,7 @@ class DeviceManager():
                 if step == 5: ## Step 3-2. 인장시험 준비 (subject_id)
                     self.checkExecutionMode()
                     print("[Execution Manager] Step 3-2 (1 of 2). Experiment initializing ... (subject: {})".format(subject_id))
-                    self.executeInstron(subject_id, command_type='setup', wait_until_end=True, debug=debug);   sleep(10.0)
+                    self.executeInstron(subject_id, command_type='setup', wait_until_end=True, debug=debug)
 
                     print("[Execution Manager] Step 3-2 (2 of 2). Robot task start !!! (Monitor experiment: {})".format(subject_id))
                     robot_task_queue = self.makeRobotTaskQueue(task_type='monitor_experiment')
@@ -481,10 +493,15 @@ class DeviceManager():
                 
                 if step == 6: ## Step 3-3. 인장시험 실행 & 저장 (subject_id)
                     self.checkExecutionMode()
-                    print("[Execution Manager] Step 3-3 (1 of 2). Experiment start !!! (subject: {})".format(subject_id))
+                    print("[Execution Manager] Step 3-3 (1 of 4). Experiment start !!! (subject: {})".format(subject_id))
                     self.executeInstron(subject_id, command_type='execute', wait_until_end=True, debug=debug)
 
-                    print("[Execution Manager] Step 3-3 (1 of 2). Robot task start !!! (Finnishing experiment: {})".format(subject_id))
+                    print("[Execution Manager] Step 3-3 (2 of 4). Removing specimen and start analyzing !!! (subject: {})".format(subject_id))
+                    robot_task_queue = self.makeRobotTaskQueue(task_type='remove_specimen')
+                    self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
+                    self.executeInstron(subject_id, command_type='open', wait_until_end=False, debug=debug)
+
+                    print("[Execution Manager] Step 3-3 (4 of 4).  Robot task start !!! (Finish experiment: {})".format(subject_id))
                     robot_task_queue = self.makeRobotTaskQueue(task_type='finish_experiment')
                     self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
                     step = 7 if len(self.printer_list_finished) == 0 else 0
@@ -544,14 +561,14 @@ if __name__ == '__main__':
     # manager.addDevice('MS', DeviceClass_OMM(device_name='MS', port_='/dev/ttyUSB0'))
 
     manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', ip_=SERVER_IP, port_='5001', usb_port_=0))
-    manager.addDevice('printer2', DeviceClass_3DP(device_name='printer2', ip_=SERVER_IP, port_='5002', usb_port_=1))
-    manager.addDevice('printer3', DeviceClass_3DP(device_name='printer3', ip_=SERVER_IP, port_='5003', usb_port_=2))
+    # manager.addDevice('printer2', DeviceClass_3DP(device_name='printer2', ip_=SERVER_IP, port_='5002', usb_port_=1))
+    # manager.addDevice('printer3', DeviceClass_3DP(device_name='printer3', ip_=SERVER_IP, port_='5003', usb_port_=2))
     # manager.addDevice('printer4', DeviceClass_3DP(device_name='printer4', ip_=SERVER_IP, port_='5004', usb_port_=3))
     sleep(3.0)
 
     manager.device_dict['R_001/cobot'].sendCommand({"command": ACTION_IO_COMPRESSOR_ON})
     manager.device_dict['MS'].sendCommand({"connection": True})
     manager.device_dict['printer1'].sendCommand({"connection": True})
-    manager.device_dict['printer2'].sendCommand({"connection": True})
-    manager.device_dict['printer3'].sendCommand({"connection": True})
+    # manager.device_dict['printer2'].sendCommand({"connection": True})
+    # manager.device_dict['printer3'].sendCommand({"connection": True})
     # manager.device_dict['printer4'].sendCommand({"connection": True})
