@@ -471,7 +471,7 @@ class DeviceClass_Cobot():
         self.gripper_open()
         movel(posx(0, -23, -23, 0, 0, 0), vel=DSR_DEFAULT_JOG_VELX, acc=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL)
         self.gripper_close()
-        movel(posx(0, -2, 2, 0, 0, 0), vel=DSR_DEFAULT_JOG_VELX, acc=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL)
+        movel(posx(0, -2.5, 2.5, 0, 0, 0), vel=DSR_DEFAULT_JOG_VELX, acc=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL)
         movel(posx(0, 40, 40, 0, 0, 0), vel=DSR_DEFAULT_JOG_VELX, acc=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL)
 
 
@@ -1049,7 +1049,7 @@ class DeviceClass_Cobot():
             movel(viewpoint)
 
         # Task [10009]: Place specimen and go to the monitoring position
-        elif(self.cmd_protocol == TASK_INSTRON_CLEAN):
+        elif(self.cmd_protocol == TASK_INSTRON_CLEAN1):
             self.gripper_open();  rospy.sleep(1.0)
             self.setVelAcc(100, 100, [50,50], [50,50])
             viewpoint = [self.status['posx'][0],self.status['posx'][1],self.status['posx'][2],self.status['posx'][3],self.status['posx'][4]+20,self.status['posx'][5]]
@@ -1057,6 +1057,9 @@ class DeviceClass_Cobot():
             self.movel_xyz(-100, 200, 100)
             self.movel_z(100)
             self.gripper_close();  rospy.sleep(1.0)
+
+        # Task [-10009]: Place specimen and go to the monitoring position
+        elif(self.cmd_protocol == TASK_INSTRON_CLEAN2):
             self.movel_z(-150)
             self.movel_y(250)
             self.gripper_open();  rospy.sleep(1.0)
