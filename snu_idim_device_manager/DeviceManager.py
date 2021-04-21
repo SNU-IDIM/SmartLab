@@ -287,10 +287,16 @@ class DeviceManager():
             robot_task_queue = task_monitor_experiment
             return robot_task_queue
 
-        elif task_type == 'remove_specimen':
-            task_remove_specimen = [TASK_INSTRON_CLEAN]
-            self.cobot_recent_work = TASK_INSTRON_CLEAN
-            robot_task_queue = task_remove_specimen
+        elif task_type == 'remove_specimen1':
+            task_remove_specimen1 = [TASK_INSTRON_CLEAN1]
+            self.cobot_recent_work = TASK_INSTRON_CLEAN1
+            robot_task_queue = task_remove_specimen1
+            return robot_task_queue
+        
+        elif task_type == 'remove_specimen2':
+            task_remove_specimen2 = [TASK_INSTRON_CLEAN2]
+            self.cobot_recent_work = TASK_INSTRON_CLEAN2
+            robot_task_queue = task_remove_specimen2
             return robot_task_queue
         
         elif task_type == 'finish_experiment':
@@ -396,9 +402,9 @@ class DeviceManager():
 
 
     def executionManager(self):
-        step = 4;   printer_id = 'printer3';   subject_id = 'yun_7';   printer_number = 3;    amr_pos_3dp = deepcopy(AMR_POS_3DP_0);   amr_pos_3dp[1] += printer_number * AMR_OFFSET_3DP
+        step = 0#;   printer_id = 'printer3';   subject_id = 'yun_9';   printer_number = 3;    amr_pos_3dp = deepcopy(AMR_POS_3DP_0);   amr_pos_3dp[1] += printer_number * AMR_OFFSET_3DP
         debug = False
-        debug_withoutAMR = True #True
+        debug_withoutAMR = False #True
 
         while True:
             try:
@@ -497,9 +503,11 @@ class DeviceManager():
                     self.executeInstron(subject_id, command_type='execute', wait_until_end=True, debug=debug)
 
                     print("[Execution Manager] Step 3-3 (2 of 4). Removing specimen and start analyzing !!! (subject: {})".format(subject_id))
-                    robot_task_queue = self.makeRobotTaskQueue(task_type='remove_specimen')
+                    robot_task_queue = self.makeRobotTaskQueue(task_type='remove_specimen1') # Grasp specimen to remove
                     self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
-                    self.executeInstron(subject_id, command_type='open', wait_until_end=False, debug=debug)
+                    self.executeInstron(subject_id, command_type='open', wait_until_end=False, debug=debug) # Instron gripper open
+                    robot_task_queue = self.makeRobotTaskQueue(task_type='remove_specimen2') # Remove specimen
+                    self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
 
                     print("[Execution Manager] Step 3-3 (4 of 4).  Robot task start !!! (Finish experiment: {})".format(subject_id))
                     robot_task_queue = self.makeRobotTaskQueue(task_type='finish_experiment')
@@ -561,7 +569,7 @@ if __name__ == '__main__':
     # manager.addDevice('MS', DeviceClass_OMM(device_name='MS', port_='/dev/ttyUSB0'))
 
     manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', ip_=SERVER_IP, port_='5001', usb_port_=0))
-    # manager.addDevice('printer2', DeviceClass_3DP(device_name='printer2', ip_=SERVER_IP, port_='5002', usb_port_=1))
+    manager.addDevice('printer2', DeviceClass_3DP(device_name='printer2', ip_=SERVER_IP, port_='5002', usb_port_=1))
     # manager.addDevice('printer3', DeviceClass_3DP(device_name='printer3', ip_=SERVER_IP, port_='5003', usb_port_=2))
     # manager.addDevice('printer4', DeviceClass_3DP(device_name='printer4', ip_=SERVER_IP, port_='5004', usb_port_=3))
     sleep(3.0)
@@ -569,6 +577,6 @@ if __name__ == '__main__':
     manager.device_dict['R_001/cobot'].sendCommand({"command": ACTION_IO_COMPRESSOR_ON})
     manager.device_dict['MS'].sendCommand({"connection": True})
     manager.device_dict['printer1'].sendCommand({"connection": True})
-    # manager.device_dict['printer2'].sendCommand({"connection": True})
+    manager.device_dict['printer2'].sendCommand({"connection": True})
     # manager.device_dict['printer3'].sendCommand({"connection": True})
     # manager.device_dict['printer4'].sendCommand({"connection": True})
