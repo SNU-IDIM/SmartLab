@@ -23,10 +23,24 @@ class SmartLabClient(object):
         try:
             smartlab_cmd = dict()
             smartlab_cmd['test_mode'] = 'step'
-            smartlab_cmd['test_step'] = 1
-
+            smartlab_cmd['test_step'] = -1
+            smartlab_cmd['setup_device'] = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer1', 'printer2', 'printer3']
+            smartlab_cmd['setup_doe'] = {
+                                    'header_id': 'DRY_TEST',
+                                    'experiment_type': 'Tensile Test',
+                                    'factors': [ 
+                                                {'factor_name': 'infill_line_distance', 'factor_range': [1, 6]},
+                                                {'factor_name': 'layer_height', 'factor_range': [0.1, 0.2]},
+                                                #  {'factor_name': 'default_material_print_temperature', 'factor_range': [190, 220]}, 
+                                            ],
+                                    'doe_type': DOE_GENERALIZED_FACTORIAL, # DOE_GENERALIZED_FACTORIAL=3
+                                    'option': [
+                                                [1, 2, 4, 6], 
+                                                [0.1, 0.12, 0.2], 
+                                                # [190, 191, 219, 220]
+                                            ],
+                                    }
             
-            print('gi')
 
             for i in range(10):
                 print(i)
