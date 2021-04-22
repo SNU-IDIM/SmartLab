@@ -45,14 +45,14 @@ class TestManager():
 
 
 class SmartLABCore():
-
     def __init__(self, ip_='192.168.60.21', port_=5555):
-
         ## Initializating SmartLAB
         self.ip_ = ip_
         self.port_ = port_
 
         self.init_flag = True
+        self.test_step = 0
+
         self.req = dict()
         self.req['test_mode'] = 'step'
         self.req['test_step'] = -1
@@ -72,53 +72,23 @@ class SmartLABCore():
                                             # [190, 191, 219, 220]
                                         ],
                                 }
+        self.res = dict()
 
+        ## Device dict (list of devices to handle with ID)
+        self.device_dict = dict() # for device manager
+        self.device_info = dict() # to send data to client via ZMQ
+
+        ## Test info
+        self.test_info = dict()
+        self.test_info['fabrication'] = list()
+        self.test_info['measurement'] = list()
+        self.test_info['experiment'] = list()
+        self.test_info['completed'] = list()
 
         ## ZMQ: ROS(server) <-> Python(client)
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REP)
         self.socket.bind("tcp://*:{}".format(self.port_))
-
-
-        ## Device dict (list of devices to handle with ID)
-        self.device_dict = dict() # for device manager
-        self.device_info = dict() # to send data to client via ZMQ
-        
-        self.req_test_mode = True
-        self.req_test_step = False
-
-        self.test_step = 0
-
-        ## for 3DP Manager
-        self.printing_queue            = list()
-        self.printer_list_idle         = list()
-        self.printer_list_initializing = list()
-        self.printer_list_printing     = list()
-        self.printer_list_finished     = list()  ## ***
-        self.printer_list_robot_done   = list()
-
-        self.specimen_ready_list = list()  ## ***
-        self.test_ready_list     = list()  ## ***
-
-        ## for Cobot Manager
-        self.cobot_task_queue = list()
-        self.cobot_recent_work = None
-
-        ## for Instron Manager
-        self.instron_save_flag = False
-
-        ## for AMR Manager
-        self.client = actionlib.SimpleActionClient('/R_001/WAS', WorkFlowAction)
-        self.client.wait_for_server(timeout=rospy.Duration(1))
-        self.amr = WorkFlowGoal()
-        self.amr_param = [Param('max_trans_vel','float','0.3'),
-                          Param('max_rot_vel','float','0.25'), 
-                          Param('xy_goal_tolerance','float','0.20'),
-                          Param('yaw_goal_tolerance','float','0.05')]
-        self.amr.work = []
-        self.amr.work_id = 'amr'
-        self.amr.loop_flag = 1  # default: 1 (no repeat)
-
 
         ## ZMQ Server thread
         self.thread_server = Thread(target=self.zmq_server)
@@ -165,7 +135,10 @@ class SmartLABCore():
                 self.thread_3.start()
 
             try:
-                self.socket.send_string(json.dumps(self.device_info))
+                self.test_info['fabrication']  = self.printing_queue
+                self.res['device'] = self.device_info
+                self.res['experiment'] = self.test_info
+                self.socket.send_string(json.dumps(self.res))
             except:
                 pass
 
@@ -226,7 +199,15 @@ class SmartLABCore():
         3D Printer related
     '''
     def addPrintingQueue(self, printing_queue):
-        self.printing_queue = printing_queue
+        self.printing_queue            = printing_queue
+        self.printer_list_idle         = list()
+        self.printer_list_initializing = list()
+        self.printer_list_printing     = list()
+        self.printer_list_finished     = list()  ## ***
+        self.printer_list_robot_done   = list()
+
+        self.specimen_ready_list = list()  ## ***
+        self.test_ready_list     = list()  ## ***
 
 
     def manager3DP(self):
@@ -267,6 +248,7 @@ class SmartLABCore():
                             try:
                                 print_next = self.printing_queue.pop(0)
                                 self.device_dict[device_id].sendCommand({'print': print_next})
+                                sleep(2.0)
                                 print("[3DP] {} status: Idle -> Printing {}".format(device_id, print_next))
                             except:
                                 print("[3DP] Printing queue is empty !!!")
@@ -459,8 +441,8 @@ class SmartLABCore():
                     self.req['test_step'] = -1
                     return 1
             elif self.req['test_mode'] == 'debug':
-                print("[DEBUG MODE] Execute following step ... (Step: {})".format(self.test_step))
                 self.test_step = self.req['test_step']
+                print("[DEBUG MODE] Execute following step ... (Step: {})".format(self.test_step))
                 return -1
 
 
@@ -506,6 +488,7 @@ class SmartLABCore():
 
 
                 elif self.test_step == 1: ## Step 2-1. Get printing bed from printer (3DP bed: 3D printer -> Robot)
+                    self.test_info['measurement'] = [subject_id];   self.test_info['experiment'] = []
                     print("[Execution Manager] Step 2-1 (1 of 2). AMR moving... (target: {}: {})".format(printer_id, amr_pos_3dp))
                     if debug_withoutAMR == False:
                         self.executeAMR(spot_name=printer_id, target_pose=amr_pos_3dp, hold_time=0.0, debug=debug)
@@ -557,6 +540,7 @@ class SmartLABCore():
 
 
                 elif self.test_step == 4: ## Step 3-1. 협동로봇 시편 -> 인장시험기 (printer_id)
+                    self.test_info['measurement'] = [];   self.test_info['experiment'] = [subject_id]
                     print("[Execution Manager] Step 3-1 (1 of 2). AMR moving... (target: instron, {})".format(AMR_POS_INSTRON))
                     if debug_withoutAMR == False:
                         self.executeAMR(spot_name='instron', target_pose=AMR_POS_INSTRON, hold_time=0.0, debug=debug)
@@ -593,6 +577,7 @@ class SmartLABCore():
                     print("[Execution Manager] Step 3-3 (4 of 4).  Robot task start !!! (Finish experiment: {})".format(subject_id))
                     robot_task_queue = self.makeRobotTaskQueue(task_type='finish_experiment')
                     self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
+                    self.test_info['measurement'] = [];   self.test_info['experiment'] = [];    self.test_info['completed'].append(subject_id)
                     self.test_step = 7 if len(self.printer_list_finished) == 0 else 0
                 
 

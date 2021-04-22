@@ -1,5 +1,6 @@
-print('printer3'.split('printer')[1])
-print('good{}'.format([1, 2, 3]))
+a = dict()
+a['test'] = {'a': 1}
+print(a)
 # #! /usr/bin/env python
 # # -*- coding: utf-8 -*-
 
