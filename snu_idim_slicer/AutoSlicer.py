@@ -64,13 +64,16 @@ class AutoSlicer():
         n_test_total = len(self.doe_list[0])
         n_factors    = len(self.doe_factors)
 
+
         # Change List Type Test Information to Dict Type Test Information
         testset_dict = {}
         for i in range(n_test_total):
             testset_dict[i] = {'Number':str(i)}
-
             for j in range(n_factors):
-                testset_dict[i][self.doe_factors[j]] = self.doe_list[j][i]
+                if self.doe_factors[j] == 'infill_angles':
+                    testset_dict[i][self.doe_factors[j]] = [int(string) for string in self.doe_list[j][i].split(',')]
+                else:
+                    testset_dict[i][self.doe_factors[j]] = self.doe_list[j][i]
         
         n_test_total = int(len(testset_dict))
         n_test_done = 0

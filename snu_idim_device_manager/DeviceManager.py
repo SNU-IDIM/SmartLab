@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os, sys, json, time
+import datetime
 from time import sleep
 from copy import deepcopy
 from threading import Thread
@@ -60,6 +61,7 @@ class DeviceManager():
         self.step_flag = False
 
         ## for 3DP Manager
+        self.header = 'TEST_' + datetime.datetime.now().strftime('%y%m%d')
         self.printing_queue            = list()
         self.printer_list_idle         = list()
         self.printer_list_initializing = list()
@@ -163,6 +165,13 @@ class DeviceManager():
     def addPrintingQueue(self, printing_queue):
         self.printing_queue = printing_queue
 
+    def tapping(self, printer_name, gCode_name):
+        gCode_name = gCode_name + '.gcode'
+        UPLOAD_PATH = os.path.join(os.getenv("HOME"), '.octoprint/uploads/')
+        GCODE_PATH = os.path.join(UPLOAD_PATH, self.header, gCode_name)
+        CODE_PATH = os.path.join(os.getenv("HOME"), 'catkin_ws/src/SNU_SmartLAB', 'snu_idim_slicer','Tapping.py')
+        command = 'python3 ' + CODE_PATH + ' ' + GCODE_PATH + ' ' + printer_name
+        os.system(command)
 
     def manager3DP(self):
         while True:
@@ -201,6 +210,7 @@ class DeviceManager():
                         if device_status['status'].find('Idle') != -1:
                             try:
                                 print_next = self.printing_queue.pop(0)
+                                self.tapping(device_id, print_next)
                                 self.device_dict[device_id].sendCommand({'print': print_next})
                                 print("[3DP] {} status: Idle -> Printing {}".format(device_id, print_next))
                             except:
@@ -537,8 +547,22 @@ if __name__ == '__main__':
 
     # SERVER_IP = '192.168.0.81'
     SERVER_IP = '192.168.60.21'
-
+    header_id = 'TEST_' + datetime.datetime.now().strftime('%y%m%d')
     ## User Input (Experiment settings)
+
+    # infill_line_distance / infill_angles / layer_height
+    test_setting = {
+                    'header_id': header_id,
+                    'experiment_type': 'Tensile Test',
+                    'factors': [ {'factor_name': 'infill_line_distance', 'factor_range': [0.4, 0.45]},
+                                 {'factor_name': 'infill_angles'}
+                               ],
+                    'doe_type': DOE_GENERALIZED_FACTORIAL, # DOE_GENERALIZED_FACTORIAL=3
+                    'option': [ [0.4, 0.45], 
+                                ['0', '45,135', '0,90', '90']
+                              ],
+                    }
+    '''
     test_setting = {
                     'header_id': 'DRY_TEST',
                     'experiment_type': 'Tensile Test',
@@ -554,6 +578,7 @@ if __name__ == '__main__':
                                 # [190, 191, 219, 220]
                               ],
                     }
+    '''
 
     ## Test Manager
     test_manager = TestManager(test_setting=test_setting, ip=SERVER_IP)
@@ -570,7 +595,7 @@ if __name__ == '__main__':
 
     manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', ip_=SERVER_IP, port_='5001', usb_port_=0))
     manager.addDevice('printer2', DeviceClass_3DP(device_name='printer2', ip_=SERVER_IP, port_='5002', usb_port_=1))
-    # manager.addDevice('printer3', DeviceClass_3DP(device_name='printer3', ip_=SERVER_IP, port_='5003', usb_port_=2))
+    manager.addDevice('printer3', DeviceClass_3DP(device_name='printer3', ip_=SERVER_IP, port_='5003', usb_port_=2))
     # manager.addDevice('printer4', DeviceClass_3DP(device_name='printer4', ip_=SERVER_IP, port_='5004', usb_port_=3))
     sleep(3.0)
 
@@ -578,5 +603,5 @@ if __name__ == '__main__':
     manager.device_dict['MS'].sendCommand({"connection": True})
     manager.device_dict['printer1'].sendCommand({"connection": True})
     manager.device_dict['printer2'].sendCommand({"connection": True})
-    # manager.device_dict['printer3'].sendCommand({"connection": True})
+    manager.device_dict['printer3'].sendCommand({"connection": True})
     # manager.device_dict['printer4'].sendCommand({"connection": True})
