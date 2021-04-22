@@ -5,7 +5,6 @@
 # x_off : the center x coordinate of the specimen with respect to namepen
 # y_off : the center y coordinate of the specimen with respect to namepen
 # z_off : the height right before close to the pusher
-
 import sys
 
 def tapping(x_off,y_off,z_off,z=8.5):

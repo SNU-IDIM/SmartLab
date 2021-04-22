@@ -214,9 +214,10 @@ class SmartLABCore():
     def tapping(self, printer_name, gCode_name):
         gCode_name = gCode_name + '.gcode'
         UPLOAD_PATH = os.path.join(os.getenv("HOME"), '.octoprint/uploads/')
-        GCODE_PATH = os.path.join(UPLOAD_PATH, self.header, gCode_name)
+        GCODE_PATH = os.path.join(UPLOAD_PATH, self.req['setup_doe']['header_id'], gCode_name)
         CODE_PATH = os.path.join(os.getenv("HOME"), 'catkin_ws/src/SNU_SmartLAB', 'snu_idim_slicer','Tapping.py')
         command = 'python3 ' + CODE_PATH + ' ' + GCODE_PATH + ' ' + printer_name
+        print(command)
         os.system(command)
 
     def manager3DP(self):
@@ -261,15 +262,10 @@ class SmartLABCore():
                         ## Print a new subject from printing queue
                         if device_status['status'].find('Idle') != -1:
                             try:
-                                print('1')
                                 print_next = self.printing_queue.pop(0)
-                                print('2', device_id, print_next)
                                 self.tapping(device_id, print_next)
-                                print('3')
                                 self.device_dict[device_id].sendCommand({'print': print_next})
-                                print('4')
                                 sleep(2.0)
-                                print('5')
                                 print("[3DP] {} status: Idle -> Printing {}".format(device_id, print_next))
                             except:
                                 print("[3DP] Printing queue is empty !!!")
