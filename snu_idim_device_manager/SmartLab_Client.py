@@ -41,8 +41,7 @@ class SmartLabClient(object):
             # print(smartlab_cmd)
             
 
-            for i in range(10):
-                print(i)
+            while True:
                 self.socket.send_string(json.dumps(smartlab_cmd))
                 response = json.loads(self.socket.recv())
                 time.sleep(3)

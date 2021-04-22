@@ -80,6 +80,7 @@ class SmartLABCore():
 
         ## Test info
         self.test_info = dict()
+        self.test_info['waiting'] = list()
         self.test_info['fabrication'] = list()
         self.test_info['measurement'] = list()
         self.test_info['experiment'] = list()
@@ -135,7 +136,6 @@ class SmartLABCore():
                 self.thread_3.start()
 
             try:
-                self.test_info['fabrication']  = self.printing_queue
                 self.res['device'] = self.device_info
                 self.res['experiment'] = self.test_info
                 self.socket.send_string(json.dumps(self.res))
@@ -230,7 +230,13 @@ class SmartLABCore():
                         except:
                             pass
 
-                        ## Print a new subject from printing queue
+                        if device_status['status'].find('Printing') != -1:
+                            try:
+                                self.printer_list_printing.index(device_id)
+                            except:
+                                self.printer_list_printing.append(device_id)
+
+                        ## Check whether printing job is done
                         if device_status['status'].find('Done') != -1:
                             try:
                                 self.printer_list_finished.index(device_id)
@@ -252,7 +258,24 @@ class SmartLABCore():
                                 print("[3DP] {} status: Idle -> Printing {}".format(device_id, print_next))
                             except:
                                 print("[3DP] Printing queue is empty !!!")
-                    
+
+                    self.test_info['waiting'] = self.printing_queue
+                    self.test_info['fabrication'] = []
+                    for printer_id in self.printer_list_printing:
+                        self.test_info['fabrication'].append(self.device_info[printer_id]['subject_name'])
+                    for i in self.test_info['measurement']:
+                        try:
+                            idx = self.test_info['fabrication'].index(i)
+                            self.test_info['fabrication'].pop(idx)
+                        except:
+                            pass
+                    for i in self.test_info['experiment']:
+                        try:
+                            idx = self.test_info['fabrication'].index(i)
+                            self.test_info['fabrication'].pop(idx)
+                        except:
+                            pass
+
                     # print("\n[DEBUG] 3DP finished: {}".format(self.printer_list_finished))
                     # print("[DEBUG] 3DP robot done: {}".format(self.printer_list_robot_done))
                     # print("[DEBUG] Subject name: {}".format(device_status['subject_name']))
@@ -461,7 +484,7 @@ class SmartLABCore():
 
 
     def executionManager(self):
-        debug = True
+        debug = False
         debug_withoutAMR = False #True
 
         while True:
@@ -591,8 +614,6 @@ class SmartLABCore():
                 pass
 
             sleep(3.0)
-
-    
 
 
 
