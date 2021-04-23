@@ -21,6 +21,7 @@ class DeviceClass_Cobot():
         rospy.Subscriber("cobot/command", String, self.pnp_cb, queue_size=1)
         rospy.Subscriber("dsr/state", RobotState, self.dsr_state_cb, queue_size=1)
 
+        self.cobot_cmd_pub = rospy.Publisher("cobot/command", String, queue_size=1)
         self.cobot_status_pub = rospy.Publisher("cobot/status", String, queue_size=1)
         self.image_sub = rospy.Subscriber("/R_001/camera/color/image_raw",Image,self.vision_cb)
         self.vision_pub = rospy.Publisher("vision_2d_flag",Int32, queue_size=1)
@@ -95,6 +96,8 @@ class DeviceClass_Cobot():
         # self.thread_1 = Thread(target=self.publishStatus)
         # self.thread_1.start()
 
+
+
     ##for logging
         self.logging("---------------------------------------------")
     def logging(self, log):
@@ -104,8 +107,10 @@ class DeviceClass_Cobot():
             l.write(logged)
 
 
-        
+    def command(self, command):
+        self.cobot_cmd_pub.publish(str(command))
 
+        
     def publishStatus(self):
         msg_json = json.dumps(self.status)
         self.cobot_status_pub.publish(msg_json)
@@ -471,7 +476,8 @@ class DeviceClass_Cobot():
         self.gripper_open()
         movel(posx(0, -23, -23, 0, 0, 0), vel=DSR_DEFAULT_JOG_VELX, acc=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL)
         self.gripper_close()
-        movel(posx(0, -2.5, 2.5, 0, 0, 0), vel=DSR_DEFAULT_JOG_VELX, acc=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL)
+        movel(posx(-2, 0, 0, 0, 0, 0), vel=DSR_DEFAULT_JOG_VELX, acc=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL)
+        movel(posx(0, -1.5, 1.5, 0, 0, 0), vel=DSR_DEFAULT_JOG_VELX, acc=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL)
         movel(posx(0, 40, 40, 0, 0, 0), vel=DSR_DEFAULT_JOG_VELX, acc=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL)
 
 
@@ -634,6 +640,24 @@ class DeviceClass_Cobot():
 
         return None
 
+    def searchARTagSpiral(self, tag_id):
+        pos1=posx(0, -100, 0, 0, 0, 0)
+        pos2=posx(100, 0, 0, 0, 0, 0)
+        pos3=posx(0, 200, 0, 0, 0, 0)
+        pos4=posx(-200, 0, 0, 0, 0, 0)
+        pos5=posx(0, -200, 0, 0, 0, 0)
+        pos6=posx(100, 0, 0, 0, 0, 0)
+        pos7=posx(0, 100, 0, 0, 0, 0)
+        poslist=[pos1, pos2, pos3, pos4, pos5, pos6, pos7]
+        amovesx(poslist, vel=[100,50], acc=[100,50], ref=DR_BASE, mod=DR_MV_MOD_REL, vel_opt=DR_MVS_VEL_NONE)
+        while check_motion() != 0:
+            if self.ARsearchFromEEF(tag_id) == True:
+                search_flag = True
+                break
+            else:
+                search_flag = False
+        return search_flag
+
 
     def moveBedFromStageToRobot(self, tag_id_bed, tag_id_stage=None):
         self.setVelAcc(50, 50, [100,50], [100,50])
@@ -641,57 +665,54 @@ class DeviceClass_Cobot():
         movej(Q_SEARCH_3DP_RIGHT)
         self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
 
-        amovel(pos=[0, -100, 0, 0, 0, 0], ref=DR_BASE, mod=DR_MV_MOD_REL)
-        while check_motion() != 0:
-            if self.ARsearchFromEEF(tag_id_bed) == True:
-                mwait(0)
-                self.ARsetReference(tag_id_bed, 5)
-                self.status['gripper_angle'] = 225
-                
-                waypoint_1 = self.calcRelMove([50, 0, -100, 0, 0, self.status['gripper_angle']], False)
-                waypoint_2 = self.calcRelMove([-215, 0, 172, 0, 0, 0], True)
-                waypoint_3 = self.calcRelMove([0, 0, 43, 0, 0, 0], True)
-                waypoint_4 = self.calcRelMove([0, 0, -80, 0, 0, 0], True)
-                waypoint_5 = self.calcRelMove([300, 0, 0, 0, 0, 0], True)
-                waypoint_6 = deepcopy(P_UNIVERSALJIG_3DP_BED);   waypoint_6[2] += 100
-                waypoint_7 = deepcopy(waypoint_6);               waypoint_7[2] -= 140
+        if self.searchARTagSpiral(tag_id_bed) == True:
+            self.ARalignMove(tag_id_bed)
+            self.ARsetReference(tag_id_bed, 3)
+            self.status['gripper_angle'] = 225
+            
+            waypoint_1 = self.calcRelMove([50, 0, -100, 0, 0, self.status['gripper_angle']], False)
+            waypoint_2 = self.calcRelMove([-215, 0, 172, 0, 0, 0], True)
+            waypoint_3 = self.calcRelMove([0, 0, 43, 0, 0, 0], True)
+            waypoint_4 = self.calcRelMove([0, 0, -80, 0, 0, 0], True)
+            waypoint_5 = self.calcRelMove([300, 0, 0, 0, 0, 0], True)
+            waypoint_6 = deepcopy(P_UNIVERSALJIG_3DP_BED);   waypoint_6[2] += 100
+            waypoint_7 = deepcopy(waypoint_6);               waypoint_7[2] -= 140
 
-                movel(waypoint_1, ref=DR_TOOL, mod=DR_MV_MOD_REL)
-                movel(waypoint_2, ref=DR_TOOL, mod=DR_MV_MOD_REL)
-                movel(waypoint_3, ref=DR_TOOL, mod=DR_MV_MOD_REL)
-                self.suction_cup_on()
-                movel(waypoint_4, ref=DR_TOOL, mod=DR_MV_MOD_REL)
-                movel(waypoint_5, ref=DR_TOOL, mod=DR_MV_MOD_REL)
-                movel(waypoint_6)
-                movel(waypoint_7)
-                self.suction_cup_off();  rospy.sleep(1)
-                self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
-                movel(waypoint_6)
-                movej(Q_TOP_PLATE)
-                self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0)
+            movel(waypoint_1, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+            movel(waypoint_2, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+            movel(waypoint_3, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+            self.suction_cup_on()
+            movel(waypoint_4, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+            movel(waypoint_5, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+            movel(waypoint_6)
+            movel(waypoint_7)
+            self.suction_cup_off();  rospy.sleep(1)
+            self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
+            movel(waypoint_6)
+            movej(Q_TOP_PLATE)
+            self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0)
+        else:
+            movej(Q_HOME)
+            self.logging('Searching AR TAG Failed Bed id : %s, stage id : %s' % (tag_id_bed, tag_id_stage))
+
 
 
     def moveBedFromRobotToStage(self, tag_id_bed, tag_id_stage):
         self.setVelAcc(50, 50, [100,50], [100,50])
         self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
         movej(Q_TOP_PLATE)
+        self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
 
         if self.ARsearchFromEEF(tag_id_bed) == True: ## when AR tag is detected, execute the following codes
             movej(Q_SEARCH_3DP_RIGHT)
-            
-            # amovel(pos=[0, -100, 0, 0, 0, 0], ref=DR_BASE, mod=DR_MV_MOD_REL)
-            # while check_motion() != 0:
-                # if self.ARsearchFromEEF(tag_id_stage) == True:
-                    # flag = True
-                    # mwait(1)
-            if self.ARsearchFromEEF(tag_id_stage) == True:
-            # if flag == True:
-                self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
+            if self.searchARTagSpiral(tag_id_stage) == True:
+                mwait(0)
                 movej(Q_TOP_PLATE)
             else:
                 movej(Q_HOME)
                 return -1
 
+            #Suction the 3DP Bed on the Jig
             waypoint_0 = deepcopy(Q_SEARCH_3DP_PLATE)
             movej(waypoint_0)
             self.movel_z(105)
@@ -700,22 +721,12 @@ class DeviceClass_Cobot():
             self.movel_z(-105)
         
             movej(Q_SEARCH_3DP_RIGHT)
-
-            # amovel(pos=[0, -100, 0, 0, 0, 0], ref=DR_BASE, mod=DR_MV_MOD_REL)
-            # while check_motion() != 0:
-            #     if self.ARsearchFromEEF(tag_id_stage) == True:
-            #         flag_2 = True
-            #         mwait(0)
-            # 
-            # if flag_2 == True:
-            self.logging("now here")
-            if self.ARsearchFromEEF(tag_id_stage) == True:
-                self.logging("now there")
-
-                self.ARsetReference(tag_id_stage, 4)
-
+            if self.searchARTagSpiral(tag_id_stage) == True:
+                self.ARalignMove(tag_id_stage)
+                self.ARsetReference(tag_id_stage, 3)
                 self.status['gripper_angle'] = -135 #223
                 self.logging("posj : {}".format(self.status['posj']))
+
                 # waypoint_1 = self.calcRelMove([0, 90, 0, 0, 0, self.status['gripper_angle']], False)
                
                 waypoint_1 = self.calcRelMove([0, 0, 0, 0, 0, -135], False)
@@ -735,7 +746,7 @@ class DeviceClass_Cobot():
                 # movej(posj(waypoint_1), mod=DR_MV_MOD_REL)
                 movel(waypoint_1_2, ref=DR_TOOL, mod=DR_MV_MOD_REL)
                 self.logging("posj2 : {}".format(self.status['posj']))
-                self.rotate_z(-137) 
+                self.rotate_z(-137, velx=[100, 100], accx=[100, 100]) 
                 self.logging("posj3 : {}".format(self.status['posj']))
                 movel(waypoint_2, ref=DR_TOOL, mod=DR_MV_MOD_REL)
 
@@ -895,6 +906,7 @@ class DeviceClass_Cobot():
             movel(p_tool1_step5)
 
             self.status['gripper_type'] = 'Suction'
+            set_tool('vacuum')
             
 
         # ACTION [-301]: Tool Changer - Place Tool1 to the Toolchanger1
@@ -914,7 +926,7 @@ class DeviceClass_Cobot():
 
             movel(p_tool1_step3)
             self.setVelAcc(50, 50, [50,100], [50,100])
-            task_compliance_ctrl([1000, 4500, 4000, 1000, 1000, 1000])
+            task_compliance_ctrl([1000, 4500, 20000, 1000, 1000, 1000])
             movel(p_tool1_step4)
             release_compliance_ctrl()
             movel(p_tool1_step5);       rospy.sleep(1)
@@ -953,6 +965,7 @@ class DeviceClass_Cobot():
             movel(p_tool2_step5)
 
             self.status['gripper_type'] = 'Mechanical'
+            set_tool('electric')
 
 
         # ACTION [-302]: Tool Changer - Place Tool2 to the Toolchanger2
@@ -972,7 +985,7 @@ class DeviceClass_Cobot():
 
             self.setVelAcc(50, 50, [50,100], [50,100])
             movel(p_tool2_step3)
-            task_compliance_ctrl([1000, 4500, 4000, 1000, 1000, 1000])
+            task_compliance_ctrl([1000, 4500, 20000, 1000, 1000, 1000])
 
             # movel(p_tool2_step4)
             release_compliance_ctrl()
@@ -1571,7 +1584,7 @@ class DeviceClass_Cobot():
         ##CONTROL IDIM_GRIPPER (30000)
         elif(self.cmd_protocol == IDIM_CONTROL_TEST):
             ##publish_once
-            while self.gripper_pub.get_num_connections()<1:
+            while self.gripper_pub.get_num_connections() < 1:
                 self.gripper_pub.publish(True)
                 print("interface to gripper success")
 
@@ -1596,6 +1609,8 @@ class DeviceClass_Cobot():
 if __name__=='__main__':
     cobot = DeviceClass_Cobot(device_name="cobot")
     sleep(3.0)
+    cobot.command(ACTION_IO_COMPRESSOR_ON)
+
     while not rospy.is_shutdown():
         cobot.publishStatus()
         sleep(0.5)

@@ -137,21 +137,21 @@ class snu_object_tracker():
 
                         ## 0 deg (not flipped)
                         if abs(RAD2DEG*yaw) > 180.0-TOLERANCE_ANGLE: 
-                            print("[Debug] 0 deg")
+                            # print("[Debug] 0 deg")
                             q_rot_calib = quaternion_from_euler(0, 0, 0)
 
                         ## 180 deg (flipped), compensation: +180 deg
                         elif abs(RAD2DEG*yaw) < TOLERANCE_ANGLE :  
-                            print("[Debug] 180 deg")
+                            # print("[Debug] 180 deg")
                             q_rot_calib = quaternion_from_euler(0, 0, math.pi)
 
                         ## 90 deg (flipped), compensation: -90 deg
                         elif sign == 1 and abs(math.sin(yaw)) > 1.0 - EPSILON:
-                            print("[Debug] 90 deg")
+                            # print("[Debug] 90 deg")
                             q_rot_calib = quaternion_from_euler(0, 0, -math.pi/2.0)
                         ## -90 deg (flipped), compensation: +90 deg
                         elif sign == -1 and abs(math.sin(yaw)) > 1.0 - EPSILON:
-                            print("[Debug] -90 deg")
+                            # print("[Debug] -90 deg")
                             q_rot_calib = quaternion_from_euler(0, 0, math.pi/2.0)
 
                         else:
