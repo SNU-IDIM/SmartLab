@@ -24,9 +24,9 @@ class SmartLabClient(object):
             smartlab_cmd = dict()
             smartlab_cmd['test_mode'] = 'auto'
             smartlab_cmd['test_step'] = 0
-            smartlab_cmd['setup_device'] = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer1']
+            smartlab_cmd['setup_device'] = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer1', 'printer2', 'printer3']
             smartlab_cmd['setup_doe'] = {
-                                        'header_id': 'yun_210422',
+                                        'header_id': 'DRY_TEST',
                                         'experiment_type': 'Tensile Test',
                                         'factors': [ {'factor_name': 'infill_line_distance', 'factor_range': [0.4, 0.45]},
                                                     {'factor_name': 'infill_angles'}

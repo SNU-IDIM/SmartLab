@@ -446,7 +446,7 @@ class SmartLABCore():
             elif command_type == 'open':
                 self.waitDeviceStatus(device_name='instron', status_value='Done')
                 self.device_dict['instron'].sendCommand({command_type: subject_name})
-                sleep(30.0)
+                sleep(10.0)
                 print("[Instron - Real mode] Analizing Start ({}) !!!".format(subject_name))
                 if wait_until_end == True: self.waitDeviceStatus(device_name='instron', status_key='status', status_value='Idle')
         
