@@ -19,6 +19,7 @@ class SqlHelper():
 
         try:
             self.con = pymysql.connect(host=self.host, user=self.username, passwd=self.password, port=self.port, charset=charset)
+            self.con.autocommit(True)
             self.cur = self.con.cursor()
             if database is not None:
                 self.select_db(database)
@@ -56,24 +57,23 @@ class SqlHelper():
         self.execute_commit(sql)
         return self.cur.fetchone()
 
+
     def create_table(self, tablename, attrdict, constraint):
         """
             example:
                 attrdict   ：{'book_name':'varchar(200) NOT NULL'...}
-                constraint ：PRIMARY KEY(`id`)
+                constraint ："PRIMARY KEY('id')"
         """
         if self.is_exist_table(tablename):
             return
-        sql = ''
         sql_mid = ''
         for attr,value in attrdict.items():
-            # sql_mid += '`'+attr + '`'+' '+ value+','
-            sql_mid += "{} {}, ".format(attr, value)#  '`'+attr + '`'+' '+ value+','
-        sql += 'CREATE TABLE IF NOT EXISTS {} ('.format(tablename)
-        sql += sql_mid + constraint 
-        sql += ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
+            sql_mid += "{} {}, ".format(attr, value)
+        sql_mid += constraint
+        sql = "CREATE TABLE IF NOT EXISTS {} ({}) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4".format(tablename, sql_mid)
         print('[SQL] {}'.format(sql))
         self.execute_commit(sql)
+
 
     def recreate_table(self, tablename, attrdict, constraint):
         if not self.is_exist_table(tablename):
@@ -85,18 +85,21 @@ class SqlHelper():
         self.restore_table(tablename, tablename + '.csv')
         os.remove(tablename + '.csv')
     
+
     def execute_sql(self, sql=''):
         try:
             self.cur.execute(sql)
             records = self.cur.fetchall()
             return records
         except pymysql.Error as e:
-            error = 'MySQL execute failed! ERROR (%s): %s' %(e.args[0],e.args[1])
-            print(error)
+            error = 'MySQL execute failed! ERROR ({}): {}'.format(e.args[0], e.args[1])
+            print("[ERROR] {}".format(error))
+            return error
+
 
     def execute_sql_file(self, sql):
         if not os.path.isfile(sql):
-            raise 'invalid input file path: %s' % sql
+            raise 'invalid input file path: {}'.format(sql)
         stmts = []
         stmt = ''
         delimiter = ';'
@@ -134,8 +137,10 @@ class SqlHelper():
             self.con.commit()
         except pymysql.Error as e:
             self.con.rollback()
-            error = 'MySQL execute failed! ERROR (%s): %s' %(e.args[0],e.args[1])
+            error = 'MySQL execute failed! ERROR ({}): {}' %(e.args[0], e.args[1])
+            print("[ERROR] {}".format(error))
             raise error
+
 
     def execute_commit(self, sql=''):
         try:
@@ -143,9 +148,10 @@ class SqlHelper():
             self.con.commit()
         except pymysql.Error as e:
             self.con.rollback()
-            error = 'MySQL execute failed! ERROR (%s): %s' %(e.args[0],e.args[1])
-            print("error:", error)
+            error = 'MySQL execute failed! ERROR ({}): {}'.format(e.args[0], e.args[1])
+            print("[ERROR] {}".format(error))
             return error
+
 
     def insert(self, tablename, params, conds=''):
         """
@@ -162,17 +168,19 @@ class SqlHelper():
             if isinstance(params, dict):
                 columns = [k.strip('\'"') for k in params.keys()]
                 print(columns)
-                attrs_sql = f"{','.join(columns)}"
+                attrs_sql = ','.join(columns)
                 values = [v.decode('utf8') if isinstance(v, bytes) else v for v in params.values()]
             else:
                 values = [v.decode('utf8') if isinstance(v, bytes) else v for v in params]
-            values_sql = f'{tuple(values)}'
+
+            values_sql = str(tuple(values))
             if values_sql[-2:].find(',') != -1:
-                values_sql = f'{tuple(values)}'[:-2] + ')'
+                values_sql = str(tuple(values))[:-2] + ')'
 
         sql = 'INSERT INTO {} ({}) VALUES {} {}'.format(tablename, attrs_sql, values_sql, conds)
         print('[SQL] {}'.format(sql))
         self.execute_commit(sql)
+
 
     def select(self, tablename, fields='*', conds='', order=''):
         """
@@ -200,11 +208,13 @@ class SqlHelper():
         if records is None or len(records) == 0:
             return None
         if len(records[0]) == 1:
-            return tuple([r for r, in records])
+            data = tuple([r for r, in records])
+            # print('[DEBUG] Selected data: \n{}'.format(data))
+            return data
 
         columns = self.get_table_columns(tablename) if fields == '*' else fields
         data = tuple([dict(zip(columns, row)) for row in records])
-        print('[DEBUG] Selected data: \n{}'.format(data))
+        # print('[DEBUG] Selected data: \n{}'.format(data))
 
         return data
 
@@ -215,16 +225,16 @@ class SqlHelper():
                 params = {"name" : "caixinglong", "age" : "38"}
                 mydb.delete(table, params)
         """
-        consql = ' '
+        consql = ''
         if cond_dict!='':
             for k, v in cond_dict.items():
-                if isinstance(v, str):
-                    v = "\'" + v + "\'"
-                consql = consql + tablename + "." + k + '=' + v + ' and '
-        consql = consql + ' 1=1 '
-        sql = "DELETE FROM %s where%s" % (tablename, consql)
-        #print (sql)
+                v = "'{}'".format(v)
+                consql += "{} {}.{}={} AND ".format(consql, tablename, k, v) 
+        consql = consql + '1=1'
+        sql = "DELETE FROM {} WHERE {}".format(tablename, consql)
+        print('[SQL] {}'.format(sql))
         return self.execute_commit(sql)
+
 
     def update(self, tablename, attrs_dict, cond_dict):
         """
@@ -234,7 +244,7 @@ class SqlHelper():
                 mydb.update(table, params, cond_dict)
         """
         attrs_list = []
-        consql = ' '
+        consql = ''
         for tmpkey, tmpvalue in attrs_dict.items():
             attrs_list.append("`" + tmpkey + "`" + "=" +"\'" + str(tmpvalue) + "\'")
         attrs_sql = ",".join(attrs_list)
@@ -244,33 +254,35 @@ class SqlHelper():
                 v = "\'" + str(v) + "\'"
                 consql = consql + "`" + tablename +"`." + "`" + str(k) + "`" + '=' + v + ' and '
         consql = consql + ' 1=1 '
-        sql = "UPDATE %s SET %s where%s" % (tablename, attrs_sql, consql)
-        #print(sql)
+        sql = "UPDATE {} SET {} WHERE {}".format(tablename, attrs_sql, consql)
+        print('[SQL] {}'.format(sql))
         return self.execute_commit(sql)
 
 
     def drop_table(self, tablename):
         sql = "DROP TABLE {}".format(tablename)
+        print('[SQL] {}'.format(sql))
         self.execute_commit(sql)
 
 
     def delete_table(self, tablename):
         sql = "DELETE FROM {}".format(tablename)
+        print('[SQL] {}'.format(sql))
         self.execute_commit(sql)
 
 
     def is_exist_schema(self, database):
-        result, = self.select("information_schema.SCHEMATA", "count(*)",["schema_name = '%s'" % database])
+        result, = self.select("information_schema.SCHEMATA", "count(*)", ["schema_name = '{}'".format(database)])
         return result > 0
 
 
     def is_exist_table(self, tablename):
-        result, = self.select("information_schema.tables","count(*)",["table_name = '%s'" % tablename, "table_schema = '%s'" % self.database])
+        result, = self.select("information_schema.tables","count(*)", ["table_name = '{}'".format(tablename), "table_schema = '{}'".format(self.database)])
         return result > 0
 
 
     def is_exist_table_column(self, tablename, column_name):
-        result, = self.select("information_schema.columns","count(*)",["table_name = '%s'" % tablename, "column_name = '%s'" % column_name, "table_schema = '%s'" % self.database])
+        result, = self.select("information_schema.columns","count(*)", ["table_name = '{}'".format(tablename), "column_name = '{}'".format(column_name), "table_schema = '{}'".format(self.database)])
         return result > 0
 
 
@@ -280,18 +292,20 @@ class SqlHelper():
 
 
     def get_table_columns(self, tablename):
-        return self.select("information_schema.columns", "column_name", ["table_schema = '%s'" % self.database, "table_name = '%s'" % tablename])
+        return self.select("information_schema.columns", "column_name", ["table_schema = '{}'".format(self.database), "table_name = '{}'".format(tablename)])
 
     def get_table_columns_prim(self, tablename):
-        return self.select("information_schema.columns", "column_name", ["table_schema = '%s'" % self.database, "table_name = '%s'" % tablename, "column_key = 'PRI'"])
+        return self.select("information_schema.columns", "column_name", ["table_schema = '{}'".format(self.database), "table_name = '{}'".format(tablename), "column_key = 'PRI'"])
 
     def add_column(self, tablename, col, tp):
         sql = "ALTER TABLE {} ADD {} {}".format(tablename, col, tp)
+        print('[SQL] {}'.format(sql))
         self.execute_commit(sql)
         print("[DEBUG] New column is added !!! ({}: {})".format(col, tp))
 
     def delete_column(self, tablename, col):
-        sql = "alter table %s drop column %s" % (tablename, col)
+        sql = "ALTER TABLE {} DROP COLUMN {}".format(tablename, col)
+        print('[SQL] {}'.format(sql))
         self.execute_commit(sql)
 
     def backup_table(self, tablename, file):
@@ -360,9 +374,9 @@ if __name__ == "__main__":
 
     if not mysql.is_exist_table('device_info'):
         mysql.create_table(tablename='device_info', attrdict={'id': 'int(11) AUTO_INCREMENT', 'time_stamp': 'timestamp'}, constraint="PRIMARY KEY(id)")
-    
 
-    device_list = ['R_001/cobot', 'R_001/amr', 'instron', 'MS', 'time_stamp']
+
+    device_list = ['R_001/cobot', 'R_001/amr', 'instron', 'MS', 'printer1', 'printer2', 'printer3', 'printer4']
 
     for device_id in device_list:
         if device_id.find('/') != -1:   device_id = device_id.split('/')[1]
@@ -386,21 +400,12 @@ if __name__ == "__main__":
 
     # mysql.insert('device_info', {'time_stamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')})
     mysql.insert('device_info', test)
-    mysql.insert('device_info', {'id': 1}, conds='ON DUPLICATE KEY UPDATE amr = "test2"')
-    mysql.select('device_info', conds="id=(SELECT MIN(id) FROM device_info)")
-    # print(len(mysql.select('device_info')))
-    # for i in mysql.select('device_info'):
-    #     print(i)
+    # mysql.insert('device_info', {'id': 1}, conds='ON DUPLICATE KEY UPDATE amr = "test2"')
+    # mysql.select('device_info', conds="id=(SELECT MIN(id) FROM device_info)")
+    for i in range(5):
+        print(len(mysql.select(tablename='device_info', fields=['amr'])))
+        mysql.insert('device_info', test)
+    # mysql.delete('device_info', {'id': 2})
+    # mysql.backup_table(tablename='device_info', file='test.csv')
 
-    # if not mysql.is_exist_table('device_info'):
-        
-    #     mysql.create_table(tablename='device_info', attrdict={'id': 'int(11) AUTO_INCREMENT', 'time_stamp': 'timestamp', 'time_stamp2': 'timestamp'}, constraint="PRIMARY KEY(id)")
-    #     mysql.create_table(tablename='device_info2', attrdict={'id': 'int(11) AUTO_INCREMENT', 'time_stamp': 'timestamp', 'time_stamp2': 'timestamp'}, constraint="PRIMARY KEY(id)")
 
-    # print(mysql.get_table_columns(tablename='device_info'))
-    # mysql.insert('device_info', {'time_stamp': '2021-04-25 00:14:10', 'time_stamp2': '2021-04-25 00:14:10'})
-    # mysql.insert('device_info2', {'time_stamp': '2021-04-25 00:14:10', 'time_stamp2': '2021-04-25 00:14:10'})
-    # for i in mysql.select('device_info'):
-    #     print(type(i))
-    # for i in mysql.select('device_info2'):
-    #     print(type(i))

@@ -5,6 +5,8 @@ from PyQt5 import uic, QtCore
 from PyQt5.QtGui import *
 from PyQt5.QtWebEngineWidgets import *
 from PyQt5.QtCore import QUrl
+from SqlHelper import SqlHelper
+import json
 
 
 class SmartLAB_GUI(QMainWindow, QDialog):
@@ -13,10 +15,12 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         uic.loadUi("test.ui", self)
         QDialog().setFixedSize(self.size())
 
+        self.sql = SqlHelper(host='localhost', username='root', password='0000', port=3306, database='SmartLab')
+
         self.smartlab_cmd = dict()
         self.smartlab_cmd['test_mode'] = 'auto'
         self.smartlab_cmd['test_step'] = 0
-        self.smartlab_cmd['setup_device'] = list()
+        self.smartlab_cmd['setup_device'] = ['R_001/amr', 'R_001/cobot', 'instron', 'MS']
         self.smartlab_cmd['setup_doe'] = {
                                     'header_id': 'DRY_TEST',
                                     'experiment_type': 'Tensile Test',
@@ -36,6 +40,8 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         # self.combo = QComboBox(self)
         self.execution_mode.currentIndexChanged.connect(self.execution_mode_cb)
         self.combo_device.currentIndexChanged.connect(self.combo_device_cb)
+        for device_id in self.smartlab_cmd['setup_device']:
+            self.combo_device.addItem(device_id)
         
         model = QStandardItemModel()
         for i in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']:
@@ -58,6 +64,8 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         #           {'some': 'any 1b', 'some2': 'any 2b', 'some3': 'any 3b',  'some4': 'any 2',  'some5': 'any 3'}
         #          ]   
 
+        # spisok = self.sql.select('device_info')
+
         # self.table.setRowCount(3)
         # self.table.setColumnCount(5)
 
@@ -68,9 +76,9 @@ class SmartLAB_GUI(QMainWindow, QDialog):
 
         # for row, item_list in enumerate(spisok):
         #     for col, key in enumerate(item_list):
-        #         item = (list(spisok[row].values())[col])
+        #         item = list(spisok[row].values())[col]
         #         print(item)
-        #         newitem = QTableWidgetItem(item_list[key])
+        #         newitem = QTableWidgetItem(str(item_list[key]))
         #         self.table.setItem(row, col, newitem)
 
 
@@ -113,40 +121,43 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         # print(self.comboBox.currentText(), self.comboBox.currentIndex())
         print(self.smartlab_cmd['test_mode'])
 
+
     def combo_device_cb(self):
-        device_type = self.combo_device.currentText()
-        spisok = [{'some': device_type,  'some2': 'any 2',  'some3': 'any 3',  'some4': 'any 2',  'some5': 'any 3'},
-                  {'some': device_type, 'some2': 'any 2a', 'some3': 'any 3a',  'some4': 'any 2',  'some5': 'any 3'},
-                  {'some': device_type, 'some2': 'any 2b', 'some3': 'any 3b',  'some4': 'any 2',  'some5': 'any 3'}
-                 ]   
-
-        self.table.setRowCount(3)
-        self.table.setColumnCount(5)
-
-        vbox = QVBoxLayout(self)
-        vbox.addWidget(self.table)
-
-        self.table.setHorizontalHeaderLabels((list(spisok[0].keys())))
-
-        for row, item_list in enumerate(spisok):
-            for col, key in enumerate(item_list):
-                item = (list(spisok[row].values())[col])
-                print(item)
-                newitem = QTableWidgetItem(item_list[key])
-                self.table.setItem(row, col, newitem)
+        try:
+            device_id = self.combo_device.currentText()
+            if device_id.find('/') != -1:   device_id = device_id.split('/')[1]
+            spisok = self.sql.select(tablename='device_info', fields=device_id)
+            n_col = len(list(json.loads(spisok[0]).keys()))
+            n_row = len(spisok)
+            
+            self.table.setRowCount(n_row)
+            self.table.setColumnCount(n_col)
+            self.table.setHorizontalHeaderLabels((list(json.loads(spisok[0]).keys())))
+            for row, item_list in enumerate(spisok):
+                for col, key in enumerate(json.loads(item_list)):
+                    item = (list(json.loads(spisok[row]).values())[col])
+                    newitem = QTableWidgetItem(str(item))
+                    self.table.setItem(row, col, newitem)
+        except:
+            pass
 
 
 
     def btn_run_cb(self):
         self.smartlab_cmd['setup_device'] = []
-        if self.use_cobot.isChecked():  self.smartlab_cmd['setup_device'].append('R_001/cobot')
-        if self.use_amr.isChecked():  self.smartlab_cmd['setup_device'].append('R_001/amr')
+        if self.use_cobot.isChecked():    self.smartlab_cmd['setup_device'].append('R_001/cobot')
+        if self.use_amr.isChecked():      self.smartlab_cmd['setup_device'].append('R_001/amr')
         if self.use_instron.isChecked():  self.smartlab_cmd['setup_device'].append('instron')
-        if self.use_omm.isChecked():  self.smartlab_cmd['setup_device'].append('MS')
-        if self.use_3dp_1.isChecked():  self.smartlab_cmd['setup_device'].append('printer1')
-        if self.use_3dp_2.isChecked():  self.smartlab_cmd['setup_device'].append('printer2')
-        if self.use_3dp_3.isChecked():  self.smartlab_cmd['setup_device'].append('printer3')
-        if self.use_3dp_4.isChecked():  self.smartlab_cmd['setup_device'].append('printer4')
+        if self.use_omm.isChecked():      self.smartlab_cmd['setup_device'].append('MS')
+        if self.use_3dp_1.isChecked():    self.smartlab_cmd['setup_device'].append('printer1')
+        if self.use_3dp_2.isChecked():    self.smartlab_cmd['setup_device'].append('printer2')
+        if self.use_3dp_3.isChecked():    self.smartlab_cmd['setup_device'].append('printer3')
+        if self.use_3dp_4.isChecked():    self.smartlab_cmd['setup_device'].append('printer4')
+
+        self.combo_device.clear()
+        for device_id in self.smartlab_cmd['setup_device']:
+            self.combo_device.addItem(device_id)
+
 
         print("Execution mode: {}".format(self.smartlab_cmd['test_mode']))
         print("Execution step: {}".format(self.smartlab_cmd['test_step']))
