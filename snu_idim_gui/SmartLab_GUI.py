@@ -37,44 +37,43 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         self.btn_run.clicked.connect(self.btn_run_cb)
 
         self.execution_mode.currentIndexChanged.connect(self.cbx_exe_mode_cb)
-        self.cbx_device.currentIndexChanged.connect(self.ckbx_device_cb)
+        self.cbx_device.currentIndexChanged.connect(self.cbx_device_cb)
         for device_id in self.smartlab_cmd['setup_device']:
             self.cbx_device.addItem(device_id)
         
+        self.widget_streaming.setStyleSheet("background-color: rgb(84, 84, 84);")
+        self.webview = QWebEngineView(self.widget_streaming)
+        self.webview.setUrl(QUrl("https://www.youtube.com/embed/t67_zAg5vvI?autoplay=1"))
+        self.webview.setGeometry(0, 0, 500, 300)
+
         model = QStandardItemModel()
         for i in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']:
             model.appendRow(QStandardItem(i))
         self.listView.setModel(model)
 
+        # test_info = [{'some': 'any 1',  'some2': 'any 2',  'some3': 'any 3',   'some4': 'any 4',   'some5': 'any 5'},
+        #              {'some': 'any 1a', 'some2': 'any 2a', 'some3': 'any 3a',  'some4': 'any 4a',  'some5': 'any 5a'},
+        #              {'some': 'any 1b', 'some2': 'any 2b', 'some3': 'any 3b',  'some4': 'any 4b',  'some5': 'any 5b'}
+        #             ]   
 
-        # self.widget_streaming.setGeometry(QtCore.QRect(2, 0, 500, 300))
-        self.widget_streaming.setStyleSheet("background-color: rgb(84, 84, 84);")
-        self.webview = QWebEngineView(self.widget_streaming)
-        self.webview.setUrl(QUrl("https://www.youtube.com/embed/t67_zAg5vvI?autoplay=1"))
-        self.webview.setGeometry(0,0,500,300)
+        test_info = self.sql.select('device_info')
+        n_col = len(list(test_info[0]))
+        n_row = len(test_info)
 
+        self.table_test_info.setRowCount(n_row)
+        self.table_test_info.setColumnCount(n_col)
 
-        # spisok = [{'some': 'any 1',  'some2': 'any 2',  'some3': 'any 3',  'some4': 'any 2',  'some5': 'any 3'},
-        #           {'some': 'any 1a', 'some2': 'any 2a', 'some3': 'any 3a',  'some4': 'any 2',  'some5': 'any 3'},
-        #           {'some': 'any 1b', 'some2': 'any 2b', 'some3': 'any 3b',  'some4': 'any 2',  'some5': 'any 3'}
-        #          ]   
+        vbox = QVBoxLayout(self)
+        vbox.addWidget(self.table_test_info)
 
-        # spisok = self.sql.select('device_info')
+        self.table_test_info.setHorizontalHeaderLabels((list(test_info[0].keys())))
 
-        # self.table.setRowCount(3)
-        # self.table.setColumnCount(5)
-
-        # vbox = QVBoxLayout(self)
-        # vbox.addWidget(self.table)
-
-        # self.table.setHorizontalHeaderLabels((list(spisok[0].keys())))
-
-        # for row, item_list in enumerate(spisok):
-        #     for col, key in enumerate(item_list):
-        #         item = list(spisok[row].values())[col]
-        #         print(item)
-        #         newitem = QTableWidgetItem(str(item_list[key]))
-        #         self.table.setItem(row, col, newitem)
+        for row, item_list in enumerate(test_info):
+            for col, key in enumerate(item_list):
+                item = list(test_info[row].values())[col]
+                print(item)
+                newitem = QTableWidgetItem(str(item_list[key]))
+                self.table_test_info.setItem(row, col, newitem)
 
 
     def table_doe_cb(self):
@@ -99,20 +98,20 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         print(self.smartlab_cmd['test_mode'])
 
 
-    def ckbx_device_cb(self):
+    def cbx_device_cb(self):
         try:
             device_id = self.cbx_device.currentText()
             if device_id.find('/') != -1:   device_id = device_id.split('/')[1]
-            spisok = self.sql.select(tablename='device_info', fields=device_id)
-            n_col = len(list(json.loads(spisok[0]).keys()))
-            n_row = len(spisok)
+            device_info = self.sql.select(tablename='device_info', fields=device_id)
+            n_col = len(list(json.loads(device_info[0]).keys()))
+            n_row = len(device_info)
             
             self.table_devcie_info.setRowCount(n_row)
             self.table_devcie_info.setColumnCount(n_col)
-            self.table_devcie_info.setHorizontalHeaderLabels((list(json.loads(spisok[0]).keys())))
-            for row, item_list in enumerate(spisok):
+            self.table_devcie_info.setHorizontalHeaderLabels((list(json.loads(device_info[0]).keys())))
+            for row, item_list in enumerate(device_info):
                 for col, key in enumerate(json.loads(item_list)):
-                    item = (list(json.loads(spisok[row]).values())[col])
+                    item = (list(json.loads(device_info[row]).values())[col])
                     newitem = QTableWidgetItem(str(item))
                     self.table_devcie_info.setItem(row, col, newitem)
         except:

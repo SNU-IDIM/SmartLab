@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1147</width>
-    <height>681</height>
+    <height>725</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,8 +17,8 @@
    <widget class="QPushButton" name="btn_run">
     <property name="geometry">
      <rect>
-      <x>130</x>
-      <y>280</y>
+      <x>120</x>
+      <y>200</y>
       <width>71</width>
       <height>31</height>
      </rect>
@@ -30,8 +30,8 @@
    <widget class="QComboBox" name="execution_mode">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>280</y>
+      <x>10</x>
+      <y>200</y>
       <width>101</width>
       <height>31</height>
      </rect>
@@ -55,8 +55,8 @@
    <widget class="QListView" name="listView">
     <property name="geometry">
      <rect>
-      <x>170</x>
-      <y>340</y>
+      <x>160</x>
+      <y>260</y>
       <width>121</width>
       <height>101</height>
      </rect>
@@ -65,8 +65,8 @@
    <widget class="QTableWidget" name="table_devcie_info">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>500</y>
+      <x>10</x>
+      <y>400</y>
       <width>721</width>
       <height>121</height>
      </rect>
@@ -75,8 +75,8 @@
    <widget class="QComboBox" name="cbx_device">
     <property name="geometry">
      <rect>
-      <x>640</x>
-      <y>480</y>
+      <x>630</x>
+      <y>380</y>
       <width>101</width>
       <height>22</height>
      </rect>
@@ -85,8 +85,8 @@
    <widget class="QProgressBar" name="progressBar">
     <property name="geometry">
      <rect>
-      <x>220</x>
-      <y>280</y>
+      <x>210</x>
+      <y>200</y>
       <width>521</width>
       <height>31</height>
      </rect>
@@ -107,21 +107,21 @@
    <widget class="QLabel" name="label">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>480</y>
+      <x>10</x>
+      <y>380</y>
       <width>81</width>
       <height>16</height>
      </rect>
     </property>
     <property name="text">
-     <string>Device Status</string>
+     <string>Device status</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_2">
     <property name="geometry">
      <rect>
-      <x>170</x>
-      <y>320</y>
+      <x>160</x>
+      <y>240</y>
       <width>81</width>
       <height>16</height>
      </rect>
@@ -133,8 +133,8 @@
    <widget class="QTableWidget" name="table_doe">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>30</y>
+      <x>10</x>
+      <y>10</y>
       <width>721</width>
       <height>171</height>
      </rect>
@@ -202,8 +202,8 @@
    <widget class="QLabel" name="label_3">
     <property name="geometry">
      <rect>
-      <x>320</x>
-      <y>320</y>
+      <x>310</x>
+      <y>240</y>
       <width>81</width>
       <height>16</height>
      </rect>
@@ -215,8 +215,8 @@
    <widget class="QListView" name="listView_2">
     <property name="geometry">
      <rect>
-      <x>320</x>
-      <y>340</y>
+      <x>310</x>
+      <y>260</y>
       <width>121</width>
       <height>101</height>
      </rect>
@@ -225,8 +225,8 @@
    <widget class="QLabel" name="label_4">
     <property name="geometry">
      <rect>
-      <x>470</x>
-      <y>320</y>
+      <x>460</x>
+      <y>240</y>
       <width>81</width>
       <height>16</height>
      </rect>
@@ -238,8 +238,8 @@
    <widget class="QListView" name="listView_3">
     <property name="geometry">
      <rect>
-      <x>470</x>
-      <y>340</y>
+      <x>460</x>
+      <y>260</y>
       <width>121</width>
       <height>101</height>
      </rect>
@@ -248,8 +248,8 @@
    <widget class="QListView" name="listView_4">
     <property name="geometry">
      <rect>
-      <x>620</x>
-      <y>340</y>
+      <x>610</x>
+      <y>260</y>
       <width>121</width>
       <height>101</height>
      </rect>
@@ -258,8 +258,8 @@
    <widget class="QLabel" name="label_5">
     <property name="geometry">
      <rect>
-      <x>620</x>
-      <y>320</y>
+      <x>610</x>
+      <y>240</y>
       <width>81</width>
       <height>16</height>
      </rect>
@@ -271,8 +271,8 @@
    <widget class="QLabel" name="label_6">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>320</y>
+      <x>10</x>
+      <y>240</y>
       <width>81</width>
       <height>16</height>
      </rect>
@@ -284,8 +284,8 @@
    <widget class="QListView" name="listView_5">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>340</y>
+      <x>10</x>
+      <y>260</y>
       <width>121</width>
       <height>101</height>
      </rect>
@@ -294,8 +294,8 @@
    <widget class="QScrollArea" name="scrollArea">
     <property name="geometry">
      <rect>
-      <x>750</x>
-      <y>30</y>
+      <x>740</x>
+      <y>10</y>
       <width>191</width>
       <height>171</height>
      </rect>
@@ -415,10 +415,33 @@
    <widget class="QWidget" name="widget_streaming" native="true">
     <property name="geometry">
      <rect>
-      <x>750</x>
-      <y>280</y>
+      <x>740</x>
+      <y>200</y>
       <width>191</width>
       <height>131</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_7">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>530</y>
+      <width>111</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Experiment status</string>
+    </property>
+   </widget>
+   <widget class="QTableWidget" name="table_test_info">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>550</y>
+      <width>721</width>
+      <height>121</height>
      </rect>
     </property>
    </widget>
