@@ -62,7 +62,7 @@
      </rect>
     </property>
    </widget>
-   <widget class="QTableWidget" name="table">
+   <widget class="QTableWidget" name="table_devcie_info">
     <property name="geometry">
      <rect>
       <x>20</x>
@@ -72,7 +72,7 @@
      </rect>
     </property>
    </widget>
-   <widget class="QComboBox" name="combo_device">
+   <widget class="QComboBox" name="cbx_device">
     <property name="geometry">
      <rect>
       <x>640</x>

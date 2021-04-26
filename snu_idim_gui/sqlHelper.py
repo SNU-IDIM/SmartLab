@@ -130,7 +130,6 @@ class SqlHelper():
                     stmt = ''
                 else:
                     stmts.append(line.strip())
-
         try:
             for s in stmts:
                 self.cur.execute(s)
@@ -215,7 +214,6 @@ class SqlHelper():
         columns = self.get_table_columns(tablename) if fields == '*' else fields
         data = tuple([dict(zip(columns, row)) for row in records])
         # print('[DEBUG] Selected data: \n{}'.format(data))
-
         return data
 
 
@@ -248,7 +246,6 @@ class SqlHelper():
         for tmpkey, tmpvalue in attrs_dict.items():
             attrs_list.append("`" + tmpkey + "`" + "=" +"\'" + str(tmpvalue) + "\'")
         attrs_sql = ",".join(attrs_list)
-        #print("attrs_sql:", attrs_sql)
         if cond_dict!='':
             for k, v in cond_dict.items():
                 v = "\'" + str(v) + "\'"
@@ -319,10 +316,10 @@ class SqlHelper():
 
     def restore_table(self, tablename, file, existing_rows='update'):
         if not self.is_exist_table(tablename):
-            print('table: %s not exists, by pass %s' % (tablename, file))
+            print('Table: {} not exists, by pass {}'.format(tablename, file))
             return
         if not os.path.isfile(file):
-            print('file: %s not exists, can not import to table %s' % (file, tbl))
+            print('File: {} not exists, can not import to table {}'.format(file, tbl))
             return
         
         pri_keys = self.get_table_columns_prim(tablename)
@@ -368,44 +365,49 @@ class SqlHelper():
 
 
 if __name__ == "__main__":
+    ## Connect to the database server
     mysql = SqlHelper(host='localhost', username='root', password='0000', port=3306)
 
+    ## Use database (Database: 'SmartLab')
     mysql.select_db('SmartLab')
 
+    ## Create table if not exists (Table: 'device_info')
     if not mysql.is_exist_table('device_info'):
         mysql.create_table(tablename='device_info', attrdict={'id': 'int(11) AUTO_INCREMENT', 'time_stamp': 'timestamp'}, constraint="PRIMARY KEY(id)")
 
-
+    ## Create columns if not exists (Column: DEVICE_ID)
     device_list = ['R_001/cobot', 'R_001/amr', 'instron', 'MS', 'printer1', 'printer2', 'printer3', 'printer4']
-
     for device_id in device_list:
         if device_id.find('/') != -1:   device_id = device_id.split('/')[1]
         try:
             list(mysql.get_table_columns(tablename='device_info')).index(device_id)
             print("[DEBUG] Column already exists !!! ({})".format(device_id))
-
         except:
             mysql.add_column('device_info', device_id, 'varchar(256)')
             print("[DEBUG] Column not exists !!! ({})".format(device_id))
 
-    
-    column_list = mysql.get_table_columns(tablename='device_info')
-    print(column_list)
-    mysql.select('device_info')
 
-    test = {'time_stamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+    ## Insert data to table
+    column_list = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer1']
+    new_data1 = {'time_stamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+    new_data2 = {'time_stamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
     for device_id in column_list:
         if device_id != 'id' and device_id != 'time_stamp':
-            test[device_id] = json.dumps({'device_name': device_id, 'test2': 2})
+            new_data1[device_id] = json.dumps({'device_name': device_id, 'status': 'STATUS1'})
+            new_data2[device_id] = json.dumps({'device_name': device_id, 'status': 'STATUS2'})
+    mysql.insert('device_info', new_data1)
 
-    # mysql.insert('device_info', {'time_stamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')})
-    mysql.insert('device_info', test)
-    # mysql.insert('device_info', {'id': 1}, conds='ON DUPLICATE KEY UPDATE amr = "test2"')
-    # mysql.select('device_info', conds="id=(SELECT MIN(id) FROM device_info)")
-    for i in range(5):
-        print(len(mysql.select(tablename='device_info', fields=['amr'])))
-        mysql.insert('device_info', test)
-    # mysql.delete('device_info', {'id': 2})
-    # mysql.backup_table(tablename='device_info', file='test.csv')
+    ## Check existing columns and data
+    column_list = mysql.get_table_columns(tablename='device_info')
+    data = mysql.select('device_info')
+    print("[DEBUG] Column list: \n{}\n\nData in table ({}): \n{}".format(column_list, 'device_info', data))
 
 
+    ## Insert data to column (overwrite)
+    data = mysql.select('device_info', conds="id=(SELECT MIN(id) FROM device_info)")
+    print("[DEBUG] First data from table ({}): \n{}".format('device_info', data))
+    # mysql.insert('device_info', new_data2)
+
+    mysql.insert('device_info', {'id': 1}, conds='ON DUPLICATE KEY UPDATE amr = "test2"')
+    data = mysql.select('device_info', conds="id=(SELECT MIN(id) FROM device_info)")
+    print("[DEBUG] First data from table ({}): \n{}".format('device_info', data))
