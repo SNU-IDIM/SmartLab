@@ -19,6 +19,9 @@ from TestDesigner import TestDesigner
 sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_common/imp")) )
 from IDIM_framework import *
 
+sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_common/src")) )
+from SqlHelper import SqlHelper
+
 from DevicePluginToROS import DevicePluginToROS
 
 sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_amr")) )
@@ -53,6 +56,13 @@ class SmartLABCore():
 
         self.init_flag = True
         self.test_step = 0
+
+        ## Connect to the database server
+        self.mysql = SqlHelper(host='localhost', username='root', password='0000', port=3306, database='SmartLab')
+
+        ## Check existing columns and data
+        column_list = self.mysql.get_table_columns(tablename='result')
+        print("[DEBUG] Column list: \n{} in table ({}): \n".format(column_list, 'result'))
 
         self.req = dict()
         self.req['test_mode'] = 'step'
@@ -106,6 +116,7 @@ class SmartLABCore():
 
 
 
+
     '''#####################################################################################################
         Interface of SmartLab Server
     '''
@@ -114,6 +125,7 @@ class SmartLABCore():
             self.req.update(json.loads(self.socket.recv()))
             print('[DEBUG] Request from SmartLab Client: {}'.format(self.req))
 
+            ## Initializing ...
             if self.init_flag == True:
                 sleep(3.0)
                 self.init_flag = False
@@ -125,6 +137,10 @@ class SmartLABCore():
                 self.addPrintingQueue(test_id_list)
                 sleep(3.0)
 
+                for test_id in test_id_list:
+                    self.mysql.delete('result', {'subject_name': test_id})
+                    self.mysql.insert('result', {'subject_name': test_id, 'Status': 'Waiting'}, conds='ON DUPLICATE KEY UPDATE Status = "-"')
+                                
                 ## 3DP Manager thread
                 self.thread_1 = Thread(target=self.manager3DP)
                 self.thread_1.start()
@@ -137,12 +153,14 @@ class SmartLABCore():
                 self.thread_3 = Thread(target=self.refreshDeviceInfo)
                 self.thread_3.start()
 
-            try:
-                self.res['device'] = self.device_info
-                self.res['experiment'] = self.test_info
-                self.socket.send_string(json.dumps(self.res))
-            except:
-                pass
+            self.socket.send_string('ok')
+
+            # try:
+            #     self.res['device'] = self.device_info
+            #     self.res['experiment'] = self.test_info
+            #     self.socket.send_string(json.dumps(self.res))
+            # except:
+            #     pass
 
 
 
@@ -263,29 +281,13 @@ class SmartLABCore():
                         if device_status['status'].find('Idle') != -1:
                             try:
                                 print_next = self.printing_queue.pop(0)
-                                self.tapping(device_id, print_next)
+                                # self.tapping(device_id, print_next)
                                 self.device_dict[device_id].sendCommand({'print': print_next})
+                                self.mysql.insert('result', {'subject_name': print_next}, conds='ON DUPLICATE KEY UPDATE Status = "Fabrication"')
                                 sleep(2.0)
                                 print("[3DP] {} status: Idle -> Printing {}".format(device_id, print_next))
                             except:
                                 print("[3DP] Printing queue is empty !!!")
-
-                    self.test_info['waiting'] = self.printing_queue
-                    self.test_info['fabrication'] = []
-                    for printer_id in self.printer_list_printing:
-                        self.test_info['fabrication'].append(self.device_info[printer_id]['subject_name'])
-                    for i in self.test_info['measurement']:
-                        try:
-                            idx = self.test_info['fabrication'].index(i)
-                            self.test_info['fabrication'].pop(idx)
-                        except:
-                            pass
-                    for i in self.test_info['experiment']:
-                        try:
-                            idx = self.test_info['fabrication'].index(i)
-                            self.test_info['fabrication'].pop(idx)
-                        except:
-                            pass
 
                     # print("\n[DEBUG] 3DP finished: {}".format(self.printer_list_finished))
                     # print("[DEBUG] 3DP robot done: {}".format(self.printer_list_robot_done))
@@ -495,7 +497,7 @@ class SmartLABCore():
 
 
     def executionManager(self):
-        debug = False
+        debug = True
         debug_withoutAMR = False #True
 
         while True:
@@ -512,8 +514,8 @@ class SmartLABCore():
                 if self.test_step == 0: ## Step 0. 시편 제작 완료 시 시작
                     print("[Execution Manager] Step 1. Fabricating specimens for experiment... (finnished: {})".format(self.printer_list_finished))
                     try:
-                        printer_id = self.printer_list_finished.pop(0)
-                        subject_id = self.device_info[printer_id]['subject_name']
+                        printer_id = str(self.printer_list_finished.pop(0))
+                        subject_id = str(self.device_info[printer_id]['subject_name'])
                         printer_number = int(printer_id.split('printer')[1])
                         amr_pos_3dp = deepcopy(AMR_POS_3DP_0);   amr_pos_3dp[1] += printer_number * AMR_OFFSET_3DP
                         self.test_step = 1
@@ -522,7 +524,7 @@ class SmartLABCore():
 
 
                 elif self.test_step == 1: ## Step 2-1. Get printing bed from printer (3DP bed: 3D printer -> Robot)
-                    self.test_info['measurement'] = [subject_id];   self.test_info['experiment'] = []
+                    self.mysql.insert('result', {'subject_name': subject_id}, conds='ON DUPLICATE KEY UPDATE Status = "Measurement"')
                     print("[Execution Manager] Step 2-1 (1 of 2). AMR moving... (target: {}: {})".format(printer_id, amr_pos_3dp))
                     if debug_withoutAMR == False:
                         self.executeAMR(spot_name=printer_id, target_pose=amr_pos_3dp, hold_time=0.0, debug=debug)
@@ -574,7 +576,7 @@ class SmartLABCore():
 
 
                 elif self.test_step == 4: ## Step 3-1. 협동로봇 시편 -> 인장시험기 (printer_id)
-                    self.test_info['measurement'] = [];   self.test_info['experiment'] = [subject_id]
+                    self.mysql.insert('result', {'subject_name': subject_id}, conds='ON DUPLICATE KEY UPDATE Status = "Experiment"')
                     print("[Execution Manager] Step 3-1 (1 of 2). AMR moving... (target: instron, {})".format(AMR_POS_INSTRON))
                     if debug_withoutAMR == False:
                         self.executeAMR(spot_name='instron', target_pose=AMR_POS_INSTRON, hold_time=0.0, debug=debug)
@@ -611,13 +613,13 @@ class SmartLABCore():
                     print("[Execution Manager] Step 3-3 (4 of 4).  Robot task start !!! (Finish experiment: {})".format(subject_id))
                     robot_task_queue = self.makeRobotTaskQueue(task_type='finish_experiment')
                     self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
-                    self.test_info['measurement'] = [];   self.test_info['experiment'] = [];    self.test_info['completed'].append(subject_id)
+                    self.mysql.insert('result', {'subject_name': subject_id}, conds='ON DUPLICATE KEY UPDATE Status = "Done"')
                     self.test_step = 7 if len(self.printer_list_finished) == 0 else 0
                 
 
                 elif self.test_step == 7: ## Step 4. 수행할 작업 없을 시 AMR -> home으로 이동
-                    print("[Execution Manager] Step 4. AMR moving... (target: home, {})".format(AMR_POS_ZERO))
-                    if debug == False: self.executeAMR(spot_name='home', target_pose=AMR_POS_ZERO, hold_time=0.0, debug=debug) # target_pose 수정 작업 필요
+                    print("[Execution Manager] Step 4. AMR moving... (target: home, {})".format(AMR_POS_HOME))
+                    if debug == False: self.executeAMR(spot_name='home', target_pose=AMR_POS_HOME, hold_time=0.0, debug=debug) # target_pose 수정 작업 필요
                     self.test_step = 0
 
             except:

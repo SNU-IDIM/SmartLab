@@ -18,7 +18,7 @@ class ImageConverter:
     self.bridge = CvBridge()
 
     self.image_overview = np.empty((480, 640, 3))
-    self.cam_overview_sub = rospy.Subscriber("overview/usb_cam/image_raw", Image, self.cb_overview)
+    self.cam_overview_sub = rospy.Subscribers("overview/usb_cam/image_raw", Image, self.cb_overview)
 
     self.image_printer = np.empty((480, 640, 3))
     self.cam_printer_sub = rospy.Subscriber("printer/usb_cam/image_raw", Image, self.cb_printer)

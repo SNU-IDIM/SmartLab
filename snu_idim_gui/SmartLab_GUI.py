@@ -1,12 +1,18 @@
-import sys
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
+import sys, os
 import ast
 from PyQt5.QtWidgets import *
 from PyQt5 import uic, QtCore
 from PyQt5.QtGui import *
 from PyQt5.QtWebEngineWidgets import *
 from PyQt5.QtCore import QUrl
-from SqlHelper import SqlHelper
 import json
+
+sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_common/src")) )
+from SqlHelper import SqlHelper
+
+from SmartLab_Client import SmartLabClient
 
 
 class SmartLAB_GUI(QMainWindow, QDialog):
@@ -16,6 +22,7 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         QDialog().setFixedSize(self.size())
 
         self.sql = SqlHelper(host='localhost', username='root', password='0000', port=3306, database='SmartLab')
+        self.smartlab = SmartLabClient(ip='192.168.60.21')
 
         self.smartlab_cmd = dict()
         self.smartlab_cmd['test_mode'] = 'auto'
@@ -56,24 +63,23 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         #              {'some': 'any 1b', 'some2': 'any 2b', 'some3': 'any 3b',  'some4': 'any 4b',  'some5': 'any 5b'}
         #             ]   
 
-        test_info = self.sql.select('device_info')
-        n_col = len(list(test_info[0]))
-        n_row = len(test_info)
+        # test_info = self.sql.select('result')
+        # n_col = len(list(test_info[0]))
+        # n_row = len(test_info)
 
-        self.table_test_info.setRowCount(n_row)
-        self.table_test_info.setColumnCount(n_col)
+        # self.table_test_info.setRowCount(n_row)
+        # self.table_test_info.setColumnCount(n_col)
 
-        vbox = QVBoxLayout(self)
-        vbox.addWidget(self.table_test_info)
+        # vbox = QVBoxLayout(self)
+        # vbox.addWidget(self.table_test_info)
 
-        self.table_test_info.setHorizontalHeaderLabels((list(test_info[0].keys())))
-
-        for row, item_list in enumerate(test_info):
-            for col, key in enumerate(item_list):
-                item = list(test_info[row].values())[col]
-                print(item)
-                newitem = QTableWidgetItem(str(item_list[key]))
-                self.table_test_info.setItem(row, col, newitem)
+        # self.table_test_info.setHorizontalHeaderLabels((list(test_info[0].keys())))
+    
+        # for row, item_list in enumerate(test_info):
+        #     for col, key in enumerate(item_list):
+        #         item = list(test_info[row].values())[col]
+        #         newitem = QTableWidgetItem(str(item_list[key]))
+        #         self.table_test_info.setItem(row, col, newitem)
 
 
     def table_doe_cb(self):
@@ -139,6 +145,28 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         print("DoE: \n{}".format(self.smartlab_cmd['setup_doe']))
         # QMessageBox.about(self, "message", "2")
 
+        self.smartlab.send(self.smartlab_cmd)
+        
+        fields = ['subject_name', 'Status', 'Thickness', 'Length', 'Width', 'E_modulus', 'U_stress']
+        header_id = self.smartlab_cmd['setup_doe']['header_id']
+        test_info = self.sql.select('result', fields=fields, conds='subject_name like "%{}%"'.format(header_id))
+        n_col = len(list(test_info[0]))
+        n_row = len(test_info)
+
+        self.table_test_info.setRowCount(n_row)
+        self.table_test_info.setColumnCount(n_col)
+
+        vbox = QVBoxLayout(self)
+        vbox.addWidget(self.table_test_info)
+
+        self.table_test_info.setHorizontalHeaderLabels((list(test_info[0].keys())))
+    
+        for row, item_list in enumerate(test_info):
+            for col, key in enumerate(item_list):
+                item = list(test_info[row].values())[col]
+                newitem = QTableWidgetItem(str(item_list[key]))
+                self.table_test_info.setItem(row, col, newitem)
+
 
 
 if __name__ == "__main__":
@@ -146,3 +174,4 @@ if __name__ == "__main__":
     gui = SmartLAB_GUI()
     gui.show()
     app.exec_()
+    print('good')
