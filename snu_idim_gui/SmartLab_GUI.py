@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-import sys, os
+import sys, os, time
 import ast
 from PyQt5.QtWidgets import *
 from PyQt5 import uic, QtCore
@@ -8,6 +8,8 @@ from PyQt5.QtGui import *
 from PyQt5.QtWebEngineWidgets import *
 from PyQt5.QtCore import QUrl
 import json
+import ast
+from threading import Thread
 
 sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_common/src")) )
 from SqlHelper import SqlHelper
@@ -27,81 +29,113 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         self.smartlab_cmd = dict()
         self.smartlab_cmd['test_mode'] = 'auto'
         self.smartlab_cmd['test_step'] = 0
-        self.smartlab_cmd['setup_device'] = ['R_001/amr', 'R_001/cobot', 'instron', 'MS']
-        self.smartlab_cmd['setup_doe'] = {
-                                    'header_id': 'DRY_TEST',
-                                    'experiment_type': 'Tensile Test',
-                                    'factors': [ {'factor_name': 'infill_line_distance', 'factor_range': [0.4, 0.45]},
-                                                {'factor_name': 'infill_angles'}
-                                            ],
-                                    'doe_type': 3, # DOE_GENERALIZED_FACTORIAL=3
-                                    'option': [ [0.4, 0.45], 
-                                                ['0', '45,135', '0,90', '90']
-                                            ],
-                                    }
+        self.smartlab_cmd['setup_device'] = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer1', 'printer2', 'printer3', 'printer4']
+        self.smartlab_cmd['setup_doe'] = dict()
 
-        self.table_doe.cellChanged.connect(self.table_doe_cb)
-        self.btn_run.clicked.connect(self.btn_run_cb)
+        # self.btn_run.clicked.connect(self.btn_run_cb)
+        self.btn_doe_create.clicked.connect(self.cb_btn_doe_create)
+        self.btn_control_run.clicked.connect(self.cb_btn_control_run)
+        self.cbx_control.currentIndexChanged.connect(self.cb_cbx_control)
 
-        self.execution_mode.currentIndexChanged.connect(self.cbx_exe_mode_cb)
-        self.cbx_device.currentIndexChanged.connect(self.cbx_device_cb)
-        for device_id in self.smartlab_cmd['setup_device']:
-            self.cbx_device.addItem(device_id)
-        
-        self.widget_streaming.setStyleSheet("background-color: rgb(84, 84, 84);")
-        self.webview = QWebEngineView(self.widget_streaming)
-        self.webview.setUrl(QUrl("https://www.youtube.com/embed/t67_zAg5vvI?autoplay=1"))
-        self.webview.setGeometry(0, 0, 500, 300)
+        # self.widget_streaming.setStyleSheet("background-color: rgb(84, 84, 84);")
+        # self.webview = QWebEngineView(self.widget_streaming)
+        # self.webview.setUrl(QUrl("https://www.youtube.com/embed/t67_zAg5vvI?autoplay=1"))
+        # self.webview.setGeometry(0, 0, 500, 300)
 
-        model = QStandardItemModel()
-        for i in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']:
-            model.appendRow(QStandardItem(i))
-        self.listView.setModel(model)
+        self.thread_server = Thread(target=self.updateStatus)
+        self.thread_server.start()
 
-        # test_info = [{'some': 'any 1',  'some2': 'any 2',  'some3': 'any 3',   'some4': 'any 4',   'some5': 'any 5'},
-        #              {'some': 'any 1a', 'some2': 'any 2a', 'some3': 'any 3a',  'some4': 'any 4a',  'some5': 'any 5a'},
-        #              {'some': 'any 1b', 'some2': 'any 2b', 'some3': 'any 3b',  'some4': 'any 4b',  'some5': 'any 5b'}
-        #             ]   
-
-        # test_info = self.sql.select('result')
-        # n_col = len(list(test_info[0]))
-        # n_row = len(test_info)
-
-        # self.table_test_info.setRowCount(n_row)
-        # self.table_test_info.setColumnCount(n_col)
-
-        # vbox = QVBoxLayout(self)
-        # vbox.addWidget(self.table_test_info)
-
-        # self.table_test_info.setHorizontalHeaderLabels((list(test_info[0].keys())))
     
-        # for row, item_list in enumerate(test_info):
-        #     for col, key in enumerate(item_list):
-        #         item = list(test_info[row].values())[col]
-        #         newitem = QTableWidgetItem(str(item_list[key]))
-        #         self.table_test_info.setItem(row, col, newitem)
+    def updateStatus(self):
+        '''
+            1. Experiment status update 부분
+            2. Device status update 부분
+            3. Progree 관련 부분(progress bar 등)
+        '''
+        while True:
+            try:
+
+                # command = dict()
+                # command['test_mode'] = 'auto'
+                # command['test_step'] = 0
+                # command['setup_device'] = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer1', 'printer2', 'printer3', 'printer4']
+                # command['setup_doe'] = {
+                #                         'header_id': 'DRY_TEST',
+                #                         'experiment_type': 'Tensile Test',
+                #                         'factors': [ {'factor_name': 'infill_line_distance', 'factor_range': [0.4, 0.45]},
+                #                                     {'factor_name': 'infill_angles'}
+                #                                 ],
+                #                         'doe_type': 3, # DOE_GENERALIZED_FACTORIAL=3
+                #                         'option': [ [0.4, 0.45], 
+                #                                     ['0', '45,135', '0,90', '90']
+                #                                 ],
+                #                         }
+       
+                
+                fields = ['subject_name', 'Status', 'Thickness', 'Length', 'Width', 'E_modulus', 'U_stress']
+                header_id = self.smartlab_cmd['setup_doe']['header_id']
+                test_info = self.sql.select('result', fields=fields, conds='subject_name like "%{}%"'.format(header_id))
+                n_col = len(list(test_info[0]))
+                n_row = len(test_info)
+
+                self.table_exp_info.setRowCount(n_row)
+                self.table_exp_info.setColumnCount(n_col)
+
+                vbox = QVBoxLayout(self)
+                vbox.addWidget(self.table_exp_info)
+
+                self.table_exp_info.setHorizontalHeaderLabels((list(test_info[0].keys())))
+            
+                for row, item_list in enumerate(test_info):
+                    for col, key in enumerate(item_list):
+                        item = list(test_info[row].values())[col]
+                        newitem = QTableWidgetItem(str(item_list[key]))
+                        self.table_exp_info.setItem(row, col, newitem)
+                
+                self.smartlab.send(self.smartlab_cmd)
+                self.smartlab_cmd['test_step'] = 0 if self.smartlab_cmd['test_step'] == 1 else 1
+
+            except:
+                print("bad")
+            time.sleep(1.0)
+
+    
+    def cb_btn_control_run(self):
+        print("[DEBUG] Run button clicked !!!")
+        self.smartlab_cmd['test_step'] = 1
+        
 
 
-    def table_doe_cb(self):
-        for i in range(self.table_doe.rowCount()):
-            key = self.table_doe.verticalHeaderItem(i).text()
-            try: # List, Dict type
-                x = ast.literal_eval(self.table_doe.item(i, 0).text())
-            except: # String type
-                x = self.table_doe.item(i, 0).text()
-            self.smartlab_cmd['setup_doe'][key] = x
-        print(self.smartlab_cmd['setup_doe'])
+    def cb_btn_doe_create(self):
+        doe_factors = []
+        doe_options = []
 
-        # try: # List, Dict type
-        #     x = ast.literal_eval(self.table_doe.currentItem().text())
-        # except: # String type
-        #     x = self.table_doe.currentItem().text()
-        # print(type(x), x)
+        for i in range(self.table_doe_factors.rowCount()):
+            factor = dict()
+            option = dict()
+            factor['factor_name'] = self.table_doe_factors.item(i, 0).text()
+            try:
+                factor_range = ast.literal_eval(self.table_doe_factors.item(i, 1).text())
+                factor['factor_range'] = factor_range
+            except:
+                pass
+            option = ast.literal_eval(self.table_doe_factors.item(i, 2).text())
+            doe_factors.append(factor)
+            doe_options.append(option)
+
+        self.smartlab_cmd['setup_doe']['header_id']       = self.txt_doe_exp_name.text()
+        self.smartlab_cmd['setup_doe']['experiment_type'] = self.txt_doe_exp_type.text()
+        self.smartlab_cmd['setup_doe']['doe_type']        = 3
+        self.smartlab_cmd['setup_doe']['factors']         = doe_factors
+        self.smartlab_cmd['setup_doe']['option']          = doe_options
+        for key in self.smartlab_cmd:
+            print("[DEBUG] {}: {}".format(key, self.smartlab_cmd[key]))
 
 
-    def cbx_exe_mode_cb(self):
-        self.smartlab_cmd['test_mode'] = self.execution_mode.currentText()
-        print(self.smartlab_cmd['test_mode'])
+
+    def cb_cbx_control(self):
+        self.smartlab_cmd['test_mode'] = self.cbx_control.currentText()
+        print("[DEBUG] Execution mode: {}".format(self.smartlab_cmd['test_mode']))
 
 
     def cbx_device_cb(self):
@@ -124,29 +158,23 @@ class SmartLAB_GUI(QMainWindow, QDialog):
             pass
 
 
-    def btn_run_cb(self):
-        self.smartlab_cmd['setup_device'] = []
-        if self.use_cobot.isChecked():    self.smartlab_cmd['setup_device'].append('R_001/cobot')
-        if self.use_amr.isChecked():      self.smartlab_cmd['setup_device'].append('R_001/amr')
-        if self.use_instron.isChecked():  self.smartlab_cmd['setup_device'].append('instron')
-        if self.use_omm.isChecked():      self.smartlab_cmd['setup_device'].append('MS')
-        if self.use_3dp_1.isChecked():    self.smartlab_cmd['setup_device'].append('printer1')
-        if self.use_3dp_2.isChecked():    self.smartlab_cmd['setup_device'].append('printer2')
-        if self.use_3dp_3.isChecked():    self.smartlab_cmd['setup_device'].append('printer3')
-        if self.use_3dp_4.isChecked():    self.smartlab_cmd['setup_device'].append('printer4')
+    # def btn_run_cb(self):
+    #     self.smartlab_cmd['setup_device'] = []
+    #     if self.use_cobot.isChecked():    self.smartlab_cmd['setup_device'].append('R_001/cobot')
+    #     if self.use_amr.isChecked():      self.smartlab_cmd['setup_device'].append('R_001/amr')
+    #     if self.use_instron.isChecked():  self.smartlab_cmd['setup_device'].append('instron')
+    #     if self.use_omm.isChecked():      self.smartlab_cmd['setup_device'].append('MS')
+    #     if self.use_3dp_1.isChecked():    self.smartlab_cmd['setup_device'].append('printer1')
+    #     if self.use_3dp_2.isChecked():    self.smartlab_cmd['setup_device'].append('printer2')
+    #     if self.use_3dp_3.isChecked():    self.smartlab_cmd['setup_device'].append('printer3')
+    #     if self.use_3dp_4.isChecked():    self.smartlab_cmd['setup_device'].append('printer4')
 
-        self.cbx_device.clear()
-        for device_id in self.smartlab_cmd['setup_device']:
-            self.cbx_device.addItem(device_id)
-
-        print("Execution mode: {}".format(self.smartlab_cmd['test_mode']))
-        print("Execution step: {}".format(self.smartlab_cmd['test_step']))
-        print("Device list: {}".format(self.smartlab_cmd['setup_device']))
-        print("DoE: \n{}".format(self.smartlab_cmd['setup_doe']))
-        # QMessageBox.about(self, "message", "2")
+    #     self.cbx_device.clear()
+    #     for device_id in self.smartlab_cmd['setup_device']:
+    #         self.cbx_device.addItem(device_id)
 
         self.smartlab.send(self.smartlab_cmd)
-        
+
         fields = ['subject_name', 'Status', 'Thickness', 'Length', 'Width', 'E_modulus', 'U_stress']
         header_id = self.smartlab_cmd['setup_doe']['header_id']
         test_info = self.sql.select('result', fields=fields, conds='subject_name like "%{}%"'.format(header_id))
