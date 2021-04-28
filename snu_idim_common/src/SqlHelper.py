@@ -411,6 +411,9 @@ if __name__ == "__main__":
     # data = mysql.select('device_info', conds="id=(SELECT MIN(id) FROM device_info)")
     # print("[DEBUG] First data from table ({}): \n{}".format('device_info', data))
 
+
+
+    '''
     ## Connect to the database server
     mysql = SqlHelper(host='localhost', username='root', password='0000', port=3306)
 
@@ -444,3 +447,4 @@ if __name__ == "__main__":
 
     
 
+    '''

@@ -23,6 +23,8 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         uic.loadUi("SmartLab_GUI.ui", self)
         QDialog().setFixedSize(self.size())
 
+        self.init_flag = False
+
         self.sql = SqlHelper(host='localhost', username='root', password='0000', port=3306, database='SmartLab')
         self.smartlab = SmartLabClient(ip='192.168.60.21')
 
@@ -35,6 +37,9 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         # self.btn_run.clicked.connect(self.btn_run_cb)
         self.btn_doe_create.clicked.connect(self.cb_btn_doe_create)
         self.btn_control_run.clicked.connect(self.cb_btn_control_run)
+        self.btn_control_pause.clicked.connect(self.cb_btn_control_pause)
+        self.btn_control_stop.clicked.connect(self.cb_btn_control_stop)
+        self.btn_exp_export.clicked.connect(self.cb_btn_exp_export)
         self.cbx_control.currentIndexChanged.connect(self.cb_cbx_control)
 
         # self.widget_streaming.setStyleSheet("background-color: rgb(84, 84, 84);")
@@ -54,24 +59,6 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         '''
         while True:
             try:
-
-                # command = dict()
-                # command['test_mode'] = 'auto'
-                # command['test_step'] = 0
-                # command['setup_device'] = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer1', 'printer2', 'printer3', 'printer4']
-                # command['setup_doe'] = {
-                #                         'header_id': 'DRY_TEST',
-                #                         'experiment_type': 'Tensile Test',
-                #                         'factors': [ {'factor_name': 'infill_line_distance', 'factor_range': [0.4, 0.45]},
-                #                                     {'factor_name': 'infill_angles'}
-                #                                 ],
-                #                         'doe_type': 3, # DOE_GENERALIZED_FACTORIAL=3
-                #                         'option': [ [0.4, 0.45], 
-                #                                     ['0', '45,135', '0,90', '90']
-                #                                 ],
-                #                         }
-       
-                
                 fields = ['subject_name', 'Status', 'Thickness', 'Length', 'Width', 'E_modulus', 'U_stress']
                 header_id = self.smartlab_cmd['setup_doe']['header_id']
                 test_info = self.sql.select('result', fields=fields, conds='subject_name like "%{}%"'.format(header_id))
@@ -92,17 +79,27 @@ class SmartLAB_GUI(QMainWindow, QDialog):
                         newitem = QTableWidgetItem(str(item_list[key]))
                         self.table_exp_info.setItem(row, col, newitem)
                 
-                self.smartlab.send(self.smartlab_cmd)
-                self.smartlab_cmd['test_step'] = 0 if self.smartlab_cmd['test_step'] == 1 else 1
+                if self.init_flag == True:
+                    self.smartlab.send(self.smartlab_cmd)
+                    self.smartlab_cmd['test_step'] = 0 if self.smartlab_cmd['test_step'] == 1 else 1
 
             except:
                 print("bad")
             time.sleep(1.0)
 
-    
+    def cb_btn_exp_export(self):
+        print("[DEBUG] 'Experiment - Export' button clicked !!! (TBD)")
+
     def cb_btn_control_run(self):
-        print("[DEBUG] Run button clicked !!!")
+        print("[DEBUG] 'Control - Run' button clicked !!! (TBD)")
+        self.init_flag = True
         self.smartlab_cmd['test_step'] = 1
+    
+    def cb_btn_control_pause(self):
+        print("[DEBUG] 'Control - Pause' button clicked !!! (TBD)")
+
+    def cb_btn_control_stop(self):
+        print("[DEBUG] 'Control - Pause' button clicked !!! (TBD)")
         
 
 
