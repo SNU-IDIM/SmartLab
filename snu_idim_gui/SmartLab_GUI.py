@@ -30,8 +30,8 @@ class SmartLAB_GUI(QMainWindow, QDialog):
 
         self.smartlab_cmd = dict()
         self.smartlab_cmd['test_mode'] = 'auto'
-        self.smartlab_cmd['test_step'] = 0
-        self.smartlab_cmd['setup_device'] = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer1', 'printer2', 'printer3', 'printer4']
+        self.smartlab_cmd['test_step'] = -1
+        self.smartlab_cmd['setup_device'] = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer1', 'printer2', 'printer3']
         self.smartlab_cmd['setup_doe'] = dict()
 
         # self.btn_run.clicked.connect(self.btn_run_cb)
@@ -51,6 +51,70 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         self.thread_server.start()
 
     
+    def updateDeviceTable(self, device_status):
+        for device_id in device_status:
+
+            test_info = device_status[device_id]
+            print(test_info)
+            if   device_id.find('amr') != -1:
+                self.table_amr.setColumnCount(1)
+                self.table_amr.setRowCount(len(test_info))
+                self.table_amr.setVerticalHeaderLabels((list(test_info.keys())))
+                for row, key in enumerate(test_info):
+                    newitem = QTableWidgetItem(str(test_info[key]))
+                    self.table_amr.setItem(row, 0, newitem)
+            elif device_id.find('cobot') != -1:
+                self.table_cobot.setColumnCount(1)
+                self.table_cobot.setRowCount(len(test_info))
+                self.table_cobot.setVerticalHeaderLabels((list(test_info.keys())))
+                for row, key in enumerate(test_info):
+                    newitem = QTableWidgetItem(str(test_info[key]))
+                    self.table_cobot.setItem(row, 0, newitem)
+            elif device_id.find('MS') != -1:
+                self.table_omm.setColumnCount(1)
+                self.table_omm.setRowCount(len(test_info))
+                self.table_omm.setVerticalHeaderLabels((list(test_info.keys())))
+                for row, key in enumerate(test_info):
+                    newitem = QTableWidgetItem(str(test_info[key]))
+                    self.table_omm.setItem(row, 0, newitem)
+            elif device_id.find('instron') != -1:
+                self.table_instron.setColumnCount(1)
+                self.table_instron.setRowCount(len(test_info))
+                self.table_instron.setVerticalHeaderLabels((list(test_info.keys())))
+                for row, key in enumerate(test_info):
+                    newitem = QTableWidgetItem(str(test_info[key]))
+                    self.table_instron.setItem(row, 0, newitem)
+            elif device_id.find('printer1') != -1:
+                self.table_printer_1.setColumnCount(1)
+                self.table_printer_1.setRowCount(len(test_info))
+                self.table_printer_1.setVerticalHeaderLabels((list(test_info.keys())))
+                for row, key in enumerate(test_info):
+                    newitem = QTableWidgetItem(str(test_info[key]))
+                    self.table_printer_1.setItem(row, 0, newitem)
+            elif device_id.find('printer2') != -1:
+                self.table_printer_2.setColumnCount(1)
+                self.table_printer_2.setRowCount(len(test_info))
+                self.table_printer_2.setVerticalHeaderLabels((list(test_info.keys())))
+                for row, key in enumerate(test_info):
+                    newitem = QTableWidgetItem(str(test_info[key]))
+                    self.table_printer_2.setItem(row, 0, newitem)
+            elif device_id.find('printer3') != -1:
+                self.table_printer_3.setColumnCount(1)
+                self.table_printer_3.setRowCount(len(test_info))
+                self.table_printer_3.setVerticalHeaderLabels((list(test_info.keys())))
+                for row, key in enumerate(test_info):
+                    newitem = QTableWidgetItem(str(test_info[key]))
+                    self.table_printer_3.setItem(row, 0, newitem)
+            elif device_id.find('printer4') != -1:
+                self.table_printer_4.setColumnCount(1)
+                self.table_printer_4.setRowCount(len(test_info))
+                self.table_printer_4.setVerticalHeaderLabels((list(test_info.keys())))
+                for row, key in enumerate(test_info):
+                    newitem = QTableWidgetItem(str(test_info[key]))
+                    self.table_printer_4.setItem(row, 0, newitem)
+
+
+    
     def updateStatus(self):
         '''
             1. Experiment status update 부분
@@ -59,32 +123,56 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         '''
         while True:
             try:
-                fields = ['subject_name', 'Status', 'Thickness', 'Length', 'Width', 'E_modulus', 'U_stress']
-                header_id = self.smartlab_cmd['setup_doe']['header_id']
-                test_info = self.sql.select('result', fields=fields, conds='subject_name like "%{}%"'.format(header_id))
-                n_col = len(list(test_info[0]))
-                n_row = len(test_info)
+                # device_info = self.sql.select('device_info', conds="id=(SELECT MAX(id) FROM device_info)")[0]
+                
+                # for device_id in device_info:
+                #     try:
+                #         self.smartlab_cmd['setup_device'].index(device_id)
+                #         device_status = device_info[device_id]
+                #         # print("[DEBUG] {}: \n{}".format(device_id, device_status))
 
-                self.table_exp_info.setRowCount(n_row)
-                self.table_exp_info.setColumnCount(n_col)
+                #         self.updateDeviceTable(device_status)
+                #     except:
+                #         pass
 
-                vbox = QVBoxLayout(self)
-                vbox.addWidget(self.table_exp_info)
+                try:
+                    fields = ['subject_name', 'Status', 'Thickness', 'Length', 'Width', 'E_modulus', 'U_stress']
+                    header_id = self.smartlab_cmd['setup_doe']['header_id']
+                    test_info = self.sql.select('result', fields=fields, conds='subject_name like "%{}%"'.format(header_id))
+                    n_col = len(list(test_info[0]))
+                    n_row = len(test_info)
 
-                self.table_exp_info.setHorizontalHeaderLabels((list(test_info[0].keys())))
-            
-                for row, item_list in enumerate(test_info):
-                    for col, key in enumerate(item_list):
-                        item = list(test_info[row].values())[col]
-                        newitem = QTableWidgetItem(str(item_list[key]))
-                        self.table_exp_info.setItem(row, col, newitem)
+                    self.table_exp_info.setRowCount(n_row)
+                    self.table_exp_info.setColumnCount(n_col)
+
+                    vbox = QVBoxLayout(self)
+                    vbox.addWidget(self.table_exp_info)
+
+                    self.table_exp_info.setHorizontalHeaderLabels((list(test_info[0].keys())))
+                
+                    for row, item_list in enumerate(test_info):
+                        for col, key in enumerate(item_list):
+                            item = list(test_info[row].values())[col]
+                            newitem = QTableWidgetItem(str(item_list[key]))
+                            self.table_exp_info.setItem(row, col, newitem)
+                except:
+                    print('bad1')
                 
                 if self.init_flag == True:
-                    self.smartlab.send(self.smartlab_cmd)
-                    self.smartlab_cmd['test_step'] = 0 if self.smartlab_cmd['test_step'] == 1 else 1
+                    print(self.smartlab_cmd)
+                    self.init_flag = False
+                    response = self.smartlab.send(self.smartlab_cmd)
+                    self.smartlab_cmd['test_step'] = -1 if self.smartlab_cmd['test_step'] == 1 else 1
+                    print(response)
+                    self.updateDeviceTable(response)
+                    # try:
+                    #     for device_id in response:
+                    #         print(device_id)
+                    # except:
+                    #     print("DDDDDDDDDD")
 
             except:
-                print("bad")
+                print("bad2")
             time.sleep(1.0)
 
     def cb_btn_exp_export(self):

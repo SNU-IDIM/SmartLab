@@ -54,7 +54,8 @@ class SmartLABCore():
         self.ip_ = ip_
         self.port_ = port_
 
-        self.init_flag = True
+        self.init_server_flag = True
+        self.init_db_flag = True
         self.test_step = 0
 
         ## Connect to the database server
@@ -67,7 +68,7 @@ class SmartLABCore():
         self.req = dict()
         self.req['test_mode'] = 'step'
         self.req['test_step'] = -1
-        self.req['setup_device'] = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer1', 'printer2', 'printer3']
+        self.req['setup_device'] = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer3']
         self.req['setup_doe'] = {
                                 'header_id': 'DRY_TEST',
                                 'experiment_type': 'Tensile Test',
@@ -123,22 +124,23 @@ class SmartLABCore():
     def zmq_server(self):
         while True:
             self.req.update(json.loads(self.socket.recv()))
-            print('[DEBUG] Request from SmartLab Client: {}'.format(self.req))
+            # print('[DEBUG] Request from SmartLab Client: {}'.format(self.req))
 
             ## Initializing ...
-            if self.init_flag == True:
+            if self.init_server_flag == True:
                 sleep(3.0)
-                self.init_flag = False
-                
-                self.connectDevices(self.req['setup_device'])
+                self.init_server_flag = False
 
                 test_manager = TestManager(test_setting=self.req['setup_doe'], ip=self.ip_)
+                self.connectDevices(self.req['setup_device'])
                 test_id_list = test_manager.getTestIDs()
                 self.addPrintingQueue(test_id_list)
                 sleep(3.0)
-
                 for test_id in test_id_list:
-                    self.mysql.delete('result', {'subject_name': test_id})
+                    try:
+                        self.mysql.delete('result', {'subject_name': test_id})
+                    except:
+                        print("DBBB")
                     self.mysql.insert('result', {'subject_name': test_id, 'Status': 'Waiting'}, conds='ON DUPLICATE KEY UPDATE Status = "-"')
                                 
                 ## 3DP Manager thread
@@ -153,14 +155,14 @@ class SmartLABCore():
                 self.thread_3 = Thread(target=self.refreshDeviceInfo)
                 self.thread_3.start()
 
-            self.socket.send_string('ok')
+            # self.socket.send_string('{}, {}, {}'.format(self.req['test_mode'], self.req['test_step'], self.test_step))
 
-            # try:
-            #     self.res['device'] = self.device_info
-            #     self.res['experiment'] = self.test_info
-            #     self.socket.send_string(json.dumps(self.res))
-            # except:
-            #     pass
+            try:
+                self.res['device'] = self.device_info
+                self.res['experiment'] = self.test_info
+                self.socket.send_string(json.dumps(self.device_info))
+            except:
+                self.socket.send_string('{}, {}, {}'.format(self.req['test_mode'], self.req['test_step'], self.test_step))
 
 
 
@@ -210,6 +212,19 @@ class SmartLABCore():
 
             for i in range(len(keys)):
                 self.device_info[keys[i]] = self.device_dict[keys[i]].getStatus()
+
+            # try:
+            #     device_data = dict()
+            #     for device_id in self.device_info:
+            #         print(2)
+            #         device_id_db = str(device_id.split('/')[1]) if device_id.find('/') != -1 else str(device_id)
+            #         print(3)
+            #         device_data[device_id_db] = json.dumps(self.device_info[device_id])
+            #         print(4)
+            #     self.mysql.insert('device_info', device_data)
+            #     print(5)
+            # except:
+            #     print("DDDDDDDDSSSSSSSSSSSSSSS")
 
             # print("[DEBUG] Device information updated !!! (Devices: {})".format(self.device_info.keys()))
             sleep(1.0)
@@ -281,7 +296,7 @@ class SmartLABCore():
                         if device_status['status'].find('Idle') != -1:
                             try:
                                 print_next = self.printing_queue.pop(0)
-                                # self.tapping(device_id, print_next)
+                                self.tapping(device_id, print_next)
                                 self.device_dict[device_id].sendCommand({'print': print_next})
                                 self.mysql.insert('result', {'subject_name': print_next}, conds='ON DUPLICATE KEY UPDATE Status = "Fabrication"')
                                 sleep(2.0)
@@ -439,7 +454,6 @@ class SmartLABCore():
                 self.device_dict['instron'].sendCommand({command_type: subject_name})
                 print("[Instron - Real mode] Test Initializing ({}) ...".format(subject_name))
                 if wait_until_end == True: self.waitDeviceStatus(device_name='instron', status_key='status', status_value='Ready')
-                print("[DEBBBBBBBBBBBBBBBBB]")
             elif command_type == 'execute':
                 self.waitDeviceStatus(device_name='instron', status_value='Ready')
                 self.device_dict['instron'].sendCommand({command_type: subject_name})
@@ -497,7 +511,7 @@ class SmartLABCore():
 
 
     def executionManager(self):
-        debug = True
+        debug = False
         debug_withoutAMR = False #True
 
         while True:

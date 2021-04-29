@@ -22,7 +22,9 @@ class SmartLabClient(object):
     def send(self, command):
         self.socket.send_string(json.dumps(command))
         response = self.socket.recv()
-        print(response)
+        response = json.loads(response.decode())
+        return response
+        
         # response = json.loads(self.socket.recv())
 
         # print("============")

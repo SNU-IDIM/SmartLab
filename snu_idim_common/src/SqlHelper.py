@@ -364,37 +364,56 @@ class SqlHelper():
 
 
 if __name__ == "__main__":
-    # ## Connect to the database server
-    # mysql = SqlHelper(host='localhost', username='root', password='0000', port=3306)
+    ## Connect to the database server
+    mysql = SqlHelper(host='localhost', username='root', password='0000', port=3306)
 
-    # ## Use database (Database: 'SmartLab')
-    # mysql.select_db('SmartLab')
+    ## Use database (Database: 'SmartLab')
+    mysql.select_db('SmartLab')
 
-    # ## Create table if not exists (Table: 'device_info')
-    # if not mysql.is_exist_table('device_info'):
-    #     mysql.create_table(tablename='device_info', attrdict={'id': 'int(11) AUTO_INCREMENT', 'time_stamp': 'timestamp'}, constraint="PRIMARY KEY(id)")
+    ## Create table if not exists (Table: 'device_info')
+    device_list = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer1', 'printer2', 'printer3', 'printer4']
+    for device_id in device_list:
+        if device_id.find('/') != -1:   device_id = device_id.split('/')[1]
+        if not mysql.is_exist_table(device_id):
+            mysql.create_table(tablename=device_id, attrdict={'id': 'int(11) AUTO_INCREMENT', 'time_stamp': 'timestamp', 'status': 'TEXT(256)'}, constraint="PRIMARY KEY(id)")
+            
+    if not mysql.is_exist_table('device_info'):
+        mysql.create_table(tablename='device_info', attrdict={'id': 'int(11) AUTO_INCREMENT', 'time_stamp': 'timestamp'}, constraint="PRIMARY KEY(id)")
+        
+    for device_id in device_list:
+        if device_id.find('/') != -1:   device_id = device_id.split('/')[1]
+        try:
+            list(mysql.get_table_columns(tablename='device_info')).index(device_id)
+            print("[DEBUG] Column already exists !!! ({})".format(device_id))
+        except:
+            mysql.add_column('device_info', device_id, 'TEXT(255)')
+            print("[DEBUG] Column not exists !!! ({})".format(device_id))
+    
+    # print(mysql.get_table_columns(tablename='cobot'))
 
-    # ## Create columns if not exists (Column: DEVICE_ID)
-    # device_list = ['R_001/cobot', 'R_001/amr', 'instron', 'MS', 'printer1', 'printer2', 'printer3', 'printer4']
-    # for device_id in device_list:
-    #     if device_id.find('/') != -1:   device_id = device_id.split('/')[1]
+
+
+    # # ## Create columns if not exists (Column: DEVICE_ID)
+    # # device_list = ['R_001/cobot', 'R_001/amr', 'instron', 'MS', 'printer1', 'printer2', 'printer3', 'printer4']
+    # # for device_id in device_list:
+    # #     if device_id.find('/') != -1:   device_id = device_id.split('/')[1]
     #     try:
     #         list(mysql.get_table_columns(tablename='device_info')).index(device_id)
     #         print("[DEBUG] Column already exists !!! ({})".format(device_id))
     #     except:
-    #         mysql.add_column('device_info', device_id, 'varchar(256)')
+    #         mysql.add_column('device_info', device_id, 'varchar(64)')
     #         print("[DEBUG] Column not exists !!! ({})".format(device_id))
 
 
-    # ## Insert data to table
-    # column_list = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer1']
-    # new_data1 = {'time_stamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-    # new_data2 = {'time_stamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-    # for device_id in column_list:
-    #     if device_id != 'id' and device_id != 'time_stamp':
-    #         new_data1[device_id] = json.dumps({'device_name': device_id, 'status': 'STATUS1'})
-    #         new_data2[device_id] = json.dumps({'device_name': device_id, 'status': 'STATUS2'})
-    # mysql.insert('device_info', new_data1)
+    ## Insert data to table
+    column_list = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer1', 'printer2', 'printer3', 'printer4']
+    device_status = dict()
+    for device_id in column_list:
+        if device_id.find('/') != -1:   device_id = device_id.split('/')[1]
+        if device_id != 'id' and device_id != 'time_stamp':
+            device_status[device_id] = json.dumps({'device_name': device_id, 'status': 'Idle'})
+    print(device_status)
+    mysql.insert('device_info', device_status)
 
     # ## Check existing columns and data
     # column_list = mysql.get_table_columns(tablename='device_info')
@@ -405,10 +424,10 @@ if __name__ == "__main__":
     # ## Insert data to column (overwrite)
     # data = mysql.select('device_info', conds="id=(SELECT MIN(id) FROM device_info)")
     # print("[DEBUG] First data from table ({}): \n{}".format('device_info', data))
-    # # mysql.insert('device_info', new_data2)
+    # mysql.insert('device_info', new_data2)
 
-    # mysql.insert('device_info', {'id': 1}, conds='ON DUPLICATE KEY UPDATE amr = "test2"')
-    # data = mysql.select('device_info', conds="id=(SELECT MIN(id) FROM device_info)")
+    # # mysql.insert('device_info', {'id': 1}, conds='ON DUPLICATE KEY UPDATE amr = "test2"')
+    # data = mysql.select('device_info', conds="id=(SELECT MAX(id) FROM device_info)")
     # print("[DEBUG] First data from table ({}): \n{}".format('device_info', data))
 
 

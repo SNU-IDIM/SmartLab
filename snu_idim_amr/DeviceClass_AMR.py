@@ -102,17 +102,17 @@ if __name__=='__main__':
 	# p_test = [0, 0, 0]
 
 
-	for i in range(2):
-		printer_number = i + 1
-		printer_pose = copy.deepcopy(AMR_POS_3DP_0)
-		printer_pose[1] += printer_number * AMR_OFFSET_3DP
-		print("[DEBUG] AMR Target: Printer_#{}".format(printer_number))
-		cmd_dict = {
-			'spot_name': '3DP_{}'.format(printer_number), 
-			'target_pose': printer_pose, 
-			'hold_time': 0.0,
-		}
-		amr.command(cmd_dict)
+	# for i in range(2):
+	# 	printer_number = i + 1
+	# 	printer_pose = copy.deepcopy(AMR_POS_3DP_0)
+	# 	printer_pose[1] += printer_number * AMR_OFFSET_3DP
+	# 	print("[DEBUG] AMR Target: Printer_#{}".format(printer_number))
+	# 	cmd_dict = {
+	# 		'spot_name': '3DP_{}'.format(printer_number), 
+	# 		'target_pose': printer_pose, 
+	# 		'hold_time': 0.0,
+	# 	}
+	# 	amr.command(cmd_dict)
 
 	cmd_dict = {
 		'spot_name': 'OMM', 
