@@ -140,7 +140,7 @@ class SmartLABCore():
                     try:
                         self.mysql.delete('result', {'subject_name': test_id})
                     except:
-                        print("DBBB")
+                        print("[WARN] MYSQL error while deleting data from table 'result'")
                     self.mysql.insert('result', {'subject_name': test_id, 'Status': 'Waiting'}, conds='ON DUPLICATE KEY UPDATE Status = "-"')
                                 
                 ## 3DP Manager thread
@@ -160,9 +160,11 @@ class SmartLABCore():
             try:
                 self.res['device'] = self.device_info
                 self.res['experiment'] = self.test_info
-                self.socket.send_string(json.dumps(self.device_info))
-            except:
+                # self.socket.send_string(json.dumps(self.device_info))
                 self.socket.send_string('{}, {}, {}'.format(self.req['test_mode'], self.req['test_step'], self.test_step))
+            except:
+                print("[ERRRRRRRRRRRRr]")
+                # self.socket.send_string('{}, {}, {}'.format(self.req['test_mode'], self.req['test_step'], self.test_step))
 
 
 
@@ -204,29 +206,22 @@ class SmartLABCore():
 
     def refreshDeviceInfo(self):
         while True:
-            # print("[DEBUG] Device List: {}".format(self.device_dict.keys()))
             self.device_info = dict()
-
             keys = self.device_dict.keys()
             values = self.device_dict.values()
 
             for i in range(len(keys)):
                 self.device_info[keys[i]] = self.device_dict[keys[i]].getStatus()
+            try:
+                mysql = SqlHelper(host='localhost', username='root', password='0000', port=3306, database='SmartLab')
+                device_data = dict()
+                for device_id in self.device_info:
+                    device_id_db = str(device_id.split('/')[1]) if device_id.find('/') != -1 else str(device_id)
+                    device_data[device_id_db] = json.dumps(self.device_info[device_id])
+                mysql.insert('device_info', device_data)
+            except:
+                print("[ERROR] Device information refresh failed !!!")
 
-            # try:
-            #     device_data = dict()
-            #     for device_id in self.device_info:
-            #         print(2)
-            #         device_id_db = str(device_id.split('/')[1]) if device_id.find('/') != -1 else str(device_id)
-            #         print(3)
-            #         device_data[device_id_db] = json.dumps(self.device_info[device_id])
-            #         print(4)
-            #     self.mysql.insert('device_info', device_data)
-            #     print(5)
-            # except:
-            #     print("DDDDDDDDSSSSSSSSSSSSSSS")
-
-            # print("[DEBUG] Device information updated !!! (Devices: {})".format(self.device_info.keys()))
             sleep(1.0)
 
 
@@ -244,6 +239,7 @@ class SmartLABCore():
         self.specimen_ready_list = list()  ## ***
         self.test_ready_list     = list()  ## ***
 
+
     def tapping(self, printer_name, gCode_name):
         gCode_name = gCode_name + '.gcode'
         UPLOAD_PATH = os.path.join(os.getenv("HOME"), '.octoprint/uploads/')
@@ -252,6 +248,7 @@ class SmartLABCore():
         command = 'python3 ' + CODE_PATH + ' ' + GCODE_PATH + ' ' + printer_name
         print(command)
         os.system(command)
+
 
     def manager3DP(self):
         while True:
@@ -303,10 +300,6 @@ class SmartLABCore():
                                 print("[3DP] {} status: Idle -> Printing {}".format(device_id, print_next))
                             except:
                                 print("[3DP] Printing queue is empty !!!")
-
-                    # print("\n[DEBUG] 3DP finished: {}".format(self.printer_list_finished))
-                    # print("[DEBUG] 3DP robot done: {}".format(self.printer_list_robot_done))
-                    # print("[DEBUG] Subject name: {}".format(device_status['subject_name']))
                 except:
                     pass
                     
@@ -503,15 +496,12 @@ class SmartLABCore():
                 status_int = int(status_value)
             except:
                 status_int = status_value
-            # print("[DEBUG] Waiting for '{}' status to be '{}'... ".format(device_name, status))
-            # print('[DEBUG] OMM Status check : ', self.device_dict[device_name].getStatus())
             if self.device_dict[device_name].getStatus()[status_key] == str(status_value) or self.device_dict[device_name].getStatus()[status_key] == status_int:
-                # print("[DEBUG] '{}' status = '{}' !!! ".format(device_name, status))
                 break
 
 
     def executionManager(self):
-        debug = False
+        debug = True
         debug_withoutAMR = False #True
 
         while True:
