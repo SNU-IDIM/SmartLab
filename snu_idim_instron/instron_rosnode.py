@@ -21,9 +21,9 @@ if __name__ == "__main__":
     specimen_name = 'qwerty'
 
     cmd_dict = dict()
-    cmd_dict['setup'] = specimen_name
+    # cmd_dict['setup'] = specimen_name
 
-    instron_node.sendCommand(cmd_dict)  #   time.sleep(3)
+    # instron_node.sendCommand(cmd_dict)  #   time.sleep(3)
 
 
     '''

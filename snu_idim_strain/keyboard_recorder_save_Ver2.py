@@ -40,6 +40,7 @@ class Instron_cam:
         ##setup key input
         self.start_sig = False
         self.finish_sig = False
+        self.gripper_open = False
 
         self.button = ''
         self.subject_name = 'base'                 
@@ -60,28 +61,33 @@ class Instron_cam:
     def trigger(self,bullet, name):
         self.subject_name = name
         self.button = bullet
+        # if self.button =='recordstart':
+        #     self.cap.open()
+
+
+    def gripper(self, status):
+        self.gripper_open = status
 
 
     def KeyInterrupt(self):
         while True:
             ## define variable for image array
             self.img_arr = []
-            self.button_flage = 1
+            self.button_flag = 1
 ##----
             # self.frameCount = 263
             # self.newpath = "C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain/result/" + str(self.subject_name + "/pics")#+str(self.TEST_NUMBER)
             # self.vidfilename = "C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain/result/"+str(self.subject_name) + "/" +str(self.subject_name) + ".avi"
             # while False:
             while(self.cap.isOpened()):
+                self.finish_sig = False
 ##----
                 self.ret, self.frame = self.cap.read() #read camera
-                # print("waiting for in")
-                # if keyboard.is_pressed('space') and self.button_flage == 1:
-                if self.button =='recordstart' and self.button_flage == 1: #THis is the call for appending images
+                if self.button =='recordstart' and self.button_flag == 1: #THis is the call for appending images
                     print("button : recordstart")
                     self.start_sig = 1
                     self.keypresstime = time.time()
-                    self.button_flage = 0
+                    self.button_flag = 0
                     self.frameCount = 0
 
                     
@@ -104,49 +110,56 @@ class Instron_cam:
                     # cv2.waitKey(1)
                     self.frameCount = self.frameCount + 1
                     print(self.frameCount)
-                # if keyboard.is_pressed('esc') and self.button_flage ==0:
-                if self.button == 'recordstop' and self.button_flage == 0:
-                    self.cap.release()
+                # if keyboard.is_pressed('esc') and self.button_flag ==0:
+                if self.button == 'recordstop' and self.button_flag == 0:
+                    # self.cap.release()
                     self.escape_time = time.time()
                     self.start_sig = 0
                     self.button = ''
-                    self.button_flage = 1
                     break
             # self.image_frame_count = np.size(self.img_arr,0)
             # print("img_arr size",np.shape(self.img_arr))
             # print("image fame count : ",self.image_frame_count)
 
+            while True:
+                if self.gripper_open == True:
+                    self.gripper_open = False
+                    break
+                else:
+                    continue
 
-            # '''
-            ##setup video recorder
-            # self.fourcc = cv2.VideoWriter_fourcc(*'WMV1') #wmv
-            self.fourcc = cv2.VideoWriter_fourcc(*'MJPG') #avi
-            # self.fourcc = cv2.VideoWriter_fourcc(*'XVID')# avi
-            # self.fourcc = cv2.VideoWriter_fourcc(*'h264')
-
-            # out = cv2.VideoWriter('strain_result_and_video\\fps10_keyboardwrite.avi', fourcc, fps, (3840,2160))
-            self.out = cv2.VideoWriter(self.vidfilename, self.fourcc, self.fps, (1920,1080)) # set video
             
-            #구한 fps를 이용해서 타이밍 맞춰서 영상을 제작
-            for i in range(0,self.frameCount):
-                print("currently_processing frame:"+str(i)+"out of "+str(self.frameCount))
-                oneframe = cv2.imread(str(self.newpath) +"/calibrate_img" +str(i) + ".png", 1)
+            if self.button_flag == 0:
+                # '''
+                ##setup video recorder
+                # self.fourcc = cv2.VideoWriter_fourcc(*'WMV1') #wmv
+                self.fourcc = cv2.VideoWriter_fourcc(*'MJPG') #avi
+                # self.fourcc = cv2.VideoWriter_fourcc(*'XVID')# avi
+                # self.fourcc = cv2.VideoWriter_fourcc(*'h264')
 
-                self.out.write(oneframe)
-                cv2.waitKey(self.spf)
+                # out = cv2.VideoWriter('strain_result_and_video\\fps10_keyboardwrite.avi', fourcc, fps, (3840,2160))
+                self.out = cv2.VideoWriter(self.vidfilename, self.fourcc, self.fps, (1920,1080)) # set video
+                
+                #구한 fps를 이용해서 타이밍 맞춰서 영상을 제작
+                for i in range(0,self.frameCount):
+                    print("currently_processing frame:"+str(i)+"out of "+str(self.frameCount))
+                    oneframe = cv2.imread(str(self.newpath) +"/calibrate_img" +str(i) + ".png", 1)
 
-            self.out.release
-            cv2.destroyAllWindows()
-            print("Done writing video and frames, the total elapsed time is" +str(self.frameCount/10))
-            print("Total frame number written is", self.frameCount+1)
-            # '''
-            print("start runcal_key")
-            self.cal_result.Runcal(self.subject_name)
+                    self.out.write(oneframe)
+                    cv2.waitKey(self.spf)
+
+                self.out.release
+                cv2.destroyAllWindows()
+                print("Done writing video and frames, the total elapsed time is" +str(self.frameCount/10))
+                print("Total frame number written is", self.frameCount+1)
+                # '''
+                print("start runcal_key")
+                self.cal_result.Runcal(self.subject_name)
 
 
-            self.subject_name = ''
-            self.finish_sig = True
-            print("finish_sig",self.finish_sig)
+                self.subject_name = ''
+                self.finish_sig = True
+                print("finish_sig",self.finish_sig)
 
 
 
