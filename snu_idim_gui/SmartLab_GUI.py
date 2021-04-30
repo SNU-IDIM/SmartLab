@@ -15,6 +15,8 @@ sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu
 from SqlHelper import SqlHelper
 
 from SmartLab_Client import SmartLabClient
+sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_device_manager")) )
+from Cam_Streaming_Client import Cam_Streaming_Client
 
 
 class SmartLAB_GUI(QMainWindow, QDialog):
@@ -33,6 +35,8 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         self.smartlab_cmd['test_step'] = -1
         self.smartlab_cmd['setup_device'] = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer1', 'printer2', 'printer3']
         self.smartlab_cmd['setup_doe'] = dict()
+
+        self.streaming = Cam_Streaming_Client(ip='192.168.60.21', cam_list=['overview', 'cobot'])
 
         # self.btn_run.clicked.connect(self.btn_run_cb)
         self.btn_doe_create.clicked.connect(self.cb_btn_doe_create)

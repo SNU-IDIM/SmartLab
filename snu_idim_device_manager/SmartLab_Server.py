@@ -33,6 +33,8 @@ from DeviceClass_3DP import DeviceClass_3DP
 sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_omm")) )
 from DeviceClass_OMM import DeviceClass_OMM
 
+from Cam_Streaming_Server import Cam_Streaming_Server
+
 # sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_instron")) )
 # from DeviceClass_Instron import DeviceClass_Instron
 
@@ -97,6 +99,9 @@ class SmartLABCore():
         self.test_info['measurement'] = list()
         self.test_info['experiment'] = list()
         self.test_info['completed'] = list()
+
+        ## Camera Streaming
+        self.streaming_server = Cam_Streaming_Server(ip='192.168.60.21', cam_list=['overview', 'cobot'])
 
         ## ZMQ: ROS(server) <-> Python(client)
         self.context = zmq.Context()
