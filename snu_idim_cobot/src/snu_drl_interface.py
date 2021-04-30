@@ -15,7 +15,9 @@ from IDIM_framework import *
 class DeviceClass_Cobot():
     def __init__(self, device_name="cobot"):
         rospy.init_node(device_name, anonymous=True)
-        
+
+        rospy.set_param('/R_001/snu_dsr_interface/velocity_ratio', 50)
+
         rospy.Subscriber("cobot/command", String, self.pnp_cb, queue_size=1)
         rospy.Subscriber("dsr/state", RobotState, self.dsr_state_cb, queue_size=1)
 
@@ -92,6 +94,16 @@ class DeviceClass_Cobot():
 
         # self.thread_1 = Thread(target=self.publishStatus)
         # self.thread_1.start()
+
+    ##for logging
+        self.logging("---------------------------------------------")
+    def logging(self, log):
+        logged = str(copy.deepcopy(log)) + '\n'
+        txtfile = '/home/syscon/Desktop/log.txt'
+        with open(txtfile, 'a') as l:
+            l.write(logged)
+
+
         
 
     def publishStatus(self):
@@ -261,12 +273,15 @@ class DeviceClass_Cobot():
         # print "Searching AR tag ..."
         # print("Target frame: "    + target_frame_name)
         # print("Reference frame: " + reference_frame_name)
+        self.logging("ARsearchfromeef targetframename : {}".format(target_frame_name))
+        
         listener = tf.TransformListener()
         try:
             # print "Trying to search the target: %s ..."%target_frame_name
             listener.waitForTransform(reference_frame_name, target_frame_name, rospy.Time(), rospy.Duration(1.0))
             (trans,rot) = listener.lookupTransform(reference_frame_name, target_frame_name, rospy.Time(0))
             print("[DEBUG] Trans: {}, Rot: {}".format(trans, rot))
+            self.logging("ARsearchfromeef Trans: {}, Rot: {}".format(trans, rot))
 
             self.target_pose.position.x    = M2MM(trans[0])# + self.offset_x) # 보정 @(arm -> 측면)
             self.target_pose.position.y    = M2MM(trans[1])#f + self.offset_y) # 보정 @(arm -> 정면)
@@ -278,6 +293,8 @@ class DeviceClass_Cobot():
             return True
         except (Exception):
             print "[ERROR]: The Target(TF) is not Detected !!!"
+            self.logging("ARsearchfromeef TF is not detected")
+
             return False
             
     def ARcheckFlipped(self, ar_tag_number):
@@ -421,19 +438,25 @@ class DeviceClass_Cobot():
             @ input 3: intArray accx = [50, 10] [mm/s^2, mm/s^2]
     '''
     def movel_x(self, distance, velx=DSR_DEFAULT_JOG_VELX, accx=DSR_DEFAULT_JOG_ACCX, ref=DR_TOOL, mod=DR_MV_MOD_REL): # distance [mm]
-        movel(posx(distance, 0, 0, 0, 0, 0), vel=velx, acc=accx, ref=ref, mod=mod)
+        # movel(posx(distance, 0, 0, 0, 0, 0), vel=velx, acc=accx, ref=ref, mod=mod)
+        movel(posx(distance, 0, 0, 0, 0, 0), ref=ref, mod=mod)
     def movel_y(self, distance, velx=DSR_DEFAULT_JOG_VELX, accx=DSR_DEFAULT_JOG_ACCX, ref=DR_TOOL, mod=DR_MV_MOD_REL): # distance [mm]
-        movel(posx(0, distance, 0, 0, 0, 0), vel=velx, acc=accx, ref=ref, mod=mod)
+        # movel(posx(0, distance, 0, 0, 0, 0), vel=velx, acc=accx, ref=ref, mod=mod)
+        movel(posx(0, distance, 0, 0, 0, 0), ref=ref, mod=mod)
     def movel_z(self, distance, velx=DSR_DEFAULT_JOG_VELX, accx=DSR_DEFAULT_JOG_ACCX, ref=DR_TOOL, mod=DR_MV_MOD_REL): # distance [mm]
-        movel(posx(0, 0, distance, 0, 0, 0), vel=velx, acc=accx, ref=ref, mod=mod)
+        # movel(posx(0, 0, distance, 0, 0, 0), vel=velx, acc=accx, ref=ref, mod=mod)
+        movel(posx(0, 0, distance, 0, 0, 0), ref=ref, mod=mod)
     def movel_xyz(self, x, y, z, velx=DSR_DEFAULT_JOG_VELX, accx=DSR_DEFAULT_JOG_ACCX, ref=DR_TOOL, mod=DR_MV_MOD_REL): # distance [mm]
-        movel(posx(x, y, z, 0, 0, 0), vel=velx, acc=accx, ref=ref, mod=mod)
+        # movel(posx(x, y, z, 0, 0, 0), vel=velx, acc=accx, ref=ref, mod=mod)
+        movel(posx(x, y, z, 0, 0, 0), ref=ref, mod=mod)
     def movel_xyzjoint(self,x,y,z,jz1,jy,jz2,velx=DSR_DEFAULT_JOG_VELX, accx=DSR_DEFAULT_JOG_ACCX, ref=DR_TOOL, mod=DR_MV_MOD_REL): # distance [mm], angle [degree]
-        movel(posx(x, y, z, jz1, jy, jz2), vel=velx, acc=accx, ref=ref, mod=mod)
+        # movel(posx(x, y, z, jz1, jy, jz2), vel=velx, acc=accx, ref=ref, mod=mod)
+        movel(posx(x, y, z, jz1, jy, jz2), ref=ref, mod=mod)
 
     # rotate z refer to base
     def rotate_z(self, jz, velx=DSR_DEFAULT_JOG_VELX, accx=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL):
         movel(posx(0,0,0,0,0,jz), vel=velx, acc=accx, ref=ref, mod=mod)
+
 
     # move x, y, z refer to base
     def movel_y_base(self, distance, velx=DSR_DEFAULT_JOG_VELX, accx=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL): # distance [mm]
@@ -448,7 +471,7 @@ class DeviceClass_Cobot():
         self.gripper_open()
         movel(posx(0, -23, -23, 0, 0, 0), vel=DSR_DEFAULT_JOG_VELX, acc=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL)
         self.gripper_close()
-        movel(posx(0, -2, 2, 0, 0, 0), vel=DSR_DEFAULT_JOG_VELX, acc=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL)
+        movel(posx(0, -2.5, 2.5, 0, 0, 0), vel=DSR_DEFAULT_JOG_VELX, acc=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL)
         movel(posx(0, 40, 40, 0, 0, 0), vel=DSR_DEFAULT_JOG_VELX, acc=DSR_DEFAULT_JOG_ACCX, ref=DR_BASE, mod=DR_MV_MOD_REL)
 
 
@@ -461,16 +484,16 @@ class DeviceClass_Cobot():
 
     def specimen_shaking(self):
         task_compliance_ctrl([10000, 10000, 10000, 1500, 1500, 500])
-        self.movel_z(2);      self.gripper_close();  self.movel_z(-2)
-        self.rotate_z(10);    self.rotate_z(-20);    self.rotate_z(10)
+        self.movel_z(2);      time.sleep(0.1);       self.gripper_close();       time.sleep(0.1);        self.movel_z(-2);       time.sleep(0.1)
+        self.rotate_z(10);    time.sleep(0.1);       self.rotate_z(-20);         self.rotate_z(10);      time.sleep(0.1)
 
-        self.gripper_open();  self.movel_z(-2);      self.movel_y(120)
-        self.movel_z(4);      self.gripper_close();  self.movel_z(-2)
-        self.rotate_z(-10);   self.rotate_z(20);     self.rotate_z(-10)
+        self.gripper_open();  time.sleep(0.1);       self.movel_z(-2);           time.sleep(0.1);        self.movel_y(120);      time.sleep(0.1)
+        self.movel_z(4);      time.sleep(0.1);       self.gripper_close();       time.sleep(0.1);        self.movel_z(-2);       time.sleep(0.1)
+        self.rotate_z(-10);   time.sleep(0.1);       self.rotate_z(20);          time.sleep(0.1);        self.rotate_z(-10);     time.sleep(0.1)
 
         self.gripper_open();  self.movel_y(-60)
-        self.movel_z(2);      self.gripper_close();  self.movel_z(-2)
-        self.rotate_z(-10);   self.rotate_z(20);     self.rotate_z(-10)
+        self.movel_z(2);      time.sleep(0.1);       self.gripper_close();       time.sleep(0.1);       self.movel_z(-2);        time.sleep(0.1)
+        self.rotate_z(-10);   time.sleep(0.1);       self.rotate_z(20);          time.sleep(0.1);       self.rotate_z(-10);      time.sleep(0.1)
 
         self.movel_x(-20)
 
@@ -485,7 +508,7 @@ class DeviceClass_Cobot():
         set_accj(accj)
         set_velx(velx[0], velx[1])
         set_accx(accx[0], accx[1])
-
+        change_operation_speed(100)
 
     '''
         DSR Controller I/O Functions
@@ -566,29 +589,49 @@ class DeviceClass_Cobot():
 
     
     def searchARTagFromRight(self):
+        movej(Q_SEARCH_3DP_RIGHT) # Set initial position to look for AR TAG
         self.setVelAcc(50, 50, [100,50], [100,50])
-        movej(Q_SEARCH_3DP_RIGHT)
-        for i in range(8):
-            tag_id = i + 1
-            print(self.ARsearchFromEEF(tag_id))
-            if self.ARsearchFromEEF(tag_id) == True:
-                movej(Q_TOP_PLATE)
-                print("[DEBUG] AR Tag: {}".format(tag_id))
-                return tag_id
+        amovel(pos=[0, -100, 0, 0, 0, 0], ref=DR_BASE, mod=DR_MV_MOD_REL)
+        while check_motion() != 0:
+            for i in range(8):
+                tag_id = i + 1
+                self.logging("searchfromright iter : {}".format(tag_id))
+                if self.ARsearchFromEEF(tag_id) == True:
+                    mwait(0)
+                    movej(Q_TOP_PLATE)
+                    print("[DEBUG] AR Tag: {}".format(tag_id))
+                    self.logging("searchfromright : {}".format(tag_id))
+
+                    return tag_id
+
+        self.logging("searchfromright fin")
+
+        amovel(pos=[0, 200, 0, 0, 0, 0], ref=DR_BASE, mod=DR_MV_MOD_REL)
+        while check_motion() != 0:
+            for i in range(8):
+                tag_id = i + 1
+                if self.ARsearchFromEEF(tag_id) == True:
+                    mwait(0)
+                    movej(Q_TOP_PLATE)
+                    print("[DEBUG] AR Tag: {}".format(tag_id))
+                    return tag_id
+
         movej(Q_TOP_PLATE)
         print("[DEBUG] No AR Tag found")
         return None
 
     def searchARTagFromRobot(self):
-        self.setVelAcc(50, 50, [100,50], [100,50])
         movej(Q_TOP_PLATE)
         for i in range(8):
             tag_id = i + 1
-            print(self.ARsearchFromEEF(tag_id))
+            self.logging("searchfromrobot iter : {}".format(tag_id))
             if self.ARsearchFromEEF(tag_id) == True:
                 print("[DEBUG] AR Tag: {}".format(tag_id))
+                self.logging("searchfromrobot found : {}".format(tag_id))
                 return tag_id
         print("[DEBUG] No AR Tag found")
+        self.logging("searchfromrobot not found")
+
         return None
 
 
@@ -596,43 +639,53 @@ class DeviceClass_Cobot():
         self.setVelAcc(50, 50, [100,50], [100,50])
         self.jig_x_open();  self.jig_y_open();  rospy.sleep(1)
         movej(Q_SEARCH_3DP_RIGHT)
-
         self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
-        if self.ARsearchFromEEF(tag_id_bed) == True:
-            self.ARsetReference(tag_id_bed, 5)
-            self.status['gripper_angle'] = 225
 
-            waypoint_1 = self.calcRelMove([50, 0, -100, 0, 0, self.status['gripper_angle']], False)
-            waypoint_2 = self.calcRelMove([-215, 0, 172, 0, 0, 0], True)
-            waypoint_3 = self.calcRelMove([0, 0, 43, 0, 0, 0], True)
-            waypoint_4 = self.calcRelMove([0, 0, -80, 0, 0, 0], True)
-            waypoint_5 = self.calcRelMove([300, 0, 0, 0, 0, 0], True)
-            waypoint_6 = deepcopy(P_UNIVERSALJIG_3DP_BED);   waypoint_6[2] += 100
-            waypoint_7 = deepcopy(waypoint_6);               waypoint_7[2] -= 140
+        amovel(pos=[0, -100, 0, 0, 0, 0], ref=DR_BASE, mod=DR_MV_MOD_REL)
+        while check_motion() != 0:
+            if self.ARsearchFromEEF(tag_id_bed) == True:
+                mwait(0)
+                self.ARsetReference(tag_id_bed, 5)
+                self.status['gripper_angle'] = 225
+                
+                waypoint_1 = self.calcRelMove([50, 0, -100, 0, 0, self.status['gripper_angle']], False)
+                waypoint_2 = self.calcRelMove([-215, 0, 172, 0, 0, 0], True)
+                waypoint_3 = self.calcRelMove([0, 0, 43, 0, 0, 0], True)
+                waypoint_4 = self.calcRelMove([0, 0, -80, 0, 0, 0], True)
+                waypoint_5 = self.calcRelMove([300, 0, 0, 0, 0, 0], True)
+                waypoint_6 = deepcopy(P_UNIVERSALJIG_3DP_BED);   waypoint_6[2] += 100
+                waypoint_7 = deepcopy(waypoint_6);               waypoint_7[2] -= 140
 
-            movel(waypoint_1, ref=DR_TOOL, mod=DR_MV_MOD_REL)
-            movel(waypoint_2, ref=DR_TOOL, mod=DR_MV_MOD_REL)
-            movel(waypoint_3, ref=DR_TOOL, mod=DR_MV_MOD_REL)
-            self.suction_cup_on()
-            movel(waypoint_4, ref=DR_TOOL, mod=DR_MV_MOD_REL)
-            movel(waypoint_5, ref=DR_TOOL, mod=DR_MV_MOD_REL)
-            movel(waypoint_6)
-            movel(waypoint_7)
-            self.suction_cup_off();  rospy.sleep(1)
-            self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
-            movel(waypoint_6)
-            movej(Q_TOP_PLATE)
-            self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0)
+                movel(waypoint_1, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+                movel(waypoint_2, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+                movel(waypoint_3, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+                self.suction_cup_on()
+                movel(waypoint_4, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+                movel(waypoint_5, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+                movel(waypoint_6)
+                movel(waypoint_7)
+                self.suction_cup_off();  rospy.sleep(1)
+                self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
+                movel(waypoint_6)
+                movej(Q_TOP_PLATE)
+                self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0)
 
 
     def moveBedFromRobotToStage(self, tag_id_bed, tag_id_stage):
-        self.setVelAcc(50, 50, [100,100], [100,100])
+        self.setVelAcc(50, 50, [100,50], [100,50])
         self.jig_x_close();  self.jig_y_close();  rospy.sleep(1)
         movej(Q_TOP_PLATE)
 
         if self.ARsearchFromEEF(tag_id_bed) == True: ## when AR tag is detected, execute the following codes
             movej(Q_SEARCH_3DP_RIGHT)
+            
+            # amovel(pos=[0, -100, 0, 0, 0, 0], ref=DR_BASE, mod=DR_MV_MOD_REL)
+            # while check_motion() != 0:
+                # if self.ARsearchFromEEF(tag_id_stage) == True:
+                    # flag = True
+                    # mwait(1)
             if self.ARsearchFromEEF(tag_id_stage) == True:
+            # if flag == True:
                 self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
                 movej(Q_TOP_PLATE)
             else:
@@ -648,10 +701,28 @@ class DeviceClass_Cobot():
         
             movej(Q_SEARCH_3DP_RIGHT)
 
+            # amovel(pos=[0, -100, 0, 0, 0, 0], ref=DR_BASE, mod=DR_MV_MOD_REL)
+            # while check_motion() != 0:
+            #     if self.ARsearchFromEEF(tag_id_stage) == True:
+            #         flag_2 = True
+            #         mwait(0)
+            # 
+            # if flag_2 == True:
+            self.logging("now here")
             if self.ARsearchFromEEF(tag_id_stage) == True:
+                self.logging("now there")
+
                 self.ARsetReference(tag_id_stage, 4)
-                self.status['gripper_angle'] = 223
-                waypoint_1 = self.calcRelMove([0, 90, 0, 0, 0, self.status['gripper_angle']], False)
+
+                self.status['gripper_angle'] = -135 #223
+                self.logging("posj : {}".format(self.status['posj']))
+                # waypoint_1 = self.calcRelMove([0, 90, 0, 0, 0, self.status['gripper_angle']], False)
+               
+                waypoint_1 = self.calcRelMove([0, 0, 0, 0, 0, -135], False)
+                self.logging("waypoint_1 : {}".format(waypoint_1))
+
+                waypoint_1_2 = self.calcRelMove([0, 90, 0, 0, 0, 0], False)
+
                 waypoint_2 = self.calcRelMove([-90, -7, 80, 0, 0, 0], True)
                 waypoint_3_left = self.calcRelMove([-6, -5, 0, 0, 0, 0], True)
                 waypoint_3_right = self.calcRelMove([-6, +5, 0, 0, 0, 0], True)
@@ -660,7 +731,12 @@ class DeviceClass_Cobot():
                 waypoint_4 = self.calcRelMove([0, 0, -50, 0, 0, 0], True)
                 waypoint_5 = self.calcRelMove([200, 0, -50, 0, 0, 0], True)
 
-                movel(waypoint_1, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+                # movel(waypoint_1, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+                # movej(posj(waypoint_1), mod=DR_MV_MOD_REL)
+                movel(waypoint_1_2, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+                self.logging("posj2 : {}".format(self.status['posj']))
+                self.rotate_z(-137) 
+                self.logging("posj3 : {}".format(self.status['posj']))
                 movel(waypoint_2, ref=DR_TOOL, mod=DR_MV_MOD_REL)
 
                 task_compliance_ctrl([10, 10, 10000, 10, 10, 10])
@@ -689,6 +765,14 @@ class DeviceClass_Cobot():
         self.movel_x_base(-15)
         self.movel_z_base(80)
 
+    def defaultVel(self):
+        set_velj([120, 120, 180, 225, 225, 225])
+        set_accj(100)
+        set_velx(1000, 1000)
+        set_accx(1000, 1000)
+        speed_ratio = int(rospy.get_param('/R_001/snu_dsr_interface/velocity_ratio'))
+        change_operation_speed(speed_ratio)
+
     
     '''
         "~/ur_pnp" Topic Protocol (for Doosan-robot control)
@@ -700,7 +784,7 @@ class DeviceClass_Cobot():
                 *  101 ~  200: Doosan-robot I/O Controller
                 * 1000 ~ 4000: Relative Move (Translation)
                     - X -> 1000 (0 mm) ~ 1999 (999 mm)
-                    - Y -> 2000 (0 mm) ~ 2999 (999 mm)
+                    - Y -> 2000 (0 mm) ~ 2999 (999 mm)                                                                                       
                     - Z -> 3000 (0 mm) ~ 3999 (999 mm)
             @ TASK_[이름 정의(대문자)]   : 10001  ~ 20000
     '''
@@ -717,21 +801,21 @@ class DeviceClass_Cobot():
 
         set_robot_mode(ROBOT_MODE_AUTONOMOUS)
         release_compliance_ctrl()
-        self.setVelAcc(50, 50, [150,50], [150,50])
+        self.defaultVel()
         
         ########################################################################################################################################################
         # ACTION [0]: Home position
         if(self.cmd_protocol   == ACTION_HOME):         
-            movej(Q_HOME, 50, 50)
+            movej(Q_HOME)
         # ACTION [1]: Back position
         elif(self.cmd_protocol == ACTION_BACK):
-            movej(Q_BACK, 50, 50)
+            movej(Q_BACK)
         # ACTION [2]: Left position
         elif(self.cmd_protocol == ACTION_LEFT):
-            movej(Q_LEFT, 50, 50)
+            movej(Q_LEFT)
         # ACTION [3]: Right position
         elif(self.cmd_protocol == ACTION_RIGHT):
-            movej(Q_RIGHT, 50, 50)
+            movej(Q_RIGHT)
         # ACTION [4]: Approach
         elif(self.cmd_protocol == ACTION_APPROACH):
             movej(Q_TOP_PLATE, 50, 50) # Search pose
@@ -784,19 +868,20 @@ class DeviceClass_Cobot():
         # ACTION [-201]: Gripper Close (flange output)
         elif(self.cmd_protocol == ACTION_IO_GRIPPER_CLOSE):
             self.gripper_close()
-
+    
 
         # ACTION [301]: Tool Changer - Get Tool1 from Toolchanger1
         elif(self.cmd_protocol == ACTION_TOOLCHANGE_1_ATTACH):
             self.toolchanger_detach()
 
+            movej(Q_HOME)
+
             p_tool1_step1 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step1[2] += 300
             p_tool1_step2 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step2[2] +=  20
             p_tool1_step3 = deepcopy(P_TOOLCHANGE_1)
-            p_tool1_step4 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step4[1] += -20
-            p_tool1_step5 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step5[2] += 300
+            p_tool1_step4 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step4[1] += -100
+            p_tool1_step5 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step5[2] += 600;    p_tool1_step5[1] +=-100
 
-            self.setVelAcc(100, 100, [400,100], [400,100])
             movel(p_tool1_step1)
             movel(p_tool1_step2)
 
@@ -806,6 +891,7 @@ class DeviceClass_Cobot():
             task_compliance_ctrl([100, 100, 1000, 100, 100, 100]);  self.movel_z(50);  rospy.sleep(1);   release_compliance_ctrl()
             self.toolchanger_attach();  rospy.sleep(1)
             movel(p_tool1_step4)
+            self.defaultVel()
             movel(p_tool1_step5)
 
             self.status['gripper_type'] = 'Suction'
@@ -813,31 +899,30 @@ class DeviceClass_Cobot():
 
         # ACTION [-301]: Tool Changer - Place Tool1 to the Toolchanger1
         elif(self.cmd_protocol == ACTION_TOOLCHANGE_1_DETACH):
+            movej(Q_HOME)
 
-            p_tool1_step1 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step1[1] += -20;    p_tool1_step1[2] += 300
-            p_tool1_step2 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step2[1] += -20;    p_tool1_step2[2] += 20
-            p_tool1_step3 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step3[1] += -20;    p_tool1_step2[2] += 5
+            p_tool1_step1 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step1[1] += -100;    p_tool1_step1[2] += 300
+            p_tool1_step2 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step2[1] += -100;    p_tool1_step2[2] += 20
+            p_tool1_step3 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step3[1] += -100;    p_tool1_step2[2] += 5
             p_tool1_step4 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step4[0] += 0
             p_tool1_step5 = deepcopy(P_TOOLCHANGE_1)
             p_tool1_step6 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step6[2] += 100
-            p_tool1_step7 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step7[2] += 200
+            p_tool1_step7 = deepcopy(P_TOOLCHANGE_1);   p_tool1_step7[2] += 600
             p_tool1_step8 = [-435.8908386230469, -346.9735412597656, 71.24858093261719, 136.8338623046875, 178.95765686035156, 58.61622619628906]
-            self.setVelAcc(100, 100, [400,100], [400,100])
             movel(p_tool1_step1)
             movel(p_tool1_step2)
 
-            self.setVelAcc(50, 50, [50,100], [50,100])
             movel(p_tool1_step3)
+            self.setVelAcc(50, 50, [50,100], [50,100])
             task_compliance_ctrl([1000, 4500, 4000, 1000, 1000, 1000])
             movel(p_tool1_step4)
             release_compliance_ctrl()
             movel(p_tool1_step5);       rospy.sleep(1)
             self.toolchanger_detach();  rospy.sleep(1)
+            self.defaultVel()
             movel(p_tool1_step8)
-            
             movel(p_tool1_step6)
 
-            self.setVelAcc(200, 200, [400,100], [400,100])
             movel(p_tool1_step7)
 
             self.status['gripper_type'] = None
@@ -846,13 +931,13 @@ class DeviceClass_Cobot():
         # ACTION [302]: Tool Changer - Get Tool2 from Toolchanger2
         elif(self.cmd_protocol == ACTION_TOOLCHANGE_2_ATTACH):
             self.toolchanger_detach()
+            movej(Q_HOME)
 
             p_tool2_step1 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step1[2] += 300
             p_tool2_step2 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step2[2] +=  20
             p_tool2_step3 = deepcopy(P_TOOLCHANGE_2)
-            p_tool2_step4 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step4[1] += -20
-            p_tool2_step5 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step5[2] += 300
-            self.setVelAcc(100, 100, [400,100], [400,100])
+            p_tool2_step4 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step4[1] += -100
+            p_tool2_step5 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step5[2] += 600;    p_tool2_step5[1] += -100
             
             movel(p_tool2_step1)
             movel(p_tool2_step2)
@@ -864,6 +949,7 @@ class DeviceClass_Cobot():
 
             self.toolchanger_attach();  rospy.sleep(1)
             movel(p_tool2_step4)
+            self.defaultVel()
             movel(p_tool2_step5)
 
             self.status['gripper_type'] = 'Mechanical'
@@ -871,16 +957,16 @@ class DeviceClass_Cobot():
 
         # ACTION [-302]: Tool Changer - Place Tool2 to the Toolchanger2
         elif(self.cmd_protocol == ACTION_TOOLCHANGE_2_DETACH):
-            
-            p_tool2_step1 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step1[1] += -20;    p_tool2_step1[2] += 300
-            p_tool2_step2 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step2[1] += -20;    p_tool2_step2[2] += 20
-            p_tool2_step3 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step3[1] += -20;    p_tool2_step2[2] += 5
+            movej(Q_HOME)
+
+            p_tool2_step1 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step1[1] += -100;    p_tool2_step1[2] += 300
+            p_tool2_step2 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step2[1] += -100;    p_tool2_step2[2] += 20
+            p_tool2_step3 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step3[1] += -100;    p_tool2_step2[2] += 5
             p_tool2_step4 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step4[0] += 0
             p_tool2_step5 = deepcopy(P_TOOLCHANGE_2)
             p_tool2_step6 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step6[2] += 100
-            p_tool2_step7 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step7[2] += 200
+            p_tool2_step7 = deepcopy(P_TOOLCHANGE_2);   p_tool2_step7[2] += 600
 
-            self.setVelAcc(100, 100, [400,100], [400,100])
             movel(p_tool2_step1)
             movel(p_tool2_step2)
 
@@ -892,11 +978,10 @@ class DeviceClass_Cobot():
             release_compliance_ctrl()
             movel(p_tool2_step5);       rospy.sleep(1)
             self.toolchanger_detach();  rospy.sleep(1)
+            self.defaultVel()
             movel(p_tool2_step6)
 
-            self.setVelAcc(100, 100, [400,100], [400,100])
             movel(p_tool2_step7)
-            self.setVelAcc(50, 50, [50,100], [50,100])
 
             self.status['gripper_type'] = None
 
@@ -920,7 +1005,7 @@ class DeviceClass_Cobot():
             self.gripper_open()
             movej(Q_TOP_PLATE, 50, 50)
 
-            self.setVelAcc(50, 50, [100,50], [100,150])
+            # self.setVelAcc(50, 50, [100,50], [100,150])
             approachj = [33.12971115112305, -36.94938278198242, -131.39822387695312, -57.41393280029297, -96.33760070800781, 170.20169067382812]
             movej(approachj)
 
@@ -941,44 +1026,48 @@ class DeviceClass_Cobot():
         # Task [10002]: Search AR_Marker attached to the upper gripper of Instron
         elif(self.cmd_protocol == TASK_INSTRON_SEARCH):
             self.gripper_close()
-            movej(Q_TOP_PLATE, 50, 50) 
+            movej(Q_TOP_PLATE) 
 
-            self.setVelAcc(30, 30, [100,50], [100,50])
-            see_point1j = [81.08692169189453, -0.4761710464954376, -143.7606658935547, -9.412845611572266, 57.22504806518555, -80.97422790527344+360]
+            self.setVelAcc(100, 100, [50,50], [50,50])
+            see_point1j = [81.08692169189453, -0.4761710464954376, -143.7606658935547, -9.412845611572266, 57.22504806518555, -80.97422790527344-180]
             movej(see_point1j)
-            
-            ar_tag = 0
 
+            ar_tag = 0
             self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(2)
             if self.ARsearchFromEEF(ar_tag) == True: 
                 self.ARsetReference(ar_tag, 4)
-                self.movel_xyz(-178, -90, -180)
-                movej([self.status['posj'][0], self.status['posj'][1], self.status['posj'][2], self.status['posj'][3], self.status['posj'][4], self.status['posj'][5] - 180])
-                self.movel_xyz(0, 0, 298)
-                # self.ARsetReference(ar_tag, 1); rospy.sleep(0.5)
-                # self.ARsetReference(ar_tag, 1); rospy.sleep(0.5)
-                # self.ARsetReference(ar_tag, 1)
-                # self.movel_xyz(-157, -90, 0)
-                # self.movel_xyz(0, 0, 220)
-
-	    
+                self.movel_xyz(-43, 87, -50)
+                self.movel_xyz(0, 0, 168)
+    
         # Task [10003]: Place specimen and go to the monitoring position
         elif(self.cmd_protocol == TASK_INSTRON_MOVEOUT):
-            # rospy.sleep(10)
-            # movel([0,0,-200,0,0,90], mod = 1, ref = 1)
             self.gripper_open();  rospy.sleep(1.0)
+            self.setVelAcc(100, 100, [50,50], [50,50])
             self.movel_z(-100)
             self.movel_xyz(100, -200, -100)
-            # movel([0,0,-200,0,0,90], mod = 1, ref = 1)
-            # viewpoint = deepcopy(self.status['posx']);    viewpoint[4] -= 20
             viewpoint = [self.status['posx'][0],self.status['posx'][1],self.status['posx'][2],self.status['posx'][3],self.status['posx'][4]-20,self.status['posx'][5]]
             movel(viewpoint)
 
+        # Task [10009]: Place specimen and go to the monitoring position
+        elif(self.cmd_protocol == TASK_INSTRON_CLEAN1):
+            self.gripper_open();  rospy.sleep(1.0)
+            self.setVelAcc(100, 100, [50,50], [50,50])
+            viewpoint = [self.status['posx'][0],self.status['posx'][1],self.status['posx'][2],self.status['posx'][3],self.status['posx'][4]+20,self.status['posx'][5]]
+            movel(viewpoint)
+            self.movel_xyz(-100, 200, 100)
+            self.movel_z(100)
+            self.gripper_close();  rospy.sleep(1.0)
 
+        # Task [-10009]: Place specimen and go to the monitoring position
+        elif(self.cmd_protocol == TASK_INSTRON_CLEAN2):
+            self.movel_z(-150)
+            self.movel_y(250)
+            self.gripper_open();  rospy.sleep(1.0)
+            self.movel_y(-250)
 
         # Task [10004]: SEARCH AND APPROACH TO ''MULTIPLE'' SPECIMENS AND DETACH TO THE BED
         elif(self.cmd_protocol == TASK_DETACH_SPECIMEN):
-            self.setVelAcc(30, 30, [30,30], [30,30])
+            self.setVelAcc(100, 100, [100,100], [100,100])
             movej(Q_MULSPECIMEN_SEARCH)
             self.gripper_open()
 
@@ -1071,45 +1160,20 @@ class DeviceClass_Cobot():
 
         # Task [10006]: AFTER ATTACHING SENSOR PICK SPECIMEN AND PLACE ON RACK
         elif(self.cmd_protocol == TASK_SPECIMEN_TO_RACK):
-            '''
-            self.gripper_open()
-            self.setVelAcc(30, 30, [30, 30], [30, 30])
-            Q_SPECIMEN_RETRACT = [35.044342041015625, 9.633670806884766, -137.1417694091797, -0.0, -52.49190902709961, 35.044342041015625]
-            movej(Q_SPECIMEN_RETRACT)
-            movel(P_AFTER_ATTACH)
-            self.movel_z_base(-23)
-            # rospy.sleep(5)
-            self.gripper_close()
-            self.movel_y_base(10)
-            # movej(Q_MULSPECIMEN_SEARCH)
-            self.movel_z_base(50)
-            '''
-
-            # movel(P_PLACE_INITIAL)
             movej(Q_PLACE_INITIAL)
-            movel(P_PLACE_INCLINE)
+            self.setVelAcc(50, 50, [50,100], [50,100])
+            movej(Q_PLACE_INCLINE)
             movel(P_PLACE_RACK_1)
             self.move_lack_place()
-
-            # movej(Q_MULSPECIMEN_SEARCH)
-
-            # self.specimenAlign()
-
-            # movel(P_PICK_INITIAL)
-            # movel(P_PICK_INCLINE)
-            # movel(P_PICK_RACK_2)
-            # self.move_lack_pick()
-
             movej(Q_MULSPECIMEN_SEARCH)
 
 
         # Task [10007]: Specimen pick and place at rack TEST
         elif(self.cmd_protocol == TASK_SPECIMEN_FROM_RACK):
             self.gripper_open()
-            self.setVelAcc(70, 70, [50,50], [50,50])
             movej(Q_MULSPECIMEN_SEARCH)
-            movel(P_PICK_INITIAL)
-            movel(P_PICK_INCLINE)
+            self.setVelAcc(50, 50, [50,100], [50,100])
+            movej(Q_PICK_INCLINE)
             movel(P_PICK_RACK_1)
             self.move_lack_pick()
             movej(Q_MULSPECIMEN_SEARCH)
@@ -1125,6 +1189,7 @@ class DeviceClass_Cobot():
             tag_id_bed   = self.searchARTagFromRobot()
             tag_id_stage = self.searchARTagFromRight()
             print("[DEBUG] Bed: {}, Stage: {}".format(tag_id_bed, tag_id_stage))
+            self.logging("10010 command Bed: {}, Stage: {}".format(tag_id_bed, tag_id_stage))
             if tag_id_stage != None and tag_id_bed != None:
                 self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
 
@@ -1137,43 +1202,31 @@ class DeviceClass_Cobot():
 
         # Task [10011]: "TASK_3DP_1_BED_IN"   - (3DP-#1 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_1_BED_IN):
-            tag_id_stage = 1
-            tag_id_bed = tag_id_stage + 4
-            self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
+            self.moveBedFromRobotToStage(tag_id_bed=5, tag_id_stage=1)
         # Task [-10011]: "TASK_3DP_1_BED_OUT" - (3DP-#1 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_1_BED_OUT):
-            tag_id_bed = 1 + 4
-            self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=None)
+            self.moveBedFromStageToRobot(tag_id_bed=5, tag_id_stage=None)
 
         # Task [10012]: "TASK_3DP_2_BED_IN"   - (3DP-#2 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_2_BED_IN):
-            tag_id_stage = 2
-            tag_id_bed = tag_id_stage + 4
-            self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
+            self.moveBedFromRobotToStage(tag_id_bed=6, tag_id_stage=2)
         # Task [-10012]: "TASK_3DP_2_BED_OUT" - (3DP-#2 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_2_BED_OUT):
-            tag_id_bed = 2 + 4
-            self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=None)
+            self.moveBedFromStageToRobot(tag_id_bed=6, tag_id_stage=None)
 
         # Task [10013]: "TASK_3DP_3_BED_IN"   - (3DP-#3 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_3_BED_IN):
-            tag_id_stage = 3
-            tag_id_bed = tag_id_stage + 4
-            self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
+            self.moveBedFromRobotToStage(tag_id_bed=7, tag_id_stage=3)
         # Task [-10013]: "TASK_3DP_3_BED_OUT" - (3DP-#3 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_3_BED_OUT):
-            tag_id_bed = 3 + 4
-            self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=None)
+            self.moveBedFromStageToRobot(tag_id_bed=7, tag_id_stage=None)
 
         # Task [10014]: "TASK_3DP_4_BED_IN"   - (3DP-#4 Bed) Jig -> Printer 
         elif(self.cmd_protocol == TASK_3DP_4_BED_IN):
-            tag_id_stage = 4
-            tag_id_bed = tag_id_stage + 4
-            self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
+            self.moveBedFromRobotToStage(tag_id_bed=8, tag_id_stage=4)
         # Task [-10014]: "TASK_3DP_4_BED_OUT" - (3DP-#4 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_4_BED_OUT):
-            tag_id_bed = 4 + 4
-            self.moveBedFromStageToRobot(tag_id_bed=tag_id_bed, tag_id_stage=None)
+            self.moveBedFromStageToRobot(tag_id_bed=8, tag_id_stage=None)
 
 
         # Task [10020]: "DEMO_COLOR_SENSOR_HANDLE" - Color sensor handling demo
@@ -1261,11 +1314,9 @@ class DeviceClass_Cobot():
 
         # Task [10032]: Drop adhesive
         elif(self.cmd_protocol == TASK_ADHESIVE_DROP):
-            # self.setVelAcc(50, 50, [50,100], [50,100])
             # init_posx = [-428.15545654296875, -181.14376831054688, 261.2680969238281, 180, 180, 90]
             # movel(init_posx)
             release_compliance_ctrl()
-            self.setVelAcc(50, 50, [50,100], [50,100])
             init_posj = [27.18817138671875, 1.201263189315796, -122.7035140991211, -0.0, -58.497928619384766, -62.811859130859375]
 
             movej(init_posj,50,50)
@@ -1292,7 +1343,6 @@ class DeviceClass_Cobot():
 
         # Task [10033]: Move specimen to the center of the working table
         elif(self.cmd_protocol == TASK_SEPCIMEN_TO_CENTER):
-            self.setVelAcc(50, 50, [150,50], [150,50])
             
             Q_SPECIMEN_RETRACT = [35.044342041015625, 9.633670806884766, -137.1417694091797, -0.0, -52.49190902709961, 35.044342041015625]
             P_SPECIMEN_GLUE_SUCTION = [-357.6464538574219, -122.03623962402344, 186.5482940673828, 180, -180, 180]
@@ -1320,7 +1370,6 @@ class DeviceClass_Cobot():
             
         # Task [10034]: Move specimen to the left-hand-side of the working table
         elif(self.cmd_protocol == TASK_SPECIMEN_TO_LEFT):
-            self.setVelAcc(50, 50, [150,50], [150,50])
             Q_SPECIMEN_RETRACT = [35.044342041015625, 9.633670806884766, -137.1417694091797, -0.0, -52.49190902709961, 35.044342041015625]
             P_SPECIMEN_GLUE_SUCTION = [-357.6464538574219, -122.03623962402344, 186.5482940673828, 180, -180, 180]
             P_SPECIMEN_GLUE_MECH    = [-324.44671630859375, -179.0755157470703, 236.5482940673828, 0, 180, 90]
@@ -1344,7 +1393,6 @@ class DeviceClass_Cobot():
 
         # Task [10035]: Move specimen to the right-hand-side of the working table
         elif(self.cmd_protocol == TASK_SPECIMEN_TO_RIGHT):
-            self.setVelAcc(50, 50, [150,50], [150,50])
             Q_SPECIMEN_RETRACT = [35.044342041015625, 9.633670806884766, -137.1417694091797, -0.0, -52.49190902709961, 35.044342041015625]
             P_SPECIMEN_GLUE_SUCTION = [-357.6464538574219, -232.03623962402344, 186.0482940673828, 180, -180, 180]
             P_SPECIMEN_GLUE_MECH    = [-374.74671630859375, -179.0755157470703, 186.5482940673828, 0, 180, 90]

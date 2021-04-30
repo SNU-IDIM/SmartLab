@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os, sys, json, time
+import datetime
 from time import sleep
 from copy import deepcopy
 from threading import Thread
@@ -17,6 +18,9 @@ from TestDesigner import TestDesigner
 
 sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_common/imp")) )
 from IDIM_framework import *
+
+sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_common/src")) )
+from SqlHelper import SqlHelper
 
 from DevicePluginToROS import DevicePluginToROS
 
@@ -44,79 +48,146 @@ class TestManager():
 
 
 
-class DeviceManager():
+class SmartLABCore():
+    def __init__(self, ip_='192.168.60.21', port_=5555):
+        ## Initializating SmartLAB
+        self.ip_ = ip_
+        self.port_ = port_
 
-    def __init__(self, port_=5555):
-        ## ZMQ: ROS(server) <-> Python(client)
-        self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.REP)
-        self.socket.bind("tcp://*:{}".format(port_))
+        self.init_server_flag = True
+        self.init_db_flag = True
+        self.test_step = 0
+
+        ## Connect to the database server
+        self.mysql = SqlHelper(host='localhost', username='root', password='0000', port=3306, database='SmartLab')
+
+        ## Check existing columns and data
+        column_list = self.mysql.get_table_columns(tablename='result')
+        print("[DEBUG] Column list: \n{} in table ({}): \n".format(column_list, 'result'))
+
+        self.req = dict()
+        self.req['test_mode'] = 'step'
+        self.req['test_step'] = -1
+        self.req['setup_device'] = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer3']
+        self.req['setup_doe'] = {
+                                'header_id': 'DRY_TEST',
+                                'experiment_type': 'Tensile Test',
+                                'factors': [ 
+                                            {'factor_name': 'infill_line_distance', 'factor_range': [1, 6]},
+                                            {'factor_name': 'layer_height', 'factor_range': [0.1, 0.2]},
+                                            #  {'factor_name': 'default_material_print_temperature', 'factor_range': [190, 220]}, 
+                                        ],
+                                'doe_type': DOE_GENERALIZED_FACTORIAL, # DOE_GENERALIZED_FACTORIAL=3
+                                'option': [
+                                            [1, 2, 4, 6], 
+                                            [0.1, 0.12, 0.2], 
+                                            # [190, 191, 219, 220]
+                                        ],
+                                }
+        self.res = dict()
 
         ## Device dict (list of devices to handle with ID)
         self.device_dict = dict() # for device manager
         self.device_info = dict() # to send data to client via ZMQ
-        
-        self.bool_auto_mode = True
-        self.step_flag = False
 
-        ## for 3DP Manager
-        self.printing_queue            = list()
-        self.printer_list_idle         = list()
-        self.printer_list_initializing = list()
-        self.printer_list_printing     = list()
-        self.printer_list_finished     = list()  ## ***
-        self.printer_list_robot_done   = list()
+        ## Test info
+        self.test_info = dict()
+        self.test_info['waiting'] = list()
+        self.test_info['fabrication'] = list()
+        self.test_info['measurement'] = list()
+        self.test_info['experiment'] = list()
+        self.test_info['completed'] = list()
 
-        self.specimen_ready_list = list()  ## ***
-        self.test_ready_list     = list()  ## ***
-
-        ## for Cobot Manager
-        self.cobot_task_queue = list()
-        self.cobot_recent_work = None
-
-        ## for Instron Manager
-        self.instron_save_flag = False
-
-        ## for AMR Manager
-        self.client = actionlib.SimpleActionClient('/R_001/WAS', WorkFlowAction)
-        self.client.wait_for_server(timeout=rospy.Duration(1))
-        self.amr = WorkFlowGoal()
-        self.amr_param = [Param('max_trans_vel','float','0.3'),
-                          Param('max_rot_vel','float','0.25'), 
-                          Param('xy_goal_tolerance','float','0.20'),
-                          Param('yaw_goal_tolerance','float','0.05')]
-        self.amr.work = []
-        self.amr.work_id = 'amr'
-        self.amr.loop_flag = 1  # default: 1 (no repeat)
-        
-        ## 3DP Manager thread
-        self.thread_1 = Thread(target=self.manager3DP)
-        self.thread_1.start()
-
-        ## Cobot Manager thread
-        self.thread_2 = Thread(target=self.executionManager)
-        self.thread_2.start()
-
-        ## Refreshing 'device_info' thread (for Client)
-        self.thread_3 = Thread(target=self.refreshDeviceInfo)
-        self.thread_3.start()
+        ## ZMQ: ROS(server) <-> Python(client)
+        self.context = zmq.Context()
+        self.socket = self.context.socket(zmq.REP)
+        self.socket.bind("tcp://*:{}".format(self.port_))
 
         ## ZMQ Server thread
-        self.thread_4 = Thread(target=self.zmq_server)
-        self.thread_4.start()
+        self.thread_server = Thread(target=self.zmq_server)
+        self.thread_server.start()
 
 
     def __del__(self):
+        self.thread_server.terminate()
         self.thread_1.terminate()
         self.thread_2.terminate()
         self.thread_3.terminate()
-        self.thread_4.terminate()
         pass
+
+
+
+
+    '''#####################################################################################################
+        Interface of SmartLab Server
+    '''
+    def zmq_server(self):
+        while True:
+            self.req.update(json.loads(self.socket.recv()))
+            # print('[DEBUG] Request from SmartLab Client: {}'.format(self.req))
+
+            ## Initializing ...
+            if self.init_server_flag == True:
+                sleep(3.0)
+                self.init_server_flag = False
+
+                test_manager = TestManager(test_setting=self.req['setup_doe'], ip=self.ip_)
+                self.connectDevices(self.req['setup_device'])
+                test_id_list = test_manager.getTestIDs()
+                self.addPrintingQueue(test_id_list)
+                sleep(3.0)
+                for test_id in test_id_list:
+                    try:
+                        self.mysql.delete('result', {'subject_name': test_id})
+                    except:
+                        print("DBBB")
+                    self.mysql.insert('result', {'subject_name': test_id, 'Status': 'Waiting'}, conds='ON DUPLICATE KEY UPDATE Status = "-"')
+                                
+                ## 3DP Manager thread
+                self.thread_1 = Thread(target=self.manager3DP)
+                self.thread_1.start()
+
+                ## Cobot Manager thread
+                self.thread_2 = Thread(target=self.executionManager)
+                self.thread_2.start()
+
+                ## Refreshing 'device_info' thread (for Client)
+                self.thread_3 = Thread(target=self.refreshDeviceInfo)
+                self.thread_3.start()
+
+            # self.socket.send_string('{}, {}, {}'.format(self.req['test_mode'], self.req['test_step'], self.test_step))
+
+            try:
+                self.res['device'] = self.device_info
+                self.res['experiment'] = self.test_info
+                self.socket.send_string(json.dumps(self.device_info))
+            except:
+                self.socket.send_string('{}, {}, {}'.format(self.req['test_mode'], self.req['test_step'], self.test_step))
+
 
 
     '''#####################################################################################################
         Device manager related
     '''
+    def connectDevices(self, device_list):
+        print('[DEBUG] Trying to connect devices ... ({})'.format(device_list))
+
+        for device_id in device_list:
+            if device_id == 'R_001/amr':
+                self.addDevice(device_id, device_class=DeviceClass_AMR(device_name=device_id))
+                print('[DEBUG] Device connected !!! ({})'.format(device_id))
+
+            elif device_id.find('printer') != -1:
+                socket_port = '500{}'.format(device_id.split('printer')[1]) # socket port: '5001', '5002', '5003', '5004'
+                usb_port = int(device_id.split('printer')[1]) - 1 # usb port: 0, 1, 2, 3
+                self.addDevice(device_id, DeviceClass_3DP(device_name=device_id, ip_=self.ip_, port_=socket_port, usb_port_=usb_port))
+                print('[DEBUG] Device connected !!! ({})'.format(device_id))
+
+            elif device_id == 'R_001/cobot' or device_id == 'instron' or device_id == 'MS':
+                self.addDevice(device_id)
+                print('[DEBUG] Device connected !!! ({})'.format(device_id))
+            
+
     def addDevice(self, device_name, device_class=None):
         self.device_dict[device_name] = DevicePluginToROS(device_name=device_name, device_class=device_class)
         print("[DEBUG] '{}' is added to DeviceManager".format(device_name))
@@ -142,27 +213,45 @@ class DeviceManager():
             for i in range(len(keys)):
                 self.device_info[keys[i]] = self.device_dict[keys[i]].getStatus()
 
+            # try:
+            #     device_data = dict()
+            #     for device_id in self.device_info:
+            #         print(2)
+            #         device_id_db = str(device_id.split('/')[1]) if device_id.find('/') != -1 else str(device_id)
+            #         print(3)
+            #         device_data[device_id_db] = json.dumps(self.device_info[device_id])
+            #         print(4)
+            #     self.mysql.insert('device_info', device_data)
+            #     print(5)
+            # except:
+            #     print("DDDDDDDDSSSSSSSSSSSSSSS")
+
             # print("[DEBUG] Device information updated !!! (Devices: {})".format(self.device_info.keys()))
             sleep(1.0)
 
-
-    def zmq_server(self):
-        while True:
-            request = json.loads(self.socket.recv())
-            print('GGGGGGGGGGGGGG')
-            try:
-                print("[DEBUG] Client requested status of devices ({})".format(request['status']))
-                self.socket.send_string(json.dumps(self.device_info))
-            except:
-                pass
-    
 
     '''#####################################################################################################
         3D Printer related
     '''
     def addPrintingQueue(self, printing_queue):
-        self.printing_queue = printing_queue
+        self.printing_queue            = printing_queue
+        self.printer_list_idle         = list()
+        self.printer_list_initializing = list()
+        self.printer_list_printing     = list()
+        self.printer_list_finished     = list()  ## ***
+        self.printer_list_robot_done   = list()
 
+        self.specimen_ready_list = list()  ## ***
+        self.test_ready_list     = list()  ## ***
+
+    def tapping(self, printer_name, gCode_name):
+        gCode_name = gCode_name + '.gcode'
+        UPLOAD_PATH = os.path.join(os.getenv("HOME"), '.octoprint/uploads/')
+        GCODE_PATH = os.path.join(UPLOAD_PATH, self.req['setup_doe']['header_id'], gCode_name)
+        CODE_PATH = os.path.join(os.getenv("HOME"), 'catkin_ws/src/SNU_SmartLAB', 'snu_idim_slicer','Tapping.py')
+        command = 'python3 ' + CODE_PATH + ' ' + GCODE_PATH + ' ' + printer_name
+        print(command)
+        os.system(command)
 
     def manager3DP(self):
         while True:
@@ -184,7 +273,13 @@ class DeviceManager():
                         except:
                             pass
 
-                        ## Print a new subject from printing queue
+                        if device_status['status'].find('Printing') != -1:
+                            try:
+                                self.printer_list_printing.index(device_id)
+                            except:
+                                self.printer_list_printing.append(device_id)
+
+                        ## Check whether printing job is done
                         if device_status['status'].find('Done') != -1:
                             try:
                                 self.printer_list_finished.index(device_id)
@@ -201,11 +296,14 @@ class DeviceManager():
                         if device_status['status'].find('Idle') != -1:
                             try:
                                 print_next = self.printing_queue.pop(0)
+                                self.tapping(device_id, print_next)
                                 self.device_dict[device_id].sendCommand({'print': print_next})
+                                self.mysql.insert('result', {'subject_name': print_next}, conds='ON DUPLICATE KEY UPDATE Status = "Fabrication"')
+                                sleep(2.0)
                                 print("[3DP] {} status: Idle -> Printing {}".format(device_id, print_next))
                             except:
                                 print("[3DP] Printing queue is empty !!!")
-                    
+
                     # print("\n[DEBUG] 3DP finished: {}".format(self.printer_list_finished))
                     # print("[DEBUG] 3DP robot done: {}".format(self.printer_list_robot_done))
                     # print("[DEBUG] Subject name: {}".format(device_status['subject_name']))
@@ -213,6 +311,7 @@ class DeviceManager():
                     pass
                     
             sleep(3.0)
+
 
 
     '''#####################################################################################################
@@ -277,7 +376,7 @@ class DeviceManager():
         elif task_type == 'feed_specimen':
             task_tool_change_1_to_2 = [ACTION_HOME, ACTION_TOOLCHANGE_1_DETACH, ACTION_TOOLCHANGE_2_ATTACH, ACTION_HOME]
             task_feed_specimen = [ACTION_HOME, TASK_SPECIMEN_FROM_RACK, ACTION_HOME, TASK_INSTRON_SEARCH]
-            self.cobot_recent_work = ACTION_HOME
+            self.cobot_recent_work = TASK_INSTRON_SEARCH
             robot_task_queue = task_tool_change_1_to_2 + task_feed_specimen
             return robot_task_queue
 
@@ -287,11 +386,22 @@ class DeviceManager():
             robot_task_queue = task_monitor_experiment
             return robot_task_queue
 
+        elif task_type == 'remove_specimen1':
+            task_remove_specimen1 = [TASK_INSTRON_CLEAN1]
+            self.cobot_recent_work = TASK_INSTRON_CLEAN1
+            robot_task_queue = task_remove_specimen1
+            return robot_task_queue
+        
+        elif task_type == 'remove_specimen2':
+            task_remove_specimen2 = [TASK_INSTRON_CLEAN2]
+            self.cobot_recent_work = TASK_INSTRON_CLEAN2
+            robot_task_queue = task_remove_specimen2
+            return robot_task_queue
+        
         elif task_type == 'finish_experiment':
-            task_finish_experiment = [] # TODO: 로봇 작업 추가 필요
             task_tool_change_2_to_0 = [ACTION_HOME, ACTION_TOOLCHANGE_2_DETACH, ACTION_HOME]
             self.cobot_recent_work = ACTION_HOME
-            robot_task_queue = task_finish_experiment + task_tool_change_2_to_0
+            robot_task_queue = task_tool_change_2_to_0
             return robot_task_queue
 
 
@@ -313,44 +423,48 @@ class DeviceManager():
         print("[Cobot] Robot task finished !!! (Queue is empty)")
 
 
+
     '''#####################################################################################################
         On-Machine Measurment (OMM) related
     '''
-    def executeOMM(self, subject_name, command_type, debug=False):
+    def executeOMM(self, subject_name, command_type, wait_until_end=False, debug=False):
         if debug == False:
             sleep(2.0)
             self.waitDeviceStatus(device_name='MS', status_value='Idle')
-            if command_type == 'measure_thickness':
-                print("[OMM - Real mode] Measuring thickness ({}) ...".format(subject_name))
-                self.device_dict['MS'].sendCommand({command_type: subject_name})
-            elif command_type == 'measure_dimension':
+            if command_type == 'measure_dimension':
                 print("[OMM - Real mode] Measuring dimension ({}) ...".format(subject_name))
                 self.device_dict['MS'].sendCommand({command_type: subject_name})
-            elif command_type == 'save_result':
-                print("[OMM - Real mode] Saving results ({}) ...".format(subject_name))
-                self.device_dict['MS'].sendCommand({command_type: subject_name})
+            sleep(5.0)
+            self.waitDeviceStatus(device_name='MS', status_value='Idle')
 
         elif debug == True:
             if command_type == 'measure_dimension':
                 print("[OMM - Debug mode] Measuring dimension ({}) ...".format(subject_name))
                 sleep(1.0)
-            elif command_type == 'save_result':
-                print("[OMM - Debug mode] Saving results ({}) ...".format(subject_name))
-                sleep(1.0)
+
+
 
     '''#####################################################################################################
         Instron related
     '''
-    def executeInstron(self, subject_name, command_type, debug=False):
+    def executeInstron(self, subject_name, command_type, wait_until_end=False, debug=False):
         if debug == False:
             if command_type == 'setup':
                 self.waitDeviceStatus(device_name='instron', status_value='Idle')
                 self.device_dict['instron'].sendCommand({command_type: subject_name})
                 print("[Instron - Real mode] Test Initializing ({}) ...".format(subject_name))
+                if wait_until_end == True: self.waitDeviceStatus(device_name='instron', status_key='status', status_value='Ready')
             elif command_type == 'execute':
                 self.waitDeviceStatus(device_name='instron', status_value='Ready')
                 self.device_dict['instron'].sendCommand({command_type: subject_name})
                 print("[Instron - Real mode] Test Start ({}) !!!".format(subject_name))
+                if wait_until_end == True: self.waitDeviceStatus(device_name='instron', status_key='status', status_value='Done')
+            elif command_type == 'open':
+                self.waitDeviceStatus(device_name='instron', status_value='Done')
+                self.device_dict['instron'].sendCommand({command_type: subject_name})
+                sleep(10.0)
+                print("[Instron - Real mode] Analizing Start ({}) !!!".format(subject_name))
+                if wait_until_end == True: self.waitDeviceStatus(device_name='instron', status_key='status', status_value='Idle')
         
         elif debug == True:
             if command_type == 'setup':
@@ -361,16 +475,25 @@ class DeviceManager():
                 sleep(1.0)
 
 
+
     '''#####################################################################################################
         Execution manager related
     ''' 
     def checkExecutionMode(self):
         while True:
-            if self.bool_auto_mode == True:
-                break
-            elif self.step_flag == True:
-                self.step_flag = False
-                break
+            if self.req['test_mode'] == 'auto':
+                print("[AUTO MODE] Execute next step automatically ... (Step: {})".format(self.test_step))
+                return 0
+            elif self.req['test_mode'] == 'step':
+                print("[STEP MODE] Waiting for triggering ... (Step: {})".format(self.test_step))
+                if self.req['test_step'] != -1:
+                    print("[STEP MODE] Execute next step ... (Step: {})".format(self.test_step))
+                    self.req['test_step'] = -1
+                    return 1
+            elif self.req['test_mode'] == 'debug':
+                self.test_step = self.req['test_step']
+                print("[DEBUG MODE] Execute following step ... (Step: {})".format(self.test_step))
+                return -1
 
 
     def waitDeviceStatus(self, device_name, status_key='status', status_value=''):
@@ -381,107 +504,137 @@ class DeviceManager():
             except:
                 status_int = status_value
             # print("[DEBUG] Waiting for '{}' status to be '{}'... ".format(device_name, status))
+            # print('[DEBUG] OMM Status check : ', self.device_dict[device_name].getStatus())
             if self.device_dict[device_name].getStatus()[status_key] == str(status_value) or self.device_dict[device_name].getStatus()[status_key] == status_int:
                 # print("[DEBUG] '{}' status = '{}' !!! ".format(device_name, status))
                 break
 
 
     def executionManager(self):
-        step = 0 #;  printer_id = 'printer2';   subject_id = 'test2';   printer_number = 2;    amr_pos_3dp = deepcopy(AMR_POS_3DP_0);   amr_pos_3dp[1] += printer_number * AMR_OFFSET_3DP
         debug = False
-        
+        debug_withoutAMR = False #True
+
         while True:
             try:
-                if step == 0: ## Step 0. 시편 제작 완료 시 시작
-                    self.checkExecutionMode()
+                ## Check the execution mode (auto: 0 / step: 1 / debug: -1)
+                if self.checkExecutionMode() == -1:
+                    printer_id = 'printer3'
+                    subject_id = 'yun_9'
+                    printer_number = 3
+                    amr_pos_3dp = deepcopy(AMR_POS_3DP_0)
+                    amr_pos_3dp[1] += printer_number * AMR_OFFSET_3DP
+
+
+                if self.test_step == 0: ## Step 0. 시편 제작 완료 시 시작
                     print("[Execution Manager] Step 1. Fabricating specimens for experiment... (finnished: {})".format(self.printer_list_finished))
                     try:
-                        printer_id = self.printer_list_finished.pop(0)
-                        subject_id = self.device_info[printer_id]['subject_name']
+                        printer_id = str(self.printer_list_finished.pop(0))
+                        subject_id = str(self.device_info[printer_id]['subject_name'])
                         printer_number = int(printer_id.split('printer')[1])
                         amr_pos_3dp = deepcopy(AMR_POS_3DP_0);   amr_pos_3dp[1] += printer_number * AMR_OFFSET_3DP
-                        step = 1
+                        self.test_step = 1
                     except:
                         pass
 
-                if step == 1: ## Step 2-1. Get printing bed from printer (3DP bed: 3D printer -> Robot)
-                    self.checkExecutionMode()
-                    print("[Execution Manager] Step 2-1 (1 of 2). AMR moving... (target: {}: {})".format(printer_id, amr_pos_3dp))
-                    self.executeAMR(spot_name=printer_id, target_pose=amr_pos_3dp, hold_time=0.0, debug=debug)
 
+                elif self.test_step == 1: ## Step 2-1. Get printing bed from printer (3DP bed: 3D printer -> Robot)
+                    self.mysql.insert('result', {'subject_name': subject_id}, conds='ON DUPLICATE KEY UPDATE Status = "Measurement"')
+                    print("[Execution Manager] Step 2-1 (1 of 2). AMR moving... (target: {}: {})".format(printer_id, amr_pos_3dp))
+                    if debug_withoutAMR == False:
+                        self.executeAMR(spot_name=printer_id, target_pose=amr_pos_3dp, hold_time=0.0, debug=debug)
+                    else:
+                        print('[DEBUG_NO_AMR] AMR should be placed in front of 3DP')
                     print("[Execution Manager] Step 2-1 (2 of 2). Robot task start !!! (3DP bed: {} -> Robot)".format(printer_id))
                     robot_task_queue = self.makeRobotTaskQueue(printer_id, task_type='bed_from_printer_to_robot')
                     self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
-                    step = 2
+                    self.test_step = 2
                 
-                if step == 2: ## Step 2-2. Measurement (3DP bed: Robot -> OMM -> Robot)
-                    self.checkExecutionMode()
+
+                elif self.test_step == 2: ## Step 2-2. Measurement (3DP bed: Robot -> OMM -> Robot)
                     print("[Execution Manager] Step 2-2 (1 of 4). AMR moving... (target: OMM, {})".format(AMR_POS_OMM))
-                    self.executeAMR(spot_name='omm', target_pose=AMR_POS_OMM, hold_time=0.0, debug=debug)
-                    
+                    if debug_withoutAMR == False:
+                        self.executeAMR(spot_name='omm', target_pose=AMR_POS_OMM, hold_time=0.0, debug=debug)
+                    else:
+                        print('[DEBUG_NO_AMR] AMR should be placed in front of OMM')
+                        rospy.sleep(20)
                     print("[Execution Manager] Step 2-2 (2 of 4). Robot task start !!! (3DP bed: Robot -> OMM)")
                     robot_task_queue = self.makeRobotTaskQueue(task_type='bed_from_robot_to_omm')
                     self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
 
                     print("[Execution Manager] Step 2-2 (3 of 4). Measuring a dimension of specimen ({})".format(subject_id))
-                    self.executeOMM(subject_name=subject_id, command_type='measure_thickness', debug=debug)
                     self.executeOMM(subject_name=subject_id, command_type='measure_dimension', debug=debug)
 
                     print("[Execution Manager] Step 2-2 (4 of 4). Robot task start !!! (3DP bed: OMM -> Robot)")
                     robot_task_queue = self.makeRobotTaskQueue(task_type='bed_from_omm_to_robot')
                     self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
-                    step = 3
+                    self.test_step = 3
                 
-                if step == 3: ## Step 2-3. Get ready for the next print (시편 분리 후 3DP bed: Robot -> 3DP)
-                    self.checkExecutionMode()
+
+                elif self.test_step == 3: ## Step 2-3. Get ready for the next print (시편 분리 후 3DP bed: Robot -> 3DP)
                     print("[Execution Manager] Step 2-3 (1 of 3). Robot task start !!! (specimen handling: {})".format(subject_id))
                     robot_task_queue = self.makeRobotTaskQueue(task_type='specimen_handling')
                     self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
 
                     print("[Execution Manager] Step 2-3 (2 of 3). AMR moving... (target: {}, {})".format(printer_id, amr_pos_3dp))
-                    self.executeAMR(spot_name=printer_id, target_pose=amr_pos_3dp, hold_time=0.0, debug=debug)
-                                        
+                    if debug_withoutAMR == False:
+                        self.executeAMR(spot_name=printer_id, target_pose=amr_pos_3dp, hold_time=0.0, debug=debug)
+                    else:
+                        print('[DEBUG_NO_AMR] AMR should be placed in front of 3DP')
+                        rospy.sleep(20)
+
                     print("[Execution Manager] Step 2-3 (3 of 3). Robot task start !!! (3DP bed: Robot -> {})".format(printer_id))
                     robot_task_queue = self.makeRobotTaskQueue(printer_id, task_type='bed_from_robot_to_printer')
                     self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
                     self.printer_list_robot_done.append(printer_id)
-                    step = 4
+                    self.test_step = 4
 
-                if step == 4: ## Step 3-1. 협동로봇 시편 -> 인장시험기 (printer_id)
-                    self.checkExecutionMode()
+
+                elif self.test_step == 4: ## Step 3-1. 협동로봇 시편 -> 인장시험기 (printer_id)
+                    self.mysql.insert('result', {'subject_name': subject_id}, conds='ON DUPLICATE KEY UPDATE Status = "Experiment"')
                     print("[Execution Manager] Step 3-1 (1 of 2). AMR moving... (target: instron, {})".format(AMR_POS_INSTRON))
-                    self.executeAMR(spot_name='instron', target_pose=AMR_POS_INSTRON, hold_time=0.0, debug=debug)
-
+                    if debug_withoutAMR == False:
+                        self.executeAMR(spot_name='instron', target_pose=AMR_POS_INSTRON, hold_time=0.0, debug=debug)
+                    else:
+                        print('[DEBUG_NO_AMR] AMR should be placed in front of Instron')
+                        rospy.sleep(20)
                     print("[Execution Manager] Step 3-1 (2 of 2). Robot task start !!! (Feeding specimen: {})".format(subject_id))
                     robot_task_queue = self.makeRobotTaskQueue(task_type='feed_specimen')
                     self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
-                    step = 5
+                    self.test_step = 5
                 
-                if step == 5: ## Step 3-2. 인장시험 준비 (subject_id)
-                    self.checkExecutionMode()
+
+                elif self.test_step == 5: ## Step 3-2. 인장시험 준비 (subject_id)
                     print("[Execution Manager] Step 3-2 (1 of 2). Experiment initializing ... (subject: {})".format(subject_id))
-                    self.executeInstron(subject_id, command_type='setup', debug=debug);   sleep(10.0)
+                    self.executeInstron(subject_id, command_type='setup', wait_until_end=True, debug=debug)
 
                     print("[Execution Manager] Step 3-2 (2 of 2). Robot task start !!! (Monitor experiment: {})".format(subject_id))
                     robot_task_queue = self.makeRobotTaskQueue(task_type='monitor_experiment')
                     self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
-                    step = 6
-                
-                if step == 6: ## Step 3-3. 인장시험 실행 & 저장 (subject_id)
-                    self.checkExecutionMode()
-                    print("[Execution Manager] Step 3-3 (1 of 2). Experiment start !!! (subject: {})".format(subject_id))
-                    self.executeInstron(subject_id, command_type='execute', debug=debug)
+                    self.test_step = 6
 
-                    print("[Execution Manager] Step 3-3 (1 of 2). Robot task start !!! (Finnishing experiment: {})".format(subject_id))
+                
+                elif self.test_step == 6: ## Step 3-3. 인장시험 실행 & 저장 (subject_id)
+                    print("[Execution Manager] Step 3-3 (1 of 4). Experiment start !!! (subject: {})".format(subject_id))
+                    self.executeInstron(subject_id, command_type='execute', wait_until_end=True, debug=debug)
+
+                    print("[Execution Manager] Step 3-3 (2 of 4). Removing specimen and start analyzing !!! (subject: {})".format(subject_id))
+                    robot_task_queue = self.makeRobotTaskQueue(task_type='remove_specimen1') # Grasp specimen to remove
+                    self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
+                    self.executeInstron(subject_id, command_type='open', wait_until_end=False, debug=debug) # Instron gripper open
+                    robot_task_queue = self.makeRobotTaskQueue(task_type='remove_specimen2') # Remove specimen
+                    self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
+
+                    print("[Execution Manager] Step 3-3 (4 of 4).  Robot task start !!! (Finish experiment: {})".format(subject_id))
                     robot_task_queue = self.makeRobotTaskQueue(task_type='finish_experiment')
                     self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
-                    step = 7 if len(self.printer_list_finished) == 0 else 0
+                    self.mysql.insert('result', {'subject_name': subject_id}, conds='ON DUPLICATE KEY UPDATE Status = "Done"')
+                    self.test_step = 7 if len(self.printer_list_finished) == 0 else 0
                 
-                if step == 7: ## Step 4. 수행할 작업 없을 시 AMR -> home으로 이동
-                    self.checkExecutionMode()
-                    print("[Execution Manager] Step 4. AMR moving... (target: home, {})".format(AMR_POS_ZERO))
-                    if debug == False: self.executeAMR(spot_name='home', target_pose=AMR_POS_ZERO, hold_time=0.0, debug=debug) # target_pose 수정 작업 필요
-                    step = 0
+
+                elif self.test_step == 7: ## Step 4. 수행할 작업 없을 시 AMR -> home으로 이동
+                    print("[Execution Manager] Step 4. AMR moving... (target: home, {})".format(AMR_POS_HOME))
+                    if debug == False: self.executeAMR(spot_name='home', target_pose=AMR_POS_HOME, hold_time=0.0, debug=debug) # target_pose 수정 작업 필요
+                    self.test_step = 0
 
             except:
                 print("[Execution Manager] ERROR !!!")
@@ -489,56 +642,11 @@ class DeviceManager():
 
             sleep(3.0)
 
-    
-
 
 
 
 if __name__ == '__main__':
 
-    rospy.init_node('DeviceManager')
+    rospy.init_node('SmartLABCore')
 
-    # SERVER_IP = '192.168.0.81'
-    SERVER_IP = '192.168.60.21'
-
-    ## User Input (Experiment settings)
-    test_setting = {
-                    'header_id': 'DRY_TEST',
-                    'experiment_type': 'Tensile Test',
-                    'factors': [ 
-                                 {'factor_name': 'infill_line_distance', 'factor_range': [1, 6]},
-                                 {'factor_name': 'layer_height', 'factor_range': [0.1, 0.2]},
-                                #  {'factor_name': 'default_material_print_temperature', 'factor_range': [190, 220]}, 
-                               ],
-                    'doe_type': DOE_GENERALIZED_FACTORIAL, # DOE_GENERALIZED_FACTORIAL=3
-                    'option': [
-                                [1, 2, 4, 6], 
-                                [0.1, 0.12, 0.2], 
-                                # [190, 191, 219, 220]
-                              ],
-                    }
-
-    ## Test Manager
-    test_manager = TestManager(test_setting=test_setting, ip=SERVER_IP)
-    test_id_list = test_manager.getTestIDs()
-
-    ## Device Manager
-    manager = DeviceManager()
-    manager.addPrintingQueue(test_id_list)
-    manager.addDevice('R_001/amr', device_class=DeviceClass_AMR(device_name='R_001/amr'))
-    manager.addDevice('R_001/cobot', device_class=None)
-    manager.addDevice('instron')
-    manager.addDevice('MS')
-    # manager.addDevice('MS', DeviceClass_OMM(device_name='MS', port_='/dev/ttyUSB0'))
-
-    manager.addDevice('printer1', DeviceClass_3DP(device_name='printer1', ip_=SERVER_IP, port_='5001', usb_port_=0))
-    manager.addDevice('printer2', DeviceClass_3DP(device_name='printer2', ip_=SERVER_IP, port_='5002', usb_port_=1))
-    manager.addDevice('printer3', DeviceClass_3DP(device_name='printer3', ip_=SERVER_IP, port_='5003', usb_port_=2))
-    # manager.addDevice('printer4', DeviceClass_3DP(device_name='printer4', ip_=SERVER_IP, port_='5004', usb_port_=3))
-    sleep(3.0)
-
-    manager.device_dict['MS'].sendCommand({"connection": True})
-    manager.device_dict['printer1'].sendCommand({"connection": True})
-    manager.device_dict['printer2'].sendCommand({"connection": True})
-    manager.device_dict['printer3'].sendCommand({"connection": True})
-    # manager.device_dict['printer4'].sendCommand({"connection": True})
+    smartlab = SmartLABCore(ip_='192.168.60.21', port_=5555)

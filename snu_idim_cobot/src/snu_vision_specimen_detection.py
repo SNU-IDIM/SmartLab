@@ -147,6 +147,18 @@ class snu_vision_2d():
         edges_bgr = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
 
         contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        
+        # find largest contour
+        count = np.shape(contours)[0]
+        area = 0
+        for i in range(count):
+            new_area = cv2.contourArea(contours[i])
+            # print(new_area)
+            if new_area > area:
+                area = new_area
+                idx = i   
+        a = copy.deepcopy(contours[idx])
+        contours = [a]
 
         #image show for debugging
         # while True:
@@ -159,7 +171,7 @@ class snu_vision_2d():
         
         for ii in range(len(contours)):
             ptAccum=np.squeeze(contours[ii])
-        
+
             # FILTER2 : the specimen edge should contain more than 300 points
             if (len(ptAccum) < 300) : 
                 print(len(ptAccum), 'bad search : points are too many or little')
@@ -231,7 +243,7 @@ class snu_vision_2d():
             # print(edge_Length)
             # print(ptAccum[x_Max,0], ptAccum[x_Min,0], ptAccum[y_Max,1], ptAccum[y_Min,1])            
 
-            print(vertice)
+            # print(vertice)
             # orientation1 = float(x_Max_Vertice[1]-x_Min_Vertice[1])/float(x_Max_Vertice[0]-x_Min_Vertice[0])
             # orientation2 = float(y_Max_Vertice[1]-y_Min_Vertice[1])/float(y_Max_Vertice[0]-y_Min_Vertice[0])
             # orientation1 = float(vertice[0][1]-vertice[2][1])/float(vertice[0][0]-vertice[2][0])
@@ -258,9 +270,9 @@ class snu_vision_2d():
             cv2.circle(edges_bgr, (int(vertice[3][0]), int(vertice[3][1])), 1, (0,255,255), 2)
 
             # while True : 
-            #cv2.imshow('image', edges_bgr)
-            #cv2.waitKey(3000)
-
+            # cv2.imshow('image', edges_bgr)
+            # cv2.waitKey(1000)
+            print(centroid)
             #Calibration 250mm / 551pixels -> sondori
             px2mm_Row=(centroid[0]*2.0+rowStart-320)*250.0/551.0
             px2mm_Col=(centroid[1]*2.0+colStart-240)*250.0/551.0

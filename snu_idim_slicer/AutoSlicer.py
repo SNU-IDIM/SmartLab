@@ -64,13 +64,16 @@ class AutoSlicer():
         n_test_total = len(self.doe_list[0])
         n_factors    = len(self.doe_factors)
 
+
         # Change List Type Test Information to Dict Type Test Information
         testset_dict = {}
         for i in range(n_test_total):
             testset_dict[i] = {'Number':str(i)}
-
             for j in range(n_factors):
-                testset_dict[i][self.doe_factors[j]] = self.doe_list[j][i]
+                if self.doe_factors[j] == 'infill_angles':
+                    testset_dict[i][self.doe_factors[j]] = [int(string) for string in self.doe_list[j][i].split(',')]
+                else:
+                    testset_dict[i][self.doe_factors[j]] = self.doe_list[j][i]
         
         n_test_total = int(len(testset_dict))
         n_test_done = 0
@@ -97,16 +100,17 @@ class AutoSlicer():
             except:
                 pass
 
+
             if TEST_HEADER_ID == 'DRY_TEST': # for dry run
                 print('[DEBUG] "{}_{}.gcode"'.format(TEST_HEADER_ID, n_test_done))
                 f = open(os.path.join(SAVE_DIR, "{}_{}.gcode".format(TEST_HEADER_ID, n_test_done)), 'w')
                 gcode_home = 'G28\n'
-                gcode_pen_on  = 'G1 E-10 F2000\n;toggle the namepen\nG1 X115 Y110 F1000\nG1 Z148 F1000\nG1 Z168 F100\nG1 Z148 F1000\n'
-                gcode_pattern = 'G1 X108.0Y155.0Z8.5F2000\nG1 X108.0Y155.0Z5.0\nG1 X108.0Y155.0Z8.5\nG1 X108.0Y157.0Z8.5F2000\nG1 X108.0Y157.0Z5.0\nG1 X108.0Y157.0Z8.5\nG1 X108.0Y159.0Z8.5F2000\nG1 X108.0Y159.0Z5.0\nG1 X108.0Y159.0Z8.5\nG1 X110.0Y155.0Z8.5F2000\nG1 X110.0Y155.0Z5.0\nG1 X110.0Y155.0Z8.5\nG1 X110.0Y157.0Z8.5F2000\nG1 X110.0Y157.0Z5.0\nG1 X110.0Y157.0Z8.5\nG1 X110.0Y159.0Z8.5F2000\nG1 X110.0Y159.0Z5.0\nG1 X110.0Y159.0Z8.5\nG1 X112.0Y155.0Z8.5F2000\nG1 X112.0Y155.0Z5.0\nG1 X112.0Y155.0Z8.5\nG1 X112.0Y157.0Z8.5F2000\nG1 X112.0Y157.0Z5.0\nG1 X112.0Y157.0Z8.5\nG1 X112.0Y159.0Z8.5F2000\nG1 X112.0Y159.0Z5.0\nG1 X112.0Y159.0Z8.5'
-                gcode_pen_off = 'G1 X115 Y110 F100\nG1 Z148 F1000\nG1 Z166.5 F100\nG1 Z148 F1000\nG1 Y220 F1000\n'
+                gcode_pen_on  = 'G1 E-10 F2000\nG1 X115 Y110 F1000\nG1 Z148 F1000\nG1 Z169 F100\nG1 Z148 F1000\n'
+                gcode_pattern = 'G1 X108.7Y154.4Z8.5F2000\nG1 X108.7Y154.4Z5.0\nG1 X108.7Y154.4Z8.5\nG1 X108.7Y156.4Z8.5F2000\nG1 X108.7Y156.4Z5.0\nG1 X108.7Y156.4Z8.5\nG1 X108.7Y158.4Z8.5F2000\nG1 X108.7Y158.4Z5.0\nG1 X108.7Y158.4Z8.5\nG1 X110.7Y154.4Z8.5F2000\nG1 X110.7Y154.4Z5.0\nG1 X110.7Y154.4Z8.5\nG1 X110.7Y156.4Z8.5F2000\nG1 X110.7Y156.4Z5.0\nG1 X110.7Y156.4Z8.5\nG1 X110.7Y158.4Z8.5F2000\nG1 X110.7Y158.4Z5.0\nG1 X110.7Y158.4Z8.5\nG1 X112.7Y154.4Z8.5F2000\nG1 X112.7Y154.4Z5.0\nG1 X112.7Y154.4Z8.5\nG1 X112.7Y156.4Z8.5F2000\nG1 X112.7Y156.4Z5.0\nG1 X112.7Y156.4Z8.5\nG1 X112.7Y158.4Z8.5F2000\nG1 X112.7Y158.4Z5.0\nG1 X112.7Y158.4Z8.5\n'
+                gcode_pen_off = 'G1 X115 Y110 F1000\nG1 Z148 F1000\nG1 Z169 F100\nG1 Z148 F1000\nG1 Y220 F1000\n'
                 gcode_fix_bed = 'M17\n'
 
-                gcode_merged = gcode_home + gcode_pen_on + gcode_pattern + gcode_pen_off + gcode_fix_bed
+                gcode_merged = gcode_home #+ gcode_pen_on + gcode_pattern + gcode_pen_off + gcode_fix_bed
 
                 f.write(gcode_merged)
                 f.close()

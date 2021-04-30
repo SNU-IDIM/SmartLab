@@ -67,7 +67,7 @@ class DeviceClass_3DP:
         self.thread_1 = Thread(target=self.updateStatus)
         self.thread_1.start()
 
-        # self.connectDevice()
+        self.command({'connection': True})
 
 
     def __del__(self):
@@ -277,15 +277,12 @@ if __name__ == '__main__':
 
     printer = DeviceClass_3DP(device_name='printer0', ip_='localhost', port_=5001, usb_port_=0)
     
-    print("[DEBUG] 1. Connect printer")
-    printer.command({'connection': True})
-
-    print("[DEBUG] 2. Print start")
+    print("[DEBUG] 1. Print start")
     printer.command({'print': 'demo_0'})
 
-    print("[DEBUG] 3. Cancel printing")
+    print("[DEBUG] 2. Cancel printing")
     printer.command({'cancel': True})
 
-    print("[DEBUG] 4. Disconnect printer")
+    print("[DEBUG] 3. Disconnect printer")
     printer.command({'connection': False})
 

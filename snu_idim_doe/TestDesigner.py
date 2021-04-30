@@ -53,7 +53,7 @@ class TestDesigner(object):
                 self.output = pyDOE.fullfact(levels)
                 # print(self.output)
             else:
-                print('option is not defined, option should be defined as tuple')
+                print('option is not defined, option should be defined as tuple, list')
 
         elif self.typeOfDOE == DOE_TWO_LEVEL_FRACTIONAL_FACTORIAL:
             if self.header_['option'] is not False:
@@ -76,9 +76,11 @@ class TestDesigner(object):
 
         ## Mapping between High, low value with actual value
         if self.typeOfDOE == DOE_GENERALIZED_FACTORIAL:
+            output = np.chararray(shape=(self.numberOfExperiments, self.numberOfFactors), itemsize=20)
             for i in range(self.numberOfFactors):
                 for j in range(self.numberOfExperiments):
-                    self.output[j, i] = self.header_['option'][i][int(self.output[j, i])]
+                    output[j, i] = self.header_['option'][i][int(self.output[j, i])]
+            self.output = output
 
         elif self.typeOfDOE == DOE_TWO_LEVEL_FULL_FACTORIAL or self.typeOfDOE == DOE_TWO_LEVEL_FRACTIONAL_FACTORIAL:
             for i in range(self.numberOfFactors):
@@ -103,6 +105,7 @@ class TestDesigner(object):
 
         testsets = DOE(self.typeOfExperiment, self.factors, self.output, self.typeOfDOE)
         self.testsets = testsets.df
+        print(self.testsets)
         return self.testsets
 
 
@@ -136,32 +139,17 @@ class TestDesigner(object):
 
 
 if __name__ == '__main__':
-    ## User setting by GUI
-    # test_setting = {'header_id': str(),
-    #                 'experiment_type': str(),
-    #                 'factors': list(),
-    #                 'doe_type': int(),
-    #                 'option': list(),}
-
-    # test_setting['header_id']       = 'idim_test2'
-    # test_setting['experiment_type'] = 'Tensile Test'
-    # test_setting['factors']         = [ {'factor_name': 'infill_line_distance', 'factor_range': [1, 6]},
-    #                                     {'factor_name': 'layer_height', 'factor_range': [0.1, 0.2]},
-    #                                     {'factor_name': 'default_material_print_temperature', 'factor_range': [190, 220]}, ]
-    # test_setting['doe_type']        = DOE_GENERALIZED_FACTORIAL # DOE_GENERALIZED_FACTORIAL=3
-    # test_setting['option']          = [[1, 2, 4, 6], [0.1, 0.12, 0.2], [190, 191, 219, 220]]
-
+    # infill_line_distance / infill_angles / layer_height
     test_setting = {
                     'header_id': 'TEST',
                     'experiment_type': 'Tensile Test',
-                    'factors': [ {'factor_name': 'infill_line_distance', 'factor_range': [1, 6]},
-                                 {'factor_name': 'layer_height', 'factor_range': [0.1, 0.2]},
-                                #  {'factor_name': 'default_material_print_temperature', 'factor_range': [190, 220]}, 
+                    'factors': [ {'factor_name': 'infill_line_distance', 'factor_range': [0.4, 0.45]},
+                                 {'factor_name': 'infill_angles'}
                                ],
                     'doe_type': DOE_GENERALIZED_FACTORIAL, # DOE_GENERALIZED_FACTORIAL=3
-                    'option': [ [1, 2, 4, 6], 
-                                [0.1, 0.12, 0.2], 
-                                # [190, 191, 219, 220],
+                    'option': [ [0.4, 0.45], 
+                                ['0', '45,135', '0,90', '90']
+                                # [0,1,2]
                               ],
                     }
 
