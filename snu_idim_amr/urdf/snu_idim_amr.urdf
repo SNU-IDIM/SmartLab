@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.5.1-0-g916b5db  Build Version: 1.5.7152.31018
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="snu_idim_amr">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="0.0021684891502327 -0.000406995131138399 0.0248285548556338"
+        rpy="0 0 0" />
+      <mass
+        value="36.0948661840505" />
+      <inertia
+        ixx="0.654323127428008"
+        ixy="-0.00302640520218405"
+        ixz="-0.000304985827786298"
+        iyy="1.08273520987722"
+        iyz="1.96711471532474E-05"
+        izz="1.4807361483801" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://snu_idim_amr/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://snu_idim_amr/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+</robot>

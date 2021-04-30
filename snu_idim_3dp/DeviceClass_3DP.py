@@ -37,12 +37,13 @@ class DeviceClass_3DP:
         ## Common init for all devices
         self.device_id = int(device_name.split('printer')[1]) if usb_port_ == None else usb_port_
         
-        self.ip = '0.0.0.0' if ip_ == None else ip_
+        self.ip = 'localhost' if ip_ == None else ip_
         self.port = 5000 + self.device_id if port_ == None else int(port_)
 
         self.status = dict()
         self.status['ip_port'] = 'http://{}:{}/?#temp'.format(self.ip, self.port)
-        self.status['device_type'] = '3D Printer'
+        print(self.status['ip_port'])
+        self.status['device_type'] = 'Printer'
         self.status['device_name'] = device_name
         self.status['connection'] = ''
         self.status['subject_name'] = ''
@@ -52,7 +53,7 @@ class DeviceClass_3DP:
         self.status['gcode_file'] = ''
         
         ## Specialized init for the device (in this case, 3D printer)
-        executable_path = os.path.join('../snu_idim_3dp', 'chromedriver_81.0.4044.92')
+        executable_path = os.path.join('../snu_idim_3dp', 'chromedriver88')
         print(executable_path)
         self.driver = webdriver.Chrome(executable_path=executable_path)
         self.driver.get(self.status['ip_port'])
@@ -63,16 +64,16 @@ class DeviceClass_3DP:
         except:
             pass
 
-        thread_1 = Thread(target=self.updateStatus)
-        thread_1.start()
+        self.thread_1 = Thread(target=self.updateStatus)
+        self.thread_1.start()
 
-        # self.connectDevice()
+        self.command({'connection': True})
 
 
     def __del__(self):
         ## Specialized del for the device (in this case, 3D printer)
         self.driver.close()
-        thread_1.terminate()
+        self.thread_1.terminate()
 
 
     def updateStatus(self):
@@ -150,6 +151,7 @@ class DeviceClass_3DP:
             if cmd_keys[i] == 'status':
                 self.status['status'] = cmd_values[i]
             if cmd_keys[i] == 'connection':
+                sleep(5.0)
                 if cmd_values[i] == True and self.status['connection'].find('Offline') != -1: # connect printer
                     self.connectDevice()
                 elif cmd_values[i] == False and self.status['connection'].find('Offline') == -1: # disconnect printer
@@ -218,6 +220,13 @@ class DeviceClass_3DP:
             try:
                 self.waitUntilLoaded(by=By.CLASS_NAME, name='title clickable')
                 folders = self.driver.find_element(By.XPATH, "//*[@class='gcode_files']/*[@class='scroll-wrapper']//*[@class='title clickable']").click()
+                files = self.driver.find_elements(By.XPATH, "//*[@class='gcode_files']//*[@class='title clickable']")
+                for f in files:
+                    if f.text == file_name:
+                        print("[INFO] G-code file '{}' is selected".format(file_name))
+                        f.click()
+                        flag = True
+                        break
             except:
                 if flag == False:
                     files = self.driver.find_elements(By.XPATH, "//*[@class='gcode_files']//*[@class='title clickable']")
@@ -244,7 +253,7 @@ class DeviceClass_3DP:
                             flag = True
                             break
 
-        self.waitUntilLoaded(by=By.CLASS_NAME, name='search-clear');     sleep(1.0)
+        self.waitUntilLoaded(by=By.CLASS_NAME, name='search-clear');     sleep(2.0)
         self.driver.find_element(By.CLASS_NAME, 'search-clear').click()
         
 
@@ -266,17 +275,14 @@ class DeviceClass_3DP:
 
 if __name__ == '__main__':  
 
-    printer = DeviceClass_3DP(device_name='printer0')
+    printer = DeviceClass_3DP(device_name='printer0', ip_='localhost', port_=5001, usb_port_=0)
     
-    print("[DEBUG] 1. Connect printer")
-    printer.command({'connection': True})
+    print("[DEBUG] 1. Print start")
+    printer.command({'print': 'demo_0'})
 
-    print("[DEBUG] 2. Print start")
-    printer.command({'print': '201122_feedrate_test'})
-
-    print("[DEBUG] 3. Cancel printing")
+    print("[DEBUG] 2. Cancel printing")
     printer.command({'cancel': True})
 
-    print("[DEBUG] 4. Disconnect printer")
+    print("[DEBUG] 3. Disconnect printer")
     printer.command({'connection': False})
 
