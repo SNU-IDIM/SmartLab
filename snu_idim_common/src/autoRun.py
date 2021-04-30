@@ -167,57 +167,57 @@ class idimAutomation():
 
   
     def execute(self, cmd_file):
+        with open(os.path.join(self.type, cmd_file), "r") as File:
+        # File = open(os.path.join(self.type, cmd_file), "r")
+        # print(File)
 
-        File = open(os.path.join(self.type, cmd_file), "r")
-        print(File)
-
-        while True:
-            data = File.readline().split("\n")[0]
-            if data == "":
-                print("[DEBUG] Command script file line end"); break
+            while True:
+                data = File.readline().split("\n")[0]
+                if data == "":
+                    print("[DEBUG] Command script file line end"); break
+                    
+                mode = data.split(',')[0]
+                data = data.split(',')[1:]
                 
-            mode = data.split(',')[0]
-            data = data.split(',')[1:]
+                if mode == 'click':
+                    n_click, image = int(data[0]), data[1]
+                    try:
+                        t_wait = float(data[2])
+                    except:
+                        t_wait = 10.0
+                    self.wait_for_image(image, duration=t_wait)
+                    print("Click icon")
+                    self.move_to_icon(image, click=n_click, sleep=0.5)
+
+                elif mode == 'wait':
+                    duration = float(data[0])
+                    print("Waiting for image({}) (for {} sec)".format(data[1], duration))
+                    self.wait_for_image(data[1], duration=duration)
+
+                elif mode == 'find':
+                    text = data[0]
+                    print("Click text: {}".format(text))
+                    self.move_to_text(text, click=1)
+
+                elif mode == 'text':
+                    text = data[0]
+                    print("Texting: {}".format(text))
+                    pyautogui.write(text)
+                    time.sleep(0.5)
+
+                elif mode == 'program':
+                    program = data[0]
+                    print(program)
+                    pyautogui.hotkey('winleft', program)
+                    time.sleep(0.5)
+
+                elif mode == 'tab':
+                    tab = data[0]
+                    pyautogui.hotkey('alt', tab)
+                    time.sleep(0.5)
             
-            if mode == 'click':
-                n_click, image = int(data[0]), data[1]
-                try:
-                    t_wait = float(data[2])
-                except:
-                    t_wait = 10.0
-                self.wait_for_image(image, duration=t_wait)
-                print("Click icon")
-                self.move_to_icon(image, click=n_click, sleep=0.5)
-
-            elif mode == 'wait':
-                duration = float(data[0])
-                print("Waiting for image({}) (for {} sec)".format(data[1], duration))
-                self.wait_for_image(data[1], duration=duration)
-
-            elif mode == 'find':
-                text = data[0]
-                print("Click text: {}".format(text))
-                self.move_to_text(text, click=1)
-
-            elif mode == 'text':
-                text = data[0]
-                print("Texting: {}".format(text))
-                pyautogui.write(text)
-                time.sleep(0.5)
-
-            elif mode == 'program':
-                program = data[0]
-                print(program)
-                pyautogui.hotkey('winleft', program)
-                time.sleep(0.5)
-
-            elif mode == 'tab':
-                tab = data[0]
-                pyautogui.hotkey('alt', tab)
-                time.sleep(0.5)
-        
-        
-        File.close()
+            
+            # File.close()
 
 
 if __name__ == "__main__":
