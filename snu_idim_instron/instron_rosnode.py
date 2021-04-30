@@ -18,8 +18,8 @@ if __name__ == "__main__":
     instron_node = DevicePluginToROS(device_name=device_name, device_class=DeviceClass_Instron(device_name=device_name))
 
     # '''
-    rospy.sleep(5.0)
-    specimen_name = 'calb'
+    # rospy.sleep(5.0)
+    # specimen_name = 'D30_A15_75_135'
     cmd_dict = dict()
     # cmd_dict['setup'] = specimen_name
 
@@ -36,10 +36,14 @@ if __name__ == "__main__":
     #     else:
     #         continue
     
+
     # while True:
-    #     if instron_node.getStatus()['status'] =='Idle':
+    #     if instron_node.getStatus()['status'] =='Done':
+    #         print("gripper open test")
+    #         time.sleep(2)
+
     #         print("result debugging")
-    #         cmd_dict['result'] = 'test5'
+    #         cmd_dict['open'] = specimen_name
     #         del(cmd_dict['execute'])
     #         instron_node.sendCommand(cmd_dict)
     #         break

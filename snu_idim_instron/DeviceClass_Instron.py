@@ -42,24 +42,26 @@ class UART:
 
 
 	def changeflag(self, var):
+		# print("changeflage")
+		# print(self.status['status'], var)
+
 		if self.status['status'] == var:
 			self.continue_flag = 1
 
 		elif self.status['status'] == 'Serial_error':
+			print('serialerror')
 			self.continue_flag = 0
-			if 'result' in self.status.keys():
-				del(self.status['result'])
+			
 		elif self.status['status'] == 'Serial_error1':
 			print('serialerror1')
 			self.continue_flag = 0
-			if 'result' in self.status.keys():
-				del(self.status['result'])
+			
 		else:
 			self.continue_flag = -1
 
 
 	def write_data(self, data):
-		data = json.dumps(data)
+		data = json.dumps(data) + str('\n')
 		self.serial.write(data.encode())
 
 	def updateStatus(self):
@@ -67,7 +69,7 @@ class UART:
 
 			if self.serial.inWaiting() > 0:
 				self.serial.flushInput()
-				time.sleep(0.5)
+				time.sleep(0.7)
 
 				self.data = self.serial.readline().split('\n')#.decode('utf-8',errors = 'replace')
 				self.data = self.serial.readline().decode('utf-8', errors='replace').split('\n')[0]
@@ -80,6 +82,7 @@ class UART:
 
 	def waitStatus(self):
 		self.count = 0
+		ntime = time.time()
 		while True:
 			self.changeflag(self.goal_status)
 			if self.continue_flag == 1:
@@ -88,19 +91,20 @@ class UART:
 				break
 
 			elif self.continue_flag == 0:
-				print(self.message)
-				self.write_data(self.message)
-				time.sleep(1)
-
-				if self.message['message'] == 'running':
+				if self.message['message'] == 'finish':
+					print(self.message, self.count)
 					self.count += 1
-				if self.count == 3:
-					break
-			
-			else:
-				# print("Waiting for the next step\n")
-				# self.write_data(self.message)
-				continue
+					# time.sleep(1)
+
+				# if self.count <4:
+					# print(self.message, self.count)
+					self.write_data(self.message)
+					print("write data again")
+					time.sleep(0.3)
+				elif time.time() - ntime > 2:
+					print("Waiting for the next step\n")
+					self.write_data(self.message)
+					ntime = time.time()
 
 	def datacollect(self):
 		print("data collect")
@@ -188,10 +192,12 @@ class DeviceClass_Instron:
 				self.uart.message['subject_name'] = cmd_values[i]
 				self.uart.message['message'] = 'start'
 				self.uart.write_data(self.uart.message)                         # send instron 'start'
+				print("setupmessage :", self.uart.message)
 																				# connection : online / status : Idle
 				self.uart.goal_status = 'Initializing'							# wait until status = Initializing
+				print("initializing goal set tup")
 				self.uart.waitStatus()											# status : Initializing
-			
+				print("initializing waiting")
 				self.uart.message['message'] = 'setting'
 				self.uart.write_data(self.uart.message)								# for update status
 				
@@ -202,12 +208,14 @@ class DeviceClass_Instron:
 				self.uart.waitStatus()											# status : Ready
 
 			if cmd_keys[i] == "execute":                         # experiment execute trigger
+				print('execute in')
 				self.uart.goal_status = 'Ready'									# check status : Ready
 				self.uart.waitStatus()											# Status Ready
 
 				self.uart.message['message'] = 'experiment_start'
 				self.uart.write_data(self.uart.message)			                # send instron 'experiment_start'
 				self.uart.goal_status = 'Testing'								# wait until status = Testing
+				print("waitstatus testing")
 				self.uart.waitStatus()											# status : Testing
 
 				self.uart.message['message'] = 'running'
@@ -216,15 +224,19 @@ class DeviceClass_Instron:
 				self.uart.goal_status = 'Done'									# wait until status = Done 
 				self.uart.waitStatus()											# status : Done
 
+			if cmd_keys[i] == "open":
 				GPIO.output(self.PIN, GPIO.LOW)
 				# time.sleep(0.5)												# wait for gripper open
 
 				self.uart.message['message'] = 'finish'
-				self.uart.write_data(self.uart.message)                         # tell Instron 'gripper closed'
+				now = time.time()
+				while (time.time() - now)< 2:
+					print(time.time())
+					self.uart.write_data(self.uart.message)                     # tell Instron 'gripper closed'
+					time.sleep(0.1)
 				self.uart.goal_status = 'Idle'									# wait until status = Idle
 				self.uart.waitStatus()											# status : Idle
 		
-		GPIO.cleanup()
 
 		
 
