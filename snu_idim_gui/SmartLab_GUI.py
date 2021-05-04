@@ -25,7 +25,7 @@ class SmartLAB_GUI(QMainWindow, QDialog):
 
         self.init_flag = False
 
-        self.sql = SqlHelper(host='localhost', username='root', password='0000', port=3306, database='SmartLab')
+        self.sql = SqlHelper(host='192.168.60.21', username='wjYun', password='0000', port=3306, database='SmartLab')
         self.smartlab = SmartLabClient(ip='192.168.60.21')
 
         self.smartlab_cmd = dict()
