@@ -38,6 +38,7 @@ class mysql:
     def sendResult(self,data_dict):
         result = data_dict
         subname = result['subject_name']
+        print(subname)
         del(result['subject_name'])
         # print(result.values())
         # print(list(map(str,result.values())))
@@ -54,7 +55,7 @@ class mysql:
 
         fields = ','.join(data_keys)
         contents = "'" + "','".join(data_values) + "'"
-        # print(data_keys)
+        print(data_keys)
         # print(data_values)
         # print(subname)
         for i, field in enumerate(data_keys):
@@ -63,7 +64,7 @@ class mysql:
             self.cur.execute(sql3)
 
         self.con.commit()
-        self.con.close()
+        # self.con.close()
         print("\n data saved \n")
 
 

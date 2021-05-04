@@ -17,24 +17,12 @@ class SmartLabClient(object):
             print("[ERROR - ZMQ] Client setting error")
         time.sleep(3.0)
 
-
     
     def send(self, command):
         self.socket.send_string(json.dumps(command))
         response = self.socket.recv()
-        response = json.loads(response.decode())
         return response
         
-        # response = json.loads(self.socket.recv())
-
-        # print("============")
-        # device_list = list()
-        # for i in response['device']:
-        #     device_list.append(i)
-        # print("Device list: {}".format(device_list))
-        # for i in response['experiment']:
-        #     print("{}: {}".format(i, response['experiment'][i]))
-
 
 
 if __name__ == '__main__':

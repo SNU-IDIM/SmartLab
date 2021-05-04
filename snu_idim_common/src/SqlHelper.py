@@ -9,7 +9,7 @@ import json
 import ast
 
 class SqlHelper():
-    def __init__(self, host="localhost", username="root", password="", port=3306, database=None, charset="utf8mb4"):
+    def __init__(self, host="localhost", username="root", password="", port=3306, database=None, charset="utf8mb4", debug=False):
         self.host = host
         self.username = username
         self.password = password
@@ -17,6 +17,8 @@ class SqlHelper():
         self.port = port
         self.con = None
         self.cur = None
+
+        self.debug = debug
 
         try:
             self.con = pymysql.connect(host=self.host, user=self.username, passwd=self.password, port=self.port, charset=charset)
@@ -26,13 +28,21 @@ class SqlHelper():
                 self.select_db(database)
         except:
             raise "[ERROR] DataBase connection error !!!"
+    
+    def __del__(self):
+        if not self.con:
+            self.con.close()
+    
+    def printSQL(self, sql):
+        if self.debug == True:
+            print('[SQL] {}'.format(sql))
 
 
     def select_db(self, database):
         self.cur.execute('CREATE DATABASE IF NOT EXISTS {}'.format(database))
         self.cur.execute('USE {}'.format(database))
         self.database = database
-        print("[DEBUG] Selected DB: {}".format(self.database))
+        self.printSQL(self.database)
 
 
     def close(self):
@@ -43,7 +53,7 @@ class SqlHelper():
     def get_version(self):
         self.cur.execute("SELECT VERSION()")
         version = self.get_one_data()[0]
-        print("[DEBUG] MySQL Version: {}".format(version))
+        self.printSQL(version)
         return version
 
 
@@ -54,7 +64,7 @@ class SqlHelper():
 
     def fetch_one_data(self, tablename):
         sql = "SELECT * FROM {}".format(tablename)
-        print('[SQL] {}'.format(sql))
+        self.printSQL(sql)
         self.execute_commit(sql)
         return self.cur.fetchone()
 
@@ -72,7 +82,7 @@ class SqlHelper():
             sql_mid += "{} {}, ".format(attr, value)
         sql_mid += constraint
         sql = "CREATE TABLE IF NOT EXISTS {} ({}) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4".format(tablename, sql_mid)
-        print('[SQL] {}'.format(sql))
+        self.printSQL(sql)
         self.execute_commit(sql)
 
 
@@ -147,9 +157,9 @@ class SqlHelper():
             self.cur.execute(sql)
             self.con.commit()
         except pymysql.Error as e:
-            self.con.rollback()
             error = 'MySQL execute failed! ERROR ({}): {}'.format(e.args[0], e.args[1])
             print("[ERROR] {}".format(error))
+            self.con.rollback()
             return error
 
 
@@ -176,7 +186,7 @@ class SqlHelper():
             
 
         sql = 'INSERT INTO {}({}) VALUES ({}) {}'.format(tablename, attrs_sql, values_sql, conds)
-        print('[SQL] {}'.format(sql))
+        self.printSQL(sql)
         self.execute_commit(sql)
 
 
@@ -201,7 +211,7 @@ class SqlHelper():
                 consql = 'WHERE ' + conds
 
         sql += consql + order
-        print('[SQL] {}'.format(sql))
+        self.printSQL(sql)
         records = self.execute_sql(sql)
         if records is None or len(records) == 0:
             return None
@@ -229,7 +239,7 @@ class SqlHelper():
                 consql += "{} {}.{}={} AND ".format(consql, tablename, k, v) 
         consql = consql + '1=1'
         sql = "DELETE FROM {} WHERE {}".format(tablename, consql)
-        print('[SQL] {}'.format(sql))
+        self.printSQL(sql)
         return self.execute_commit(sql)
 
 
@@ -251,19 +261,19 @@ class SqlHelper():
                 consql = consql + "`" + tablename +"`." + "`" + str(k) + "`" + '=' + v + ' and '
         consql = consql + ' 1=1 '
         sql = "UPDATE {} SET {} WHERE {}".format(tablename, attrs_sql, consql)
-        print('[SQL] {}'.format(sql))
+        self.printSQL(sql)
         return self.execute_commit(sql)
 
 
     def drop_table(self, tablename):
         sql = "DROP TABLE {}".format(tablename)
-        print('[SQL] {}'.format(sql))
+        self.printSQL(sql)
         self.execute_commit(sql)
 
 
     def delete_table(self, tablename):
         sql = "DELETE FROM {}".format(tablename)
-        print('[SQL] {}'.format(sql))
+        self.printSQL(sql)
         self.execute_commit(sql)
 
 
@@ -295,13 +305,13 @@ class SqlHelper():
 
     def add_column(self, tablename, col, tp):
         sql = "ALTER TABLE {} ADD {} {}".format(tablename, col, tp)
-        print('[SQL] {}'.format(sql))
+        self.printSQL(sql)
         self.execute_commit(sql)
         print("[DEBUG] New column is added !!! ({}: {})".format(col, tp))
 
     def delete_column(self, tablename, col):
         sql = "ALTER TABLE {} DROP COLUMN {}".format(tablename, col)
-        print('[SQL] {}'.format(sql))
+        self.printSQL(sql)
         self.execute_commit(sql)
 
     def backup_table(self, tablename, file):
@@ -365,55 +375,47 @@ class SqlHelper():
 
 if __name__ == "__main__":
     ## Connect to the database server
-    mysql = SqlHelper(host='localhost', username='root', password='0000', port=3306)
+    mysql = SqlHelper(host='localhost', username='root', password='0000', port=3306, debug=True)
 
     ## Use database (Database: 'SmartLab')
     mysql.select_db('SmartLab')
 
     ## Create table if not exists (Table: 'device_info')
     device_list = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer1', 'printer2', 'printer3', 'printer4']
-    for device_id in device_list:
-        if device_id.find('/') != -1:   device_id = device_id.split('/')[1]
-        if not mysql.is_exist_table(device_id):
-            mysql.create_table(tablename=device_id, attrdict={'id': 'int(11) AUTO_INCREMENT', 'time_stamp': 'timestamp', 'status': 'TEXT(256)'}, constraint="PRIMARY KEY(id)")
+    # for device_id in device_list:
+    #     if device_id.find('/') != -1:   device_id = device_id.split('/')[1]
+    #     if not mysql.is_exist_table(device_id):
+    #         mysql.create_table(tablename=device_id, attrdict={'id': 'int(11) AUTO_INCREMENT', 'time_stamp': 'timestamp', 'status': 'VARCHAR(256)'}, constraint="PRIMARY KEY(id)")
             
     if not mysql.is_exist_table('device_info'):
         mysql.create_table(tablename='device_info', attrdict={'id': 'int(11) AUTO_INCREMENT', 'time_stamp': 'timestamp'}, constraint="PRIMARY KEY(id)")
-        
-    for device_id in device_list:
-        if device_id.find('/') != -1:   device_id = device_id.split('/')[1]
-        try:
-            list(mysql.get_table_columns(tablename='device_info')).index(device_id)
-            print("[DEBUG] Column already exists !!! ({})".format(device_id))
-        except:
-            mysql.add_column('device_info', device_id, 'TEXT(255)')
-            print("[DEBUG] Column not exists !!! ({})".format(device_id))
+
     
     # print(mysql.get_table_columns(tablename='cobot'))
 
 
 
     # # ## Create columns if not exists (Column: DEVICE_ID)
-    # # device_list = ['R_001/cobot', 'R_001/amr', 'instron', 'MS', 'printer1', 'printer2', 'printer3', 'printer4']
-    # # for device_id in device_list:
-    # #     if device_id.find('/') != -1:   device_id = device_id.split('/')[1]
-    #     try:
-    #         list(mysql.get_table_columns(tablename='device_info')).index(device_id)
-    #         print("[DEBUG] Column already exists !!! ({})".format(device_id))
-    #     except:
-    #         mysql.add_column('device_info', device_id, 'varchar(64)')
-    #         print("[DEBUG] Column not exists !!! ({})".format(device_id))
+    device_list = ['R_001/cobot', 'R_001/amr', 'instron', 'MS', 'printer1', 'printer2', 'printer3', 'printer4']
+    for device_id in device_list:
+        if device_id.find('/') != -1:   device_id = device_id.split('/')[1]
+        try:
+            list(mysql.get_table_columns(tablename='device_info')).index(device_id)
+            print("[DEBUG] Column already exists !!! ({})".format(device_id))
+        except:
+            mysql.add_column('device_info', device_id, 'varchar(1024)')
+            print("[DEBUG] Column not exists !!! ({})".format(device_id))
 
 
     ## Insert data to table
-    column_list = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer1', 'printer2', 'printer3', 'printer4']
-    device_status = dict()
-    for device_id in column_list:
-        if device_id.find('/') != -1:   device_id = device_id.split('/')[1]
-        if device_id != 'id' and device_id != 'time_stamp':
-            device_status[device_id] = json.dumps({'device_name': device_id, 'status': 'Idle'})
-    print(device_status)
-    mysql.insert('device_info', device_status)
+    # column_list = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer1', 'printer2', 'printer3', 'printer4']
+    # device_status = dict()
+    # for device_id in column_list:
+    #     if device_id.find('/') != -1:   device_id = device_id.split('/')[1]
+    #     if device_id != 'id' and device_id != 'time_stamp':
+    #         device_status[device_id] = json.dumps({'device_name': device_id, 'status': 'Idle'})
+    # print(device_status)
+    # mysql.insert('device_info', device_status)
 
     # ## Check existing columns and data
     # column_list = mysql.get_table_columns(tablename='device_info')
