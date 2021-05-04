@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-
 import cv2
 import sys
 from PyQt5.QtWidgets import  QWidget, QLabel, QApplication
@@ -26,7 +23,8 @@ class Thread(QThread):
 
 class App(QWidget):
     def __init__(self):
-        super(QWidget, self).__init__()
+        super().__init__()
+        [...]
         self.initUI()
 
     @pyqtSlot(QImage)
