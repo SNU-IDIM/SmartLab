@@ -14,16 +14,19 @@ from cv_bridge import CvBridge, CvBridgeError
 
 
 class Cam_Streaming_Server:
-	def __init__(self, ip='192.168.60.21', cam_list=['overview', 'cobot']):
+	def __init__(self, ip='192.168.0.88', cam_list=['overview', 'cobot']):
 		self.bridge = CvBridge()
+		self.imagezmq_sender = imagezmq.ImageSender()
 
 		for cam_id in cam_list:
 			if cam_id == 'overview':
-				self.sender_overview = imagezmq.ImageSender(connect_to='tcp://{}:{}'.format(ip, 5801))
+				# self.sender_overview = imagezmq.ImageSender(connect_to='tcp://{}:{}'.format(ip, 5805))
+				# self.sender_overview = imagezmq.ImageSender()
 				self.image_overview = np.empty((480, 640, 3))
 				self.cam_overview_sub = rospy.Subscriber("/overview/usb_cam/image_raw", Image, self.cb_overview)
 			elif cam_id == 'cobot':
-				self.sender_cobot = imagezmq.ImageSender(connect_to='tcp://{}:{}'.format(ip, 5802))
+				# self.sender_cobot = imagezmq.ImageSender()
+				# self.sender_cobot = imagezmq.ImageSender(connect_to='tcp://{}:{}'.format(ip, 5806))
 				self.image_cobot = np.empty((480, 640, 3))
 				self.cam_robot_sub = rospy.Subscriber("/R_001/camera/color/image_rect_color", Image, self.cb_cobot)
 
@@ -32,8 +35,7 @@ class Cam_Streaming_Server:
 		try:
 			self.image_overview = self.bridge.imgmsg_to_cv2(data, "bgr8")
 			# print(type(self.image_overview), self.image_overview.shape)
-			
-			self.sender_overview.send_image('overview', self.image_overview)
+			self.imagezmq_sender.send_image('overview', self.image_overview)
 		except CvBridgeError as e:
 			print(e)
 		# cv2.imshow("Image window", self.image_overview);  cv2.waitKey(3)
@@ -43,7 +45,7 @@ class Cam_Streaming_Server:
 		try:
 			self.image_cobot = self.bridge.imgmsg_to_cv2(data, "bgr8")
 			# print(type(self.image_cobot), self.image_cobot.shape)
-			self.sender_cobot.send_image('cobot', self.image_cobot)
+			self.imagezmq_sender.send_image('cobot', self.image_cobot)
 		except CvBridgeError as e:
 			print(e)
 		# cv2.imshow("Image window", self.image_cobot);   cv2.waitKey(3)   
@@ -54,7 +56,7 @@ class Cam_Streaming_Server:
 if __name__ == '__main__':
 	rospy.init_node('SmartLab_Cam_Streaming')
 
-	s_server = Cam_Streaming_Server(ip='192.168.60.21', cam_list=['overview', 'cobot'])
+	s_server = Cam_Streaming_Server(ip='192.168.60.235', cam_list=['overview', 'cobot'])
 	
 	while True:
 		time.sleep(1)

@@ -9,34 +9,24 @@ from threading import Thread
 class Cam_Streaming_Client(object):
 
     def __init__(self, ip='192.168.60.21', cam_list=['overview', 'cobot']):
-        for cam_id in cam_list:
-            if cam_id == 'overview':
-                self.image_overview = np.empty((480, 640, 3))
-                self.cam_overview = imagezmq.ImageHub('tcp://*:{}'.format(5801))
-                self.thread_overview = Thread(target=self.overview_streaming)
-                self.thread_overview.start()
+        self.image_overview = np.empty((480, 640, 3))
+        self.image_cobot = np.empty((480, 640, 3))
 
-            elif cam_id == 'cobot':
-                self.image_cobot = np.empty((480, 640, 3))
-                self.cam_cobot = imagezmq.ImageHub('tcp://*:{}'.format(5802))
-                self.thread_overview = Thread(target=self.cobot_streaming)
-                self.thread_overview.start()
-
+        self.image_zmq = imagezmq.ImageHub('tcp://*:{}'.format(5556))
+        self.thread_imagezmq = Thread(target=self.imageZmqLoop)
+        self.thread_imagezmq.start()
     
-    def overview_streaming(self):
-        while True:
-            rpi_name, self.image_overview = self.cam_overview.recv_image()
-            # print(rpi_name)
-            # cv2.imshow(rpi_name, self.image_overview);  cv2.waitKey(1)
-            self.cam_overview.send_reply(b'OK')
 
-
-    def cobot_streaming(self):
+    def imageZmqLoop(self):
         while True:
-            rpi_name, self.image_cobot = self.cam_cobot.recv_image()
-            # print(rpi_name)
-            # cv2.imshow(rpi_name, self.image_cobot);  cv2.waitKey(1)
-            self.cam_cobot.send_reply(b'OK')
+            rpi_name, image = self.image_zmq.recv_image()
+            print(rpi_name)
+            if rpi_name == 'overview':
+                self.image_overview = image
+            elif rpi_name == 'cobot':
+                self.image_cobot = image
+            # cv2.imshow(rpi_name, rpi_name);  cv2.waitKey(1)
+            self.image_zmq.send_reply(b'OK')
 
 
 if __name__ == '__main__':

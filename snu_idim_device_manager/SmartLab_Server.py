@@ -51,7 +51,7 @@ class TestManager():
 
 
 class SmartLABCore():
-    def __init__(self, ip_='192.168.60.21', port_=5555):
+    def __init__(self, ip_='192.168.0.88', port_=5555):
         ## Initializating SmartLAB
         self.ip_ = ip_
         self.port_ = port_
@@ -129,6 +129,8 @@ class SmartLABCore():
     def zmq_server(self):
         while True:
             self.req.update(json.loads(self.socket.recv()))
+            if self.req['setup_doe']['doe_type'] == 'GENERALIZED_FACTORIAL':
+                self.req['setup_doe']['doe_type'] = DOE_GENERALIZED_FACTORIAL
             # print('[DEBUG] Request from SmartLab Client: {}'.format(self.req))
 
             ## Initializing ...
