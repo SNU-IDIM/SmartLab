@@ -26,7 +26,7 @@ class Cam_Streaming_Client(object):
     def overview_streaming(self):
         while True:
             rpi_name, self.image_overview = self.cam_overview.recv_image()
-            # print(rpi_name)
+            print(rpi_name)
             # cv2.imshow(rpi_name, self.image_overview);  cv2.waitKey(1)
             self.cam_overview.send_reply(b'OK')
 
@@ -34,7 +34,7 @@ class Cam_Streaming_Client(object):
     def cobot_streaming(self):
         while True:
             rpi_name, self.image_cobot = self.cam_cobot.recv_image()
-            # print(rpi_name)
+            print(rpi_name)
             # cv2.imshow(rpi_name, self.image_cobot);  cv2.waitKey(1)
             self.cam_cobot.send_reply(b'OK')
 

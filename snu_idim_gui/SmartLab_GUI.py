@@ -7,13 +7,18 @@ from PyQt5 import uic, QtCore
 from PyQt5.QtGui import *
 from PyQt5.QtWebEngineWidgets import *
 from PyQt5.QtCore import QUrl, QThread, pyqtSignal, pyqtSlot, Qt
-from SqlHelper import SqlHelper
 import json
 import ast
 import cv2
+from threading import Thread
+from SmartLab_Client import SmartLabClient
+
+sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_common/src")) )
+from SqlHelper import SqlHelper
+from Cam_Streaming_Client import Cam_Streaming_Client
 
 
-class Thread(QThread):
+class QtThread(QThread):
     changePixmap = pyqtSignal(QImage)
 
     def run(self):
@@ -39,7 +44,12 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         self.init_flag = False
 
         self.sql = SqlHelper(host='192.168.60.21', username='wjYun', password='0000', port=3306, database='SmartLab')
+        self.thread_server = Thread(target=self.updateStatus)
+        self.thread_server.start()
+
         self.smartlab = SmartLabClient(ip='192.168.60.21')
+        self.streaming = Cam_Streaming_Client(ip='192.168.60.21', cam_list=['cobot'])
+
 
         self.smartlab_cmd = dict()
         self.smartlab_cmd['test_mode'] = 'auto'
@@ -47,23 +57,22 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         self.smartlab_cmd['setup_device'] = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer1', 'printer2', 'printer3']
         self.smartlab_cmd['setup_doe'] = dict()
 
-        self.streaming = Cam_Streaming_Client(ip='192.168.60.21', cam_list=['overview', 'cobot'])
 
-        # self.btn_run.clicked.connect(self.btn_run_cb)
         self.btn_doe_create.clicked.connect(self.cb_btn_doe_create)
         self.btn_control_run.clicked.connect(self.cb_btn_control_run)
         self.btn_control_pause.clicked.connect(self.cb_btn_control_pause)
         self.btn_control_stop.clicked.connect(self.cb_btn_control_stop)
         self.btn_exp_export.clicked.connect(self.cb_btn_exp_export)
         self.cbx_control.currentIndexChanged.connect(self.cb_cbx_control)
+        self.btn_doe_apply.clicked.connect(self.cb_btn_doe_apply)
 
         # create a label
         # self.label = QLabel(self)
         # self.label.move(280, 120)
         # self.label.resize(640, 480)
 
-        th = Thread(self)
-        th.changePixmap.connect(self.setImage)
+        th = QtThread(self)
+        th.changePixmap.connect(self.setImageOverview)
         th.start()
 
         # self.widget_streaming.setStyleSheet("background-color: rgb(84, 84, 84);")
@@ -71,8 +80,7 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         # self.webview.setUrl(QUrl("https://www.youtube.com/embed/t67_zAg5vvI?autoplay=1"))
         # self.webview.setGeometry(0, 0, 500, 300)
 
-        self.thread_server = Thread(target=self.updateStatus)
-        self.thread_server.start()
+
 
     
     def updateDeviceTable(self, device_status):
@@ -142,8 +150,8 @@ class SmartLAB_GUI(QMainWindow, QDialog):
 
 
     @pyqtSlot(QImage)
-    def setImage(self, image):
-        self.label.setPixmap(QPixmap.fromImage(image))
+    def setImageOverview(self, image):
+        self.image_overview.setPixmap(QPixmap.fromImage(image))
     
     def updateStatus(self):
         '''
@@ -158,6 +166,7 @@ class SmartLAB_GUI(QMainWindow, QDialog):
                     self.updateDeviceTable(device_info)
                 except:
                     print("[ERROR] Device information update error !!!")
+                    pass
 
                 try:
                     fields = ['subject_name', 'Status', 'Thickness', 'Length', 'Width', 'E_modulus', 'U_stress']
@@ -199,6 +208,8 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         print("[DEBUG] 'Control - Run' button clicked !!! (TBD)")
         self.init_flag = True
         self.smartlab_cmd['test_step'] = 1
+        print("[DEBUG] SmartLab Command: \n{}".format(self.smartlab_cmd))
+        
     
     def cb_btn_control_pause(self):
         print("[DEBUG] 'Control - Pause' button clicked !!! (TBD)")
@@ -206,9 +217,18 @@ class SmartLAB_GUI(QMainWindow, QDialog):
     def cb_btn_control_stop(self):
         print("[DEBUG] 'Control - Pause' button clicked !!! (TBD)")
         
-
+    def cb_btn_doe_apply(self):
+        self.txt_doe_exp_name.setText(self.DOE_window.doe['header_id'])
+        self.txt_doe_exp_type.setText(self.DOE_window.doe['experiment_type'])
+        self.txt_doe_doe_type.setText(self.DOE_window.doe['doe_type'])
+        self.txt_doe_doe_desc.setText(str(self.DOE_window.doe['factors'])+'\noptions : ' + str(self.DOE_window.doe['option']))
+        self.smartlab_cmd['setup_doe'] = self.DOE_window.doe
 
     def cb_btn_doe_create(self):
+        self.DOE_window = DOE_Window()
+        self.DOE_window.exec()
+
+        '''
         doe_factors = []
         doe_options = []
 
@@ -232,7 +252,7 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         self.smartlab_cmd['setup_doe']['option']          = doe_options
         for key in self.smartlab_cmd:
             print("[DEBUG] {}: {}".format(key, self.smartlab_cmd[key]))
-
+        '''
 
 
     def cb_cbx_control(self):
@@ -276,6 +296,61 @@ class SmartLAB_GUI(QMainWindow, QDialog):
     #             newitem = QTableWidgetItem(str(item_list[key]))
     #             self.table_test_info.setItem(row, col, newitem)
 
+class DOE_Window(QDialog) :
+    def __init__(self) :
+        super().__init__()
+        uic.loadUi("DoE_Create.ui", self)
+        # self.setupUi(self)
+        self.cbx_doe_type.textActivated.connect(self.cb_cbx_doe_type)
+        self.btn_doe_ok.clicked.connect(self.cb_btn_doe_ok)
+
+    def cb_cbx_doe_type(self, QString):
+        if QString == 'GENERALIZED_FACTORIAL':
+            self.groupBox_options.show()
+        else:
+            self.groupBox_options.hide()
+
+    def cb_btn_doe_ok(self):
+        self.doe = dict()
+        self.doe['header_id'] = self.txt_exp_name.text()
+        self.doe['experiment_type'] = self.cbx_exp_type.currentText()
+        self.doe['doe_type']        = self.cbx_doe_type.currentText()
+        factors = list()
+        options = list()
+        if self.checkBox_linedistance.isChecked():
+            factor=dict()
+            factor['factor_name'] = self.checkBox_linedistance.text()
+            factor['factor_range'] = self.txt_linedistance_range.text().split(',')
+            factors.append(factor)
+            options.append(self.txt_linedistance_option.text().split(','))
+        if self.checkBox_linewidth.isChecked():
+            factor=dict()
+            factor['factor_name'] = self.checkBox_linewidth.text()
+            factor['factor_range'] = self.txt_linewidth_range.text().split(',')
+            factors.append(factor)
+            options.append(self.txt_linewidth_option.text().split(','))
+        if self.checkBox_layerheight.isChecked():
+            factor=dict()
+            factor['factor_name'] = self.checkBox_layerheight.text()
+            factor['factor_range'] = self.txt_layerheight_range.text().split(',')
+            factors.append(factor)
+            options.append(self.txt_layerheight_option.text().split(','))
+        if self.checkBox_rasterangle.isChecked():
+            factor=dict()
+            factor['factor_name'] = self.checkBox_rasterangle.text()
+            # factor['factor_range'] = self.txt_rasterangle_range.text()
+            factors.append(factor)
+            options.append(self.txt_rasterangle_option.text().split('/'))
+        if self.checkBox_infillpatern.isChecked():
+            factor=dict()
+            factor['factor_name'] = self.checkBox_linedistance.text()
+            # factor['factor_range'] = self.cbx_infill_pattern.currentText()
+            factors.append(factor)
+            # options.append(self.txt_linewidth_option.text())
+        self.doe['factors'] = factors
+        self.doe['option'] = options
+
+        print(self.doe)
 
 
 if __name__ == "__main__":

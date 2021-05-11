@@ -379,7 +379,8 @@ if __name__ == "__main__":
 
     ## Use database (Database: 'SmartLab')
     mysql.select_db('SmartLab')
-
+    print(mysql.select('device_info', conds="id=(SELECT MAX(id) FROM device_info)")[0])
+    '''
     ## Create table if not exists (Table: 'device_info')
     device_list = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer1', 'printer2', 'printer3', 'printer4']
     # for device_id in device_list:
@@ -431,7 +432,7 @@ if __name__ == "__main__":
     # # mysql.insert('device_info', {'id': 1}, conds='ON DUPLICATE KEY UPDATE amr = "test2"')
     # data = mysql.select('device_info', conds="id=(SELECT MAX(id) FROM device_info)")
     # print("[DEBUG] First data from table ({}): \n{}".format('device_info', data))
-
+    '''
 
 
     '''
