@@ -1,24 +1,43 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-import sys, os, time
 import ast
-from PyQt5.QtWidgets import *
-from PyQt5 import uic, QtCore
+import json
+import os
+import sys
+import time
+from threading import Thread
+
+import cv2
+from PyQt5 import QtCore, uic
+from PyQt5.QtCore import Qt, QThread, QUrl, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import *
 from PyQt5.QtWebEngineWidgets import *
-from PyQt5.QtCore import QUrl, QThread, pyqtSignal, pyqtSlot, Qt
-import json
-import ast
-import cv2
-from threading import Thread
+from PyQt5.QtWidgets import *
+
 from SmartLab_Client import SmartLabClient
 
 sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_common/src")) )
-from SqlHelper import SqlHelper
 from Cam_Streaming_Client import Cam_Streaming_Client
+from SqlHelper import SqlHelper
+import pafy
+# class QtThread(QThread):
+#     changePixmap = pyqtSignal(QImage)
+
+#     def run(self):
+#         cap = cv2.VideoCapture(0)
+#         while True:
+#             ret, frame = cap.read()
+#             if ret:
+#                 # https://stackoverflow.com/a/55468544/6622587
+#                 rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+#                 h, w, ch = rgbImage.shape
+#                 bytesPerLine = ch * w
+#                 convertToQtFormat = QImage(rgbImage.data, w, h, bytesPerLine, QImage.Format_RGB888)
+#                 p = convertToQtFormat.scaled(640, 480, Qt.KeepAspectRatio)
+#                 self.changePixmap.emit(p)
 
 
-class QtThread(QThread):
+class Overview(QThread):
     changePixmap = pyqtSignal(QImage)
 
     def run(self):
@@ -35,6 +54,46 @@ class QtThread(QThread):
                 self.changePixmap.emit(p)
 
 
+
+class Roboteefview(QThread):
+    changePixmap = pyqtSignal(QImage)
+
+    def run(self):
+        cap = cv2.VideoCapture(1)
+        while True:
+            ret, frame = cap.read()
+            if ret:
+                # https://stackoverflow.com/a/55468544/6622587
+                rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                h, w, ch = rgbImage.shape
+                bytesPerLine = ch * w
+                convertToQtFormat = QImage(rgbImage.data, w, h, bytesPerLine, QImage.Format_RGB888)
+                p = convertToQtFormat.scaled(640, 480, Qt.KeepAspectRatio)
+                self.changePixmap.emit(p)
+
+class cam360(QThread):
+    changePixmap = pyqtSignal(QImage)
+
+    def run(self):
+        url = 'https://www.youtube.com/watch?v=avmSkeJwT0o'
+
+        while True:
+            vPafy = pafy.new(url)
+            play = vPafy.getbest(preftype="mp4")
+            cap = cv2.VideoCapture(play.url)
+            # cap = cv2.VideoCapture(play.url)
+            ret, frame = cap.read()
+            if ret:
+                # https://stackoverflow.com/a/55468544/6622587
+                rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                h, w, ch = rgbImage.shape
+                bytesPerLine = ch * w
+                convertToQtFormat = QImage(rgbImage.data, w, h, bytesPerLine, QImage.Format_RGB888)
+                p = convertToQtFormat.scaled(360, 240, Qt.KeepAspectRatio)
+                self.changePixmap.emit(p)
+
+
+
 class SmartLAB_GUI(QMainWindow, QDialog):
     def __init__(self):
         super(QDialog, self).__init__()
@@ -43,9 +102,9 @@ class SmartLAB_GUI(QMainWindow, QDialog):
 
         self.init_flag = False
 
-        self.sql = SqlHelper(host='192.168.60.21', username='wjYun', password='0000', port=3306, database='SmartLab')
-        self.thread_server = Thread(target=self.updateStatus)
-        self.thread_server.start()
+        # self.sql = SqlHelper(host='192.168.60.21', username='wjYun', password='0000', port=3306, database='SmartLab')
+        # self.thread_server = Thread(target=self.updateStatus)
+        # self.thread_server.start()
 
         self.smartlab = SmartLabClient(ip='192.168.60.21')
         self.streaming = Cam_Streaming_Client(ip='192.168.60.21', cam_list=['cobot'])
@@ -71,13 +130,28 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         # self.label.move(280, 120)
         # self.label.resize(640, 480)
 
-        th = QtThread(self)
-        th.changePixmap.connect(self.setImageOverview)
-        th.start()
 
-        # self.widget_streaming.setStyleSheet("background-color: rgb(84, 84, 84);")
-        # self.webview = QWebEngineView(self.widget_streaming)
-        # self.webview.setUrl(QUrl("https://www.youtube.com/embed/t67_zAg5vvI?autoplay=1"))
+        #The camera thread setting function
+        # th = QtThread(self)
+        # th.changePixmap.connect(self.setImageOverview)
+        # th.start()
+
+        ov_cam =Overview(self)
+        ov_cam.changePixmap.connect(self.setImageOverview)
+        ov_cam.start()
+
+
+        rb_cam =Roboteefview(self)
+        rb_cam.changePixmap.connect(self.setImage_cobot_eef)
+        rb_cam.start()
+
+        cam_360 =cam360(self)
+        cam_360.changePixmap.connect(self.setImage_cam_360)
+        cam_360.start()
+
+        # self.cam360_screen.setStyleSheet("background-color: rgb(84, 84, 84);")
+        # self.webview = QWebEngineView(self.cam360_screen)
+        # self.webview.setUrl(QUrl("https://www.youtube.com/watch?v=avmSkeJwT0o"))
         # self.webview.setGeometry(0, 0, 500, 300)
 
 
@@ -152,7 +226,14 @@ class SmartLAB_GUI(QMainWindow, QDialog):
     @pyqtSlot(QImage)
     def setImageOverview(self, image):
         self.image_overview.setPixmap(QPixmap.fromImage(image))
-    
+
+    def setImage_cobot_eef(self, image):
+        self.image_cobot_eef.setPixmap(QPixmap.fromImage(image))
+
+
+    def setImage_cam_360(self, image):
+        self.cam360_screen.setPixmap(QPixmap.fromImage(image))
+
     def updateStatus(self):
         '''
             1. Experiment status update 부분
