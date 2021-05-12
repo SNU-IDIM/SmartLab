@@ -109,6 +109,11 @@ class TestDesigner(object):
         return self.testsets
 
 
+    def getTestsets(self):
+        print("NOOOOOOOOOO")
+        # return self.testsets
+
+
     def getTestsetList(self):
         n = len(self.test_info_dict['doe']['NUMBER'])
         testset_list = list()

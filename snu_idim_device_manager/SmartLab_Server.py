@@ -43,6 +43,7 @@ class TestManager():
     def __init__(self, test_setting, ip='localhost'):
         self.test_designer = TestDesigner(test_setting=test_setting, ip=ip)
         self.test_id_list = self.test_designer.sendDOE()
+        self.testsets = self.test_designer.testsets
     
     def getTestIDs(self):
         print("[DEBUG - TestManager] Test ID list: \n{}".format(self.test_id_list))
@@ -101,7 +102,7 @@ class SmartLABCore():
         self.test_info['completed'] = list()
 
         ## Camera Streaming
-        self.streaming_server = Cam_Streaming_Server(ip='192.168.60.21', cam_list=['overview', 'cobot'])
+        self.streaming_server = Cam_Streaming_Server(cam_list=['overview', 'cobot'])
 
         ## ZMQ: ROS(server) <-> Python(client)
         self.context = zmq.Context()
@@ -143,6 +144,7 @@ class SmartLABCore():
                 test_id_list = test_manager.getTestIDs()
                 self.addPrintingQueue(test_id_list)
                 sleep(3.0)
+
                 for test_id in test_id_list:
                     try:
                         self.mysql.delete('result', {'subject_name': test_id})
@@ -508,7 +510,7 @@ class SmartLABCore():
 
 
     def executionManager(self):
-        debug = False
+        debug = True
         debug_withoutAMR = False #True
 
         while True:
@@ -559,7 +561,7 @@ class SmartLABCore():
                     self.executeCobot(robot_task_queue, wait_until_end=True, debug=debug)
 
                     print("[Execution Manager] Step 2-2 (3 of 4). Measuring a dimension of specimen ({})".format(subject_id))
-                    self.executeOMM(subject_name=subject_id, command_type='measure_dimension', debug=debug)
+                    self.executeOMM(subject_name=subject_id, wait_until_end=True, command_type='measure_dimension', debug=debug)
 
                     print("[Execution Manager] Step 2-2 (4 of 4). Robot task start !!! (3DP bed: OMM -> Robot)")
                     robot_task_queue = self.makeRobotTaskQueue(task_type='bed_from_omm_to_robot')
