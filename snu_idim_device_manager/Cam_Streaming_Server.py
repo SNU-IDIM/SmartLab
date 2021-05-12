@@ -56,7 +56,7 @@ class Cam_Streaming_Server:
 if __name__ == '__main__':
 	rospy.init_node('SmartLab_Cam_Streaming')
 
-	s_server = Cam_Streaming_Server(ip='192.168.60.235', cam_list=['overview', 'cobot'])
+	s_server = Cam_Streaming_Server(ip='192.168.0.38', cam_list=['overview', 'cobot'])
 	
 	while True:
 		time.sleep(1)

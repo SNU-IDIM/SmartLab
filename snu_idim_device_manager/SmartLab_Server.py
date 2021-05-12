@@ -51,7 +51,7 @@ class TestManager():
 
 
 class SmartLABCore():
-    def __init__(self, ip_='192.168.0.88', port_=5555):
+    def __init__(self, ip_='192.168.60.21', port_=5555):
         ## Initializating SmartLAB
         self.ip_ = ip_
         self.port_ = port_
@@ -508,7 +508,7 @@ class SmartLABCore():
 
 
     def executionManager(self):
-        debug = True
+        debug = False
         debug_withoutAMR = False #True
 
         while True:

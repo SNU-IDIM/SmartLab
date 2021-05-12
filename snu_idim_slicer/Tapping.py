@@ -8,11 +8,11 @@
 import sys
 
 def tapping(x_off,y_off,z_off,z=8.5):
-    code = 'M140 S60\nG1 E-10 F2000\nG1 X115 Y110 F1000\nG1 Z' + str(z_off) + ' F1000\nG1 Z' + str(float(z_off)+21) + ' F100\nG1 Z' + str(z_off) +  ' F1000\n'
+    code = 'M140 S40\nG1 E-10 F2000\nG1 X115 Y110 F1000\nG1 Z' + str(z_off) + ' F1000\nG1 Z' + str(float(z_off)+21) + ' F100\nG1 Z' + str(z_off) +  ' F1000\n'
     for i in range(-2,3,2):
         for j in range(-2,3,2):
                 code = code + one_tapping(float(x_off)+i,float(y_off)+j,z)
-    code = code + 'G1 X115 Y110 F1000\nG1 Z' + str(z_off) + ' F1000\nG1 Z' + str(float(z_off)+19) + ' F100\nG1 Z' + str(z_off) + 'F1000\nG1 Y220 F1000\nM17'    
+    code = code + 'G1 X115 Y110 F1000\nG1 Z' + str(z_off) + ' F1000\nG1 Z' + str(float(z_off)+19) + ' F100\nG1 Z' + str(z_off) + 'F1000\nG1 Z100 F1000\nG1 Y220 F1000\nM17'    
     return code
 
 def one_tapping(x, y, z):

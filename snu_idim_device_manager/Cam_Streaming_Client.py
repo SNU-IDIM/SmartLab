@@ -20,7 +20,7 @@ class Cam_Streaming_Client(object):
     def imageZmqLoop(self):
         while True:
             rpi_name, image = self.image_zmq.recv_image()
-            print(rpi_name)
+            # print(rpi_name)
             if rpi_name == 'overview':
                 self.image_overview = image
             elif rpi_name == 'cobot':
