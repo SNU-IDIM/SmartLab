@@ -20,13 +20,9 @@ class Cam_Streaming_Server:
 
 		for cam_id in cam_list:
 			if cam_id == 'overview':
-				# self.sender_overview = imagezmq.ImageSender(connect_to='tcp://{}:{}'.format(ip, 5805))
-				# self.sender_overview = imagezmq.ImageSender()
 				self.image_overview = np.empty((480, 640, 3))
 				self.cam_overview_sub = rospy.Subscriber("/overview/usb_cam/image_raw", Image, self.cb_overview)
 			elif cam_id == 'cobot':
-				# self.sender_cobot = imagezmq.ImageSender()
-				# self.sender_cobot = imagezmq.ImageSender(connect_to='tcp://{}:{}'.format(ip, 5806))
 				self.image_cobot = np.empty((480, 640, 3))
 				self.cam_robot_sub = rospy.Subscriber("/R_001/camera/color/image_rect_color", Image, self.cb_cobot)
 
@@ -34,7 +30,7 @@ class Cam_Streaming_Server:
 	def cb_overview(self, data):
 		try:
 			self.image_overview = self.bridge.imgmsg_to_cv2(data, "bgr8")
-			# print(type(self.image_overview), self.image_overview.shape)
+			print(type(self.image_overview), self.image_overview.shape)
 			self.imagezmq_sender.send_image('overview', self.image_overview)
 		except CvBridgeError as e:
 			print(e)
@@ -44,7 +40,7 @@ class Cam_Streaming_Server:
 	def cb_cobot(self, data):
 		try:
 			self.image_cobot = self.bridge.imgmsg_to_cv2(data, "bgr8")
-			# print(type(self.image_cobot), self.image_cobot.shape)
+			print(type(self.image_cobot), self.image_cobot.shape)
 			self.imagezmq_sender.send_image('cobot', self.image_cobot)
 		except CvBridgeError as e:
 			print(e)

@@ -21,6 +21,7 @@ from IDIM_framework import *
 
 sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_common/src")) )
 from SqlHelper import SqlHelper
+from Cam_Streaming_Server import Cam_Streaming_Server
 
 from DevicePluginToROS import DevicePluginToROS
 
@@ -33,7 +34,6 @@ from DeviceClass_3DP import DeviceClass_3DP
 sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_omm")) )
 from DeviceClass_OMM import DeviceClass_OMM
 
-from Cam_Streaming_Server import Cam_Streaming_Server
 
 # sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_instron")) )
 # from DeviceClass_Instron import DeviceClass_Instron
