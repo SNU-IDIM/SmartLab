@@ -14,9 +14,9 @@ from cv_bridge import CvBridge, CvBridgeError
 
 
 class Cam_Streaming_Server:
-	def __init__(self, ip='192.168.0.88', cam_list=['overview', 'cobot']):
+	def __init__(self, ip='192.168.0.88', port=5556, cam_list=['overview', 'cobot']):
 		self.bridge = CvBridge()
-		self.imagezmq_sender = imagezmq.ImageSender()
+		self.imagezmq_sender = imagezmq.ImageSender(connect_to='tcp://{}:{}'.format(ip, port))
 
 		for cam_id in cam_list:
 			if cam_id == 'overview':
@@ -52,7 +52,7 @@ class Cam_Streaming_Server:
 if __name__ == '__main__':
 	rospy.init_node('SmartLab_Cam_Streaming')
 
-	s_server = Cam_Streaming_Server(ip='192.168.0.38', cam_list=['overview', 'cobot'])
+	s_server = Cam_Streaming_Server(ip='192.168.0.88', port=5556, cam_list=['overview', 'cobot'])
 	
 	while True:
 		time.sleep(1)

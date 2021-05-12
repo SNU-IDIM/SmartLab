@@ -8,11 +8,11 @@ from threading import Thread
 
 class Cam_Streaming_Client(object):
 
-    def __init__(self, ip='192.168.60.21', cam_list=['overview', 'cobot']):
+    def __init__(self, port=5556, cam_list=['overview', 'cobot']):
         self.image_overview = np.empty((480, 640, 3))
         self.image_cobot = np.empty((480, 640, 3))
 
-        self.image_zmq = imagezmq.ImageHub('tcp://*:{}'.format(5556))
+        self.image_zmq = imagezmq.ImageHub('tcp://*:{}'.format(port))
         self.thread_imagezmq = Thread(target=self.imageZmqLoop)
         self.thread_imagezmq.start()
     
@@ -31,4 +31,4 @@ class Cam_Streaming_Client(object):
 
 if __name__ == '__main__':
 
-    s_client = Cam_Streaming_Client(ip='192.168.60.21', cam_list=['overview', 'cobot'])
+    s_client = Cam_Streaming_Client(port=5556, cam_list=['overview', 'cobot'])
