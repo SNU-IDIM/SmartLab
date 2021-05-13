@@ -343,6 +343,7 @@ class SmartLABCore():
                         if device_status['status'].find('Idle') != -1:
                             try:
                                 print_next = self.printing_queue.pop(0)
+                                # if self.req['setup_doe']['header_id'] != 'DRY_TEST':
                                 self.tapping(device_id, print_next)
                                 self.device_dict[device_id].sendCommand({'print': print_next})
                                 self.mysql.insert('result', {'subject_name': print_next}, conds='ON DUPLICATE KEY UPDATE Status = "Fabrication"')
@@ -551,7 +552,7 @@ class SmartLABCore():
 
 
     def executionManager(self):
-        debug = True
+        debug = False
         debug_withoutAMR = False #True
 
         while True:
