@@ -62,7 +62,7 @@ class SmartLABCore():
         self.test_step = 0
 
         ## Connect to the database server
-        self.mysql = SqlHelper(host='localhost', username='root', password='0000', port=3306, database='SmartLab')
+        self.mysql = SqlHelper(host='localhost', username='root', password='0000', port=3306, database='SmartLab', debug=True)
 
         ## Check existing columns and data
         column_list = self.mysql.get_table_columns(tablename='result')
@@ -143,14 +143,55 @@ class SmartLABCore():
                 self.connectDevices(self.req['setup_device'])
                 test_id_list = test_manager.getTestIDs()
                 self.addPrintingQueue(test_id_list)
+                print(type(test_manager.testsets))
+                print(test_manager.testsets)
                 sleep(3.0)
 
-                for test_id in test_id_list:
-                    try:
+                doe_dict = test_manager.testsets.to_dict()
+                try:
+                    for test_id in self.mysql.select('result', 'subject_name', conds=["subject_name like '%{}%'".format(self.req['setup_doe']['header_id'])]):
                         self.mysql.delete('result', {'subject_name': test_id})
+                except:
+                    pass
+
+                for factor in doe_dict:
+                    try:
+                        list(self.mysql.get_table_columns(tablename='result')).index(factor)
+                        print("[DEBUG] Column already exists !!! ({})".format(factor))
                     except:
-                        print("[WARN] MYSQL error while deleting data from table 'result'")
-                    self.mysql.insert('result', {'subject_name': test_id, 'Status': 'Waiting'}, conds='ON DUPLICATE KEY UPDATE Status = "-"')
+                        self.mysql.add_column('result', factor, 'varchar(64)')
+                        print("[DEBUG] Column not exists !!! ({})".format(factor))
+                    
+                    if factor != 'NUMBER':
+                        for test_id in test_id_list:
+                            n_id = int(test_id.split('_')[-1])
+                            print(n_id)
+                            print(doe_dict)
+                            print(doe_dict[factor])
+                            print(doe_dict[factor][n_id])
+                            self.mysql.insert('result', {'subject_name': test_id, 'Status': 'Waiting'}, conds='ON DUPLICATE KEY UPDATE Status = "-"')
+                            # self.mysql.insert('result', {'subject_name': test_id, 'Status': 'Waiting', str(factor): str(doe_dict[factor][test_id])}, conds='ON DUPLICATE KEY UPDATE Status = "-"')
+                            
+                    
+                    # for test_id in doe_dict[factor]:
+                    #     subject_name = "{}_{}".format(self.req['setup_doe']['header_id'], test_id)
+                    #     print("---")
+                    #     print(subject_name)
+                    #     self.mysql.insert('result', {'subject_name': subject_name, 'Status': 'Waiting'}, conds='WHERE subject_name = \'{}\''.format(subject_name))
+
+
+                # for test_id in test_id_list:
+                #     # self.mysql.insert('result', {'subject_name': test_id, 'Status': 'Waiting'}, conds='ON DUPLICATE KEY UPDATE Status = "-"')
+                #     for factor in doe_dict:
+                #         self.mysql.insert('result', {factor, doe_dict[factor][test_id.split('_')[-1]]}, conds='WHERE subject_name = \'{}\''.format(test_id))
+
+
+                # for test_id in test_id_list:
+                #     try:
+                #         self.mysql.delete('result', {'subject_name': test_id})
+                #     except:
+                #         print("[WARN] MYSQL error while deleting data from table 'result'")
+                #     self.mysql.insert('result', {'subject_name': test_id, 'Status': 'Waiting'}, conds='ON DUPLICATE KEY UPDATE Status = "-"')
                                 
                 ## 3DP Manager thread
                 self.thread_1 = Thread(target=self.manager3DP)
@@ -436,7 +477,7 @@ class SmartLABCore():
             if command_type == 'measure_dimension':
                 print("[OMM - Real mode] Measuring dimension ({}) ...".format(subject_name))
                 self.device_dict['MS'].sendCommand({command_type: subject_name})
-            sleep(5.0)
+            sleep(10.0)
             self.waitDeviceStatus(device_name='MS', status_value='Idle')
 
         elif debug == True:
