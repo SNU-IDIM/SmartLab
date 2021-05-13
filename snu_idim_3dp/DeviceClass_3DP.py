@@ -94,9 +94,9 @@ class DeviceClass_3DP:
                     self.status['status'] = "Printing {}".format(self.status['subject_name'])
                     # print("[DEBUG] Status: {}".format(self.status['status']))
             
-                ## 'status' : 'Printing {subject_name}' -> 'Done {subject_name}'
+                ## 'status' : 'Printing {subject_name}' -> 'Done'
                 if self.status['status'].find('Printing') != -1 and self.status['connection'] == 'Operational':
-                    self.status['status'] = 'Done {}'.format(self.status['subject_name'])
+                    self.status['status'] = 'Done'
 
                 self.status['connection']   = device_status_table[0].text
                 self.status['percentage']   = device_status_table[1].text

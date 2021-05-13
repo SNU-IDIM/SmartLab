@@ -169,8 +169,8 @@ class SmartLABCore():
                             print(doe_dict)
                             print(doe_dict[factor])
                             print(doe_dict[factor][n_id])
-                            self.mysql.insert('result', {'subject_name': test_id, 'Status': 'Waiting'}, conds='ON DUPLICATE KEY UPDATE Status = "-"')
-                            # self.mysql.insert('result', {'subject_name': test_id, 'Status': 'Waiting', str(factor): str(doe_dict[factor][test_id])}, conds='ON DUPLICATE KEY UPDATE Status = "-"')
+                            # self.mysql.insert('result', {'subject_name': test_id, 'Status': 'Waiting'}, conds='ON DUPLICATE KEY UPDATE Status = "-"')
+                            self.mysql.insert('result', {'subject_name': test_id, 'Status': 'Waiting', str(factor): str(doe_dict[factor][n_id])}, conds='ON DUPLICATE KEY UPDATE {} = \'{}\''.format(str(factor), str(doe_dict[factor][n_id])))
                             
                     
                     # for test_id in doe_dict[factor]:
