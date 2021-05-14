@@ -26,7 +26,7 @@ class calc_strain:
         self.cut_frame = 0
         self.final_frame = 280
         TEST_NUMBER_=TEST_NUMBER
-        # self.Runcal('0122test5')
+        # self.Runcal('D30_A15_75_135')                                                                                                 ##########################################################
 
 
 
@@ -74,13 +74,13 @@ class calc_strain:
         perp_avg = round(perp_sum / 6, self.round_n)
         # print("init_axial_avg,",init_axial_avg)
         # print("init_perp_avg",init_perp_avg)
-        print([round(-axial_avg * self.mm_per_pix, self.round_n), round(perp_avg * self.mm_per_pix, self.round_n)])
+        # print([round(-axial_avg * self.mm_per_pix, self.round_n), round(perp_avg * self.mm_per_pix, self.round_n)])###################################
         return [axial_avg ,perp_avg]
 
 
     def disp2strain(displacement):
-        print("INITLA AXIL!!!!!!!!!!!!,", self.initial_axial)
-        print("deformation", (displacement[0] - self.initial_axial))
+        # print("INITLA AXIL!!!!!!!!!!!!,", self.initial_axial)###################################
+        # print("deformation", (displacement[0] - self.initial_axial))###################################
         return [(displacement[0] - self.initial_axial) / self.initial_axial * 100,
                 (displacement[1] - self.initial_perp) / self.initial_perp * 100]
 
@@ -95,12 +95,13 @@ class calc_strain:
         axial2 = round(centroid[5][1]-centroid[3][1],self.round_n)
         axial3 = round(centroid[8][1]-centroid[6][1],self.round_n)
         axial = (axial1+axial2+axial3)/3
-        print("The centorid values are")
-        print(centroid)
+        # print("The centorid values are")###################################
+        # print(centroid)###################################
         perp1 = round(centroid[2][0] - centroid[0][0], self.round_n)
         perp2 = round(centroid[5][0] - centroid[3][0], self.round_n)
         perp3 = round(centroid[5][0] - centroid[6][0], self.round_n)
         perp = (perp1+perp2+perp3)/3
+
 
         return [abs(round(axial ,self.round_n)), abs(round(perp,self.round_n))]
 
@@ -112,7 +113,7 @@ class calc_strain:
 
     def area_filter(self, ret, labels, stats, centroids,bin):
         sizearea = stats[:, 4]
-        print(sizearea)
+        # print(sizearea)###################################
         cont = 0
         labelspeque = []
         areamin = 400
@@ -121,7 +122,7 @@ class calc_strain:
             if sizearea[i] > areamin and sizearea[i]<areamax:
                 labelspeque.append(i)
 
-        print(labelspeque)
+        # print(labelspeque)###################################
         # displaygplt(bin)
 
         return labelspeque
@@ -135,6 +136,7 @@ class calc_strain:
 
         temp_path = "C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain/template/template_rgb.png"
         temp_path = "C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain/template/2.png"
+        # temp_path = "C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain/template/test.png"
 
         template = cv.imread(temp_path, 0)
         # template = rotate_img(template)
@@ -194,7 +196,7 @@ class calc_strain:
         cent2_sort = sorted(cent_tuple2, key=lambda entry2: entry2[2])
         cent3_sort = sorted(cent_tuple3, key=lambda entry3: entry3[2])
 
-        print(cent1_sort[0][0])
+        # print(cent1_sort[0][0])###################################
         labeled = \
             [[cent1_sort[0][0], cent1_sort[0][1]],  # o    o    o          |    centroid[0]  centroid[3]   centroid[6]
             [cent1_sort[1][0], cent1_sort[1][1]],   # o    o    o          |    centroid[1]  centroid[4]   centroid[7]
@@ -263,6 +265,8 @@ class calc_strain:
 
     def Runcal(self,name):
         #TODO: #File path 명시할 것 앞선 1,2 에서 설정한 file 을 설정할 것
+        print("start runcal_calc", name)
+
         rst_img_dir = "C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain/result/" + name + "/" + name + ".avi"
         cap = cv2.VideoCapture(rst_img_dir)
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -273,7 +277,7 @@ class calc_strain:
         disp_slist = []
         displist = []
         strain_list = []
-
+        center_loc = []
         try:
             while (cap.isOpened()):
                 #앞서 영상속 필요없는 부분 삭제 코드
@@ -285,7 +289,7 @@ class calc_strain:
                 if frame_count==self.final_frame:
                     break
 
-                print("read frame at",frame_count)
+                # print("read frame at",frame_count)######################################
                 ret, frame_ = cap.read()
 
                 if np.all(frame_ == None):
@@ -318,9 +322,9 @@ class calc_strain:
                 # gray = cv2.cvtColor(c_img, cv2.COLOR_BGR2GRAY)
                 #TODO: Filter out noise(이부분에서 iteration 수를 조정할 것)
                 kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (4, 4))
-                img_mask = cv.morphologyEx(c_img, cv.MORPH_DILATE, kernel, iterations=2) #for test10 it is 1 else 2
+                img_mask = cv.morphologyEx(c_img, cv.MORPH_DILATE, kernel, iterations=1) #for test10 it is 1 else 2
                 img_mask = cv.morphologyEx(img_mask, cv.MORPH_ERODE, kernel, iterations=2)
-                # img_mask = cv.morphologyEx(img_mask, cv.MORPH_DILATE, kernel, iterations=2)
+                img_mask = cv.morphologyEx(img_mask, cv.MORPH_DILATE, kernel, iterations=1)
                 # displayplt(c_img)
 
 
@@ -341,17 +345,19 @@ class calc_strain:
                 #서로 붙어 있는 요소들을 찾고 하나의 객체로 묶음
                 nlabels, labels, stats, centroids = cv.connectedComponentsWithStats(bin,connectivity=4)
 
+
+
                 #TODO: 각 객체들이 묶이고 나서 갯수가 부족한지 많은지 확인하여 조치하는 방법
                 # 총 9개의 점이 나와야하는데 위 cv 함수의경우 0번을 제외한 1번부터 봐야하므로 nlabels 개수가 10개 이상
                 centroid_ = []
                 if nlabels >10: #
                     print("filter is used")
                     correct_idx = self.area_filter(nlabels, labels, stats, centroids,bin)
-                    print("correct_dix is", correct_idx)
-                    print("the area non sorted is",stats[:, 4])
+                    # print("correct_dix is", correct_idx)###################################
+                    # print("the area non sorted is",stats[:, 4])###################################
                     for it in range(0,len(correct_idx)):
                         centroid_.append(centroids[correct_idx[it]])
-                    print("centroid sorted~!!!!!!,centroid",centroid_)
+                    # print("centroid sorted~!!!!!!,centroid",centroid_)###################################
 
                 elif nlabels ==10:
                     centroid_ = centroids[1:10]
@@ -364,10 +370,26 @@ class calc_strain:
                 print(frame_count)
 
                 centroid__ = sorted(centroid_, key=lambda a_entry: a_entry[0])
-                print("before sorting", centroid__)
+                # print("before sorting", centroid__)###################################
                 #TODO: 9개의 점들을 sorting을해서 각자의 위치에 맞는 번호를 매기는 과정 자세한 번호는 위 function을 직접 보면 그림 그려놨음
                 centroid = self.label_img(centroid__)
-                print("after sorting", centroid)
+                # print("after sorting", centroid)###################################
+
+                debug_bin = copy.copy(bin)
+
+                for i in range(0,9):
+                    cet_num = str(i + 1)
+                    cv2.putText(debug_bin, cet_num, (int(centroid[i][0]),int(centroid[i][1])) , 0, 1, (255,255,0), 1, cv2.LINE_AA)
+                
+                cv2.imshow("bin_debug", debug_bin)
+                cv2.waitKey(1)
+                
+                center_loc.append([int(centroid[i][0]),int(centroid[i][1])])
+
+                # print("==========================")
+                # print("centroid 2 ", centroid[2][1])
+                # print("centroid 0 ", centroid[0][1])
+                # print("centroid distance", centroid[2][1] - centroid[0][1])
 
                 # displacement = calculate_displacement(centroid)
                 displacement = self.two_pdispstrain(centroid)
@@ -378,46 +400,48 @@ class calc_strain:
                     # strain = two_strain(displacement)
                     self.initial_axial = displacement[0]
                     self.initial_perp = displacement[1]
-                    print("THe displacement is!!!!!!!!")
-                    print(displacement)
+                    # print("THe displacement is!!!!!!!!")###################################
+                    # print(displacement)###################################
 
                     # cv2.imwrite("template.png", gray)
                     # self.displaygplt(bin)
                 else:
                     strain = self.two_strain(displacement,self.initial_axial)
                     # print("the strain value is", strain)
-                    print("THe displacement is!!!!!!!!")
-                    print(displacement)
-                    print("the strain value is")
-                    print(strain)
-                    print("the dismplacement list is")
-                    print(displist)
-                    print("The initial value is")
-                    print(self.initial_axial)
-                    print("The strain list is")
-                    print(strain_list)
+                    # print("THe displacement is!!!!!!!!")###################################
+                    # print(displacement)###################################
+                    # print("the strain value is")###################################
+                    # print(strain)###################################
+                    # print("the dismplacement list is")###################################
+                    # print(displist)###################################
+                    # print("The initial value is")###################################
+                    # print(self.initial_axial)###################################
+                    # print("The strain list is")###################################
+                    # print(strain_list)###################################
                     # displaygplt(bin)
 
                     if strain[0]>7:
                         strain[0] = prev_ax
-                print("The strain values are", strain)
+                # print("The strain values are", strain)###################################
                 if frame_count==0:
-                    print("the centroid values at frame 1",centroid)
+                    pass ######################################
+                    # print("the centroid values at frame 1",centroid)###################################
                     # displaygplt(bin)
                 if strain[0] < -0.5 or strain[0] > 7: # strain value 가 이상하게 나오는 경우 debug funciton
-                    print("the centroid values at frame 1", centroid)
-                    print("nlabels", nlabels)
-                    print("centroids",sorted(centroids, key=lambda a_entry: a_entry[0]))
-                    print("centroid", centroid)
-                    print("area", stats[:, 4])
-                    print("displacement", displacement[0])
-                    print("strain value", strain[0])
-                    print("displacement", displacement[0])
-                    print("strain value",strain)
-                    print("the initial axial",self.initial_axial)
-                    print("the calculated displacement",displacement[0])
-                    print("diffenrence", displacement[0]-self.initial_axial)
-                    print("strain in spot", (displacement[0]-self.initial_axial)/self.initial_axial*100)
+                    pass######################################
+                    # print("the centroid values at frame 1", centroid)###################################
+                    # print("nlabels", nlabels)###################################
+                    # print("centroids",sorted(centroids, key=lambda a_entry: a_entry[0]))###################################
+                    # print("centroid", centroid)###################################
+                    # print("area", stats[:, 4])###################################
+                    # print("displacement", displacement[0])###################################
+                    # print("strain value", strain[0])###################################
+                    # print("displacement", displacement[0])###################################
+                    # print("strain value",strain)###################################
+                    # print("the initial axial",self.initial_axial)###################################
+                    # print("the calculated displacement",displacement[0])###################################
+                    # print("diffenrence", displacement[0]-self.initial_axial)###################################
+                    # print("strain in spot", (displacement[0]-self.initial_axial)/self.initial_axial*100)###################################
 
                 #TODO:  위에서 계산한 결과 값들을 변수에 모두 모음
                 strain_list.append(strain)
@@ -426,9 +450,10 @@ class calc_strain:
                 prev_ax = strain[0]
                 prev_perp = strain[1]
                 frame_count += 1
-        
+            
         except:
             print("broken")
+
             # cv2.imshow("bin",bin)
             # cv2.waitKey()
 
@@ -474,14 +499,22 @@ class calc_strain:
         df1.to_excel(writer, sheet_name='Sheet1')
         writer.close()
         cv2.destroyAllWindows()
-
         print("finish")
 
-        c = plotter(name)
+        for i in range(0, len(center_loc)-5):
+            if center_loc[i+5][1] - center_loc[i][1] <0:
+                fracture_idx = i 
+
+        # print("---------------------")
+        # print("---------------------")
+        print("fracture", fracture_idx)
+        c = plotter(name, fracture_idx)
 
 
 if __name__ == "__main__":
     cal = calc_strain()
+    # cal.Runcal('DRY_TEST_1')
+
     time.sleep(1)
     pass
 

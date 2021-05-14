@@ -1,6 +1,7 @@
 click,1,start
 click,0,start,100
 click,1,stop,2
-click,1,finish,10
+click,1,return,10
+click,1,finish,5
 click,1,no,10
 click,1,close,10

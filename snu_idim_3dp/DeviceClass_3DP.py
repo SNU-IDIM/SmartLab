@@ -67,7 +67,7 @@ class DeviceClass_3DP:
         self.thread_1 = Thread(target=self.updateStatus)
         self.thread_1.start()
 
-        # self.connectDevice()
+        self.command({'connection': True})
 
 
     def __del__(self):
@@ -94,9 +94,9 @@ class DeviceClass_3DP:
                     self.status['status'] = "Printing {}".format(self.status['subject_name'])
                     # print("[DEBUG] Status: {}".format(self.status['status']))
             
-                ## 'status' : 'Printing {subject_name}' -> 'Done {subject_name}'
+                ## 'status' : 'Printing {subject_name}' -> 'Done'
                 if self.status['status'].find('Printing') != -1 and self.status['connection'] == 'Operational':
-                    self.status['status'] = 'Done {}'.format(self.status['subject_name'])
+                    self.status['status'] = 'Done'
 
                 self.status['connection']   = device_status_table[0].text
                 self.status['percentage']   = device_status_table[1].text
@@ -277,15 +277,12 @@ if __name__ == '__main__':
 
     printer = DeviceClass_3DP(device_name='printer0', ip_='localhost', port_=5001, usb_port_=0)
     
-    print("[DEBUG] 1. Connect printer")
-    printer.command({'connection': True})
-
-    print("[DEBUG] 2. Print start")
+    print("[DEBUG] 1. Print start")
     printer.command({'print': 'demo_0'})
 
-    print("[DEBUG] 3. Cancel printing")
+    print("[DEBUG] 2. Cancel printing")
     printer.command({'cancel': True})
 
-    print("[DEBUG] 4. Disconnect printer")
+    print("[DEBUG] 3. Disconnect printer")
     printer.command({'connection': False})
 

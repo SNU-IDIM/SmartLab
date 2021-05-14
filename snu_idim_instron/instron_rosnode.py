@@ -13,42 +13,17 @@ from DeviceClass_Instron import DeviceClass_Instron
 
 if __name__ == "__main__":
     device_name = 'instron'
+
     rospy.init_node(device_name)
     instron_node = DevicePluginToROS(device_name=device_name, device_class=DeviceClass_Instron(device_name=device_name))
-    
+
     # '''
-    rospy.sleep(5.0)
-    specimen_name = 'qwerty'
-
+    # rospy.sleep(5.0)
+    # specimen_name = 'D30_A15_75_135'
     cmd_dict = dict()
-    cmd_dict['setup'] = specimen_name
+    # cmd_dict['setup'] = specimen_name
 
-    instron_node.sendCommand(cmd_dict)  #   time.sleep(3)
-
-
-    '''
-    while True:
-        # print("3")
-        if instron_node.getStatus()['status'] == 'Ready':
-            print("execute debugging")
-            cmd_dict['execute'] = 'test1'
-            del(cmd_dict['setup'])
-            instron_node.sendCommand(cmd_dict)
-            break
-        else:
-            continue
-    while True:
-        if instron_node.getStatus()['status'] =='Idle':
-            print("result debugging")
-            cmd_dict['result'] = 'specimenc'
-            del(cmd_dict['execute'])
-            # del(cmd_dict['setup'])
-            instron_node.sendCommand(cmd_dict)
-            break
-
-        else:
-            continue
-    '''
+    # instron_node.sendCommand(cmd_dict)  #   time.sleep(3)
 
     # while True:
     #     if instron_node.getStatus()['status'] == 'Ready':
@@ -61,10 +36,14 @@ if __name__ == "__main__":
     #     else:
     #         continue
     
+
     # while True:
-    #     if instron_node.getStatus()['status'] =='Idle':
+    #     if instron_node.getStatus()['status'] =='Done':
+    #         print("gripper open test")
+    #         time.sleep(2)
+
     #         print("result debugging")
-    #         cmd_dict['result'] = 'test5'
+    #         cmd_dict['open'] = specimen_name
     #         del(cmd_dict['execute'])
     #         instron_node.sendCommand(cmd_dict)
     #         break

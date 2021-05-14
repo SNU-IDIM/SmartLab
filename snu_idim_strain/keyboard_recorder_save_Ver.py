@@ -42,7 +42,7 @@ class Instron_cam:
         self.finish_sig = False
 
         self.button = ''
-        self.subject_name = 'base3'                 
+        self.subject_name = 'base'                 
 
         # print("1")
         self.thread_2 = threading.Thread(target=self.KeyInterrupt)
@@ -50,8 +50,8 @@ class Instron_cam:
         self.thread_2.start()
         # print("2")
 
+        # self.KeyInterrupt()
         self.cal_result = calc_strain_.calc_strain()
-        
 
     def stopsig(self):
 
@@ -67,11 +67,13 @@ class Instron_cam:
             ## define variable for image array
             self.img_arr = []
             self.button_flage = 1
-
-
+##----
+            # self.frameCount = 263
+            # self.newpath = "C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain/result/" + str(self.subject_name + "/pics")#+str(self.TEST_NUMBER)
+            # self.vidfilename = "C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain/result/"+str(self.subject_name) + "/" +str(self.subject_name) + ".avi"
+            # while False:
             while(self.cap.isOpened()):
-
-
+##----
                 self.ret, self.frame = self.cap.read() #read camera
                 # print("waiting for in")
                 # if keyboard.is_pressed('space') and self.button_flage == 1:
@@ -84,7 +86,7 @@ class Instron_cam:
 
                     
                     ## set path
-                    self.newpath = "C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain/result/" + str(self.subject_name + "/pics")#+str(self.TEST_NUMBER)
+                    self.newpath = "C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain/result/" + str(self.subject_name) + "/pics"#+str(self.TEST_NUMBER)
                     self.vidfilename = "C:/Users/IDIM-Instron/Desktop/SNU_SmartLAB/snu_idim_strain/result/"+str(self.subject_name) + "/" +str(self.subject_name) + ".avi"
 
                     if not os.path.exists(self.newpath):
@@ -104,6 +106,7 @@ class Instron_cam:
                     print(self.frameCount)
                 # if keyboard.is_pressed('esc') and self.button_flage ==0:
                 if self.button == 'recordstop' and self.button_flage == 0:
+                    self.cap.release()
                     self.escape_time = time.time()
                     self.start_sig = 0
                     self.button = ''
@@ -114,7 +117,7 @@ class Instron_cam:
             # print("image fame count : ",self.image_frame_count)
 
 
-
+            # '''
             ##setup video recorder
             # self.fourcc = cv2.VideoWriter_fourcc(*'WMV1') #wmv
             self.fourcc = cv2.VideoWriter_fourcc(*'MJPG') #avi
@@ -123,7 +126,7 @@ class Instron_cam:
 
             # out = cv2.VideoWriter('strain_result_and_video\\fps10_keyboardwrite.avi', fourcc, fps, (3840,2160))
             self.out = cv2.VideoWriter(self.vidfilename, self.fourcc, self.fps, (1920,1080)) # set video
-
+            
             #구한 fps를 이용해서 타이밍 맞춰서 영상을 제작
             for i in range(0,self.frameCount):
                 print("currently_processing frame:"+str(i)+"out of "+str(self.frameCount))
@@ -136,8 +139,8 @@ class Instron_cam:
             cv2.destroyAllWindows()
             print("Done writing video and frames, the total elapsed time is" +str(self.frameCount/10))
             print("Total frame number written is", self.frameCount+1)
-
-           
+            # '''
+            print("start runcal_key")
             self.cal_result.Runcal(self.subject_name)
 
 
