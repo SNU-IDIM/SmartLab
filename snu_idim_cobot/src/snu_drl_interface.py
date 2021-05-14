@@ -489,16 +489,19 @@ class DeviceClass_Cobot():
 
 
     def specimen_shaking(self):
-        task_compliance_ctrl([10000, 10000, 10000, 1500, 1500, 500])
-        self.movel_z(2);      time.sleep(0.1);       self.gripper_close();       time.sleep(0.1);        self.movel_z(-2);       time.sleep(0.1)
+        task_compliance_ctrl([10000, 10000, 10000, 3000, 3000, 500])
+        self.movel_z(2);      time.sleep(0.1);       self.gripper_close();       time.sleep(0.1)       
+        # self.movel_z(-2);       time.sleep(0.1)
         self.rotate_z(10);    time.sleep(0.1);       self.rotate_z(-20);         self.rotate_z(10);      time.sleep(0.1)
 
         self.gripper_open();  time.sleep(0.1);       self.movel_z(-2);           time.sleep(0.1);        self.movel_y(120);      time.sleep(0.1)
-        self.movel_z(4);      time.sleep(0.1);       self.gripper_close();       time.sleep(0.1);        self.movel_z(-2);       time.sleep(0.1)
+        self.movel_z(2);      time.sleep(0.1);       self.gripper_close();       time.sleep(0.1)
+        # self.movel_z(-2);       time.sleep(0.1)
         self.rotate_z(-10);   time.sleep(0.1);       self.rotate_z(20);          time.sleep(0.1);        self.rotate_z(-10);     time.sleep(0.1)
 
-        self.gripper_open();  self.movel_y(-60)
-        self.movel_z(2);      time.sleep(0.1);       self.gripper_close();       time.sleep(0.1);       self.movel_z(-2);        time.sleep(0.1)
+        self.gripper_open();  self.movel_z(-2);      time.sleep(0.1);            self.movel_y(-60)
+        self.movel_z(2);      time.sleep(0.1);       self.gripper_close();       time.sleep(0.1);       
+        # self.movel_z(-2);        time.sleep(0.1)
         self.rotate_z(-10);   time.sleep(0.1);       self.rotate_z(20);          time.sleep(0.1);       self.rotate_z(-10);      time.sleep(0.1)
 
         self.movel_x(-20)
@@ -597,7 +600,17 @@ class DeviceClass_Cobot():
     def searchARTagFromRight(self):
         movej(Q_SEARCH_3DP_RIGHT) # Set initial position to look for AR TAG
         self.setVelAcc(50, 50, [100,50], [100,50])
-        amovel(pos=[0, -100, 0, 0, 0, 0], ref=DR_BASE, mod=DR_MV_MOD_REL)
+
+        pos1=posx(0, -100, 0, 0, 0, 0)
+        pos2=posx(100, 0, 0, 0, 0, 0)
+        pos3=posx(0, 200, 0, 0, 0, 0)
+        pos4=posx(-200, 0, 0, 0, 0, 0)
+        pos5=posx(0, -200, 0, 0, 0, 0)
+        pos6=posx(100, 0, 0, 0, 0, 0)
+        pos7=posx(0, 100, 0, 0, 0, 0)
+        poslist=[pos1, pos2, pos3, pos4, pos5, pos6, pos7]
+        amovesx(poslist, vel=[100,50], acc=[100,50], ref=DR_BASE, mod=DR_MV_MOD_REL, vel_opt=DR_MVS_VEL_NONE)
+
         while check_motion() != 0:
             for i in range(8):
                 tag_id = i + 1
@@ -607,19 +620,6 @@ class DeviceClass_Cobot():
                     movej(Q_TOP_PLATE)
                     print("[DEBUG] AR Tag: {}".format(tag_id))
                     self.logging("searchfromright : {}".format(tag_id))
-
-                    return tag_id
-
-        self.logging("searchfromright fin")
-
-        amovel(pos=[0, 200, 0, 0, 0, 0], ref=DR_BASE, mod=DR_MV_MOD_REL)
-        while check_motion() != 0:
-            for i in range(8):
-                tag_id = i + 1
-                if self.ARsearchFromEEF(tag_id) == True:
-                    mwait(0)
-                    movej(Q_TOP_PLATE)
-                    print("[DEBUG] AR Tag: {}".format(tag_id))
                     return tag_id
 
         movej(Q_TOP_PLATE)
@@ -722,6 +722,7 @@ class DeviceClass_Cobot():
         
             movej(Q_SEARCH_3DP_RIGHT)
             if self.searchARTagSpiral(tag_id_stage) == True:
+                mwait(0)
                 self.ARalignMove(tag_id_stage)
                 self.ARsetReference(tag_id_stage, 3)
                 self.status['gripper_angle'] = -135 #223
@@ -746,7 +747,7 @@ class DeviceClass_Cobot():
                 # movej(posj(waypoint_1), mod=DR_MV_MOD_REL)
                 movel(waypoint_1_2, ref=DR_TOOL, mod=DR_MV_MOD_REL)
                 self.logging("posj2 : {}".format(self.status['posj']))
-                self.rotate_z(-137, velx=[100, 100], accx=[100, 100]) 
+                self.rotate_z(-135, velx=[100, 100], accx=[100, 100]) 
                 self.logging("posj3 : {}".format(self.status['posj']))
                 movel(waypoint_2, ref=DR_TOOL, mod=DR_MV_MOD_REL)
 
@@ -842,7 +843,9 @@ class DeviceClass_Cobot():
             self.ARupdateParam(0.0, 0.0, 0.2)
             self.search_ar_target(1)
             movel(self.drl_pose, vel=[100,30], acc=[100,30])
-
+        # ACTION [100]: Move Home
+        elif(self.cmd_protocol == ACTION_ALIGN):
+            move_home()
         # ACTION [101]: Compressor On
         elif(self.cmd_protocol == ACTION_IO_COMPRESSOR_ON):
             self.compressor_on()
@@ -867,6 +870,12 @@ class DeviceClass_Cobot():
         # ACTION [-106]: Universal Jig Y-axis Open
         elif(self.cmd_protocol == ACTION_IO_JIG_Y_OPEN):
             self.jig_y_open()
+        elif(self.cmd_protocol == 1056):
+            self.jig_x_open()
+            self.jig_y_open()
+        elif(self.cmd_protocol == -1056):
+            self.jig_x_close()
+            self.jig_y_close()
         # ACTION [108]: Suction-cup ON
         elif(self.cmd_protocol == ACTION_IO_SUCTIONCUP_ON):
             self.suction_cup_on()
@@ -1046,11 +1055,23 @@ class DeviceClass_Cobot():
             movej(see_point1j)
 
             ar_tag = 0
-            self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(2)
-            if self.ARsearchFromEEF(ar_tag) == True: 
+            self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0); rospy.sleep(1)
+            pos1=posx(100, 0, 0, 0, 0, 0)   
+            pos2=posx(-200, 0, 0, 0, 0, 0)
+            poslist=[pos1, pos2]
+            amovesx(poslist, vel=[100,50], acc=[100,50], ref=DR_BASE, mod=DR_MV_MOD_REL, vel_opt=DR_MVS_VEL_NONE)
+            while check_motion() != 0:
+                if self.ARsearchFromEEF(ar_tag) == True:
+                    search_flag = True
+                    break
+                else:
+                    search_flag = False
+                
+            if search_flag == True:
+                self.ARalignMove(ar_tag)
                 self.ARsetReference(ar_tag, 4)
                 self.movel_xyz(-43, 87, -50)
-                self.movel_xyz(0, 0, 168)
+                self.movel_xyz(0, 0, 178)
     
         # Task [10003]: Place specimen and go to the monitoring position
         elif(self.cmd_protocol == TASK_INSTRON_MOVEOUT):
@@ -1078,18 +1099,19 @@ class DeviceClass_Cobot():
             self.gripper_open();  rospy.sleep(1.0)
             self.movel_y(-250)
 
-        # Task [10004]: SEARCH AND APPROACH TO ''MULTIPLE'' SPECIMENS AND DETACH TO THE BED
+        # Task [10004]: SEARCH AND APPROACH TO ''One'' SPECIMEN AND DETACH TO THE BED
         elif(self.cmd_protocol == TASK_DETACH_SPECIMEN):
             self.setVelAcc(100, 100, [100,100], [100,100])
             movej(Q_MULSPECIMEN_SEARCH)
             self.gripper_open()
+            object_count = 1
 
-            object_count=1
-            
-            ## Publish Flag to 'snu_2d_vision.py' node
-            self.vision_pub.publish(30002)
-            listener = tf.TransformListener()
             while True:
+            ## Publish Flag to 'snu_2d_vision.py' node
+                rospy.sleep(1)
+                self.vision_pub.publish(30002)
+
+                listener = tf.TransformListener()
                 try:
                     target_frame_name = 'specimen_table_' + str(object_count)
                     reference_frame_name = 'base_0'
@@ -1098,8 +1120,9 @@ class DeviceClass_Cobot():
                     print("Reference frame: " + reference_frame_name)
                     print "Trying to search the specimen: %s ..."%target_frame_name
 
-                    listener.waitForTransform(reference_frame_name, target_frame_name, rospy.Time(), rospy.Duration(8.0))
+                    listener.waitForTransform(reference_frame_name, target_frame_name, rospy.Time(), rospy.Duration(6.0))
                     (trans,rot) = listener.lookupTransform(reference_frame_name, target_frame_name, rospy.Time())
+                    self.gripper_open()
                     print(trans, rot)
                     self.update_target_pose(trans, rot)
                     self.updateEulZYZ()
@@ -1123,19 +1146,14 @@ class DeviceClass_Cobot():
                             release_compliance_ctrl()
                             break
                     rospy.sleep(1)
-                    self.movel_z(2)
+                    # self.movel_z(1)
                     self.gripper_close()
+                    rospy.sleep(0.5)
                     self.movel_z(-102,[100, 100], [100, 100]) #go up
                     movej(Q_MULSPECIMEN_SEARCH)
 
-                    if object_count == 1:
-                        break
-
-                    object_count= object_count+1
-
                 except (Exception):
                     print "[ERROR]: The Target(TF) is not Detected !!!"
-                    print("Specimen count :{}".format(object_count-1))
                     break
 
         # Task [10005]: SEARCH ONE SPECIMEN AND PICK UP

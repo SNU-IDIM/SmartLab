@@ -35,6 +35,12 @@ class snu_vision_2d():
         self.specimensaveflag = False
         self.image_sub = rospy.Subscriber("/R_001/camera/color/image_raw", Image, self.vision)
 
+        if os.path.exists('/home/syscon/catkin_ws/src/SNU_SmartLAB/snu_idim_cobot/specimen_image/csv/info.csv'):
+            os.remove('/home/syscon/catkin_ws/src/SNU_SmartLAB/snu_idim_cobot/specimen_image/csv/info.csv')
+        if os.path.exists('/home/syscon/catkin_ws/src/SNU_SmartLAB/snu_idim_cobot/specimen_image/specimen.png'):
+            os.remove('/home/syscon/catkin_ws/src/SNU_SmartLAB/snu_idim_cobot/specimen_image/specimen.png')
+        self.semi_int = 1 
+
         ### Topics to Publish ###
         self.pub1 = rospy.Publisher('cmd_moveit', Pose, queue_size=1) # Final target pose to be tracked
 
@@ -149,15 +155,16 @@ class snu_vision_2d():
         elif self.vision_protocol == TASK_JOG_DEVEL :
             location = '/home/syscon/catkin_ws/src/SNU_SmartLAB/snu_idim_cobot/specimen_image/specimen.png'   
             cv2.imwrite(location, self.specimen_image)
+            
+            cv2.imwrite('/home/syscon/catkin_ws/src/SNU_SmartLAB/snu_idim_cobot/specimen' + str(self.semi_int) + '.png', self.specimen_image)
             # os.system('python3 /home/syscon/catkin_ws/src/SNU_SmartLAB/snu_idim_cobot/src/snu_vision_specimen_detection.py')
             while True:
                 if os.path.exists('/home/syscon/catkin_ws/src/SNU_SmartLAB/snu_idim_cobot/specimen_image/csv/info.csv'):
-                    rospy.sleep(0.1)
                     specimen_info = pd.read_csv('/home/syscon/catkin_ws/src/SNU_SmartLAB/snu_idim_cobot/specimen_image/csv/info.csv')
                     break
                 else:
                     rospy.sleep(0.1)
-                    # print('Csv file does not exist')
+                    print('Csv file does not exist')
 
             specimen_np = specimen_info.to_numpy()
             size = np.shape(specimen_np)
@@ -169,8 +176,10 @@ class snu_vision_2d():
                 for j in range(10):
                     self.tf_broadcaster(CAMERA_FRAME_PREFIX_, TEMP_PREFIX_ + str(i+1), 262.0, -px2mm_Row+25.0, -px2mm_Col-10.5, 0, np.pi/2, np.pi)
                     self.tf_broadcaster(TEMP_PREFIX_ + str(i+1), OBJECT_TARGET_PREFIX_ + str(i+1), 0.0, 0.0, 0.0, 0.0, 0.0, -theta+(90)*np.pi/180)
-            
-        os.remove('/home/syscon/catkin_ws/src/SNU_SmartLAB/snu_idim_cobot/specimen_image/csv/info.csv')
+                           
+        if os.path.exists('/home/syscon/catkin_ws/src/SNU_SmartLAB/snu_idim_cobot/specimen_image/csv/info.csv'):    
+            os.rename('/home/syscon/catkin_ws/src/SNU_SmartLAB/snu_idim_cobot/specimen_image/csv/info.csv','/home/syscon/catkin_ws/src/SNU_SmartLAB/snu_idim_cobot/specimen_image/csv/info'+str(self.semi_int)+'.csv')
+            self.semi_int += 1
         self.vision_status = "vision processing complete"
         print(self.vision_status)
 

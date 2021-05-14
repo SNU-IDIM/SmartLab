@@ -5,6 +5,7 @@
     <!--<include file="$(find snu_idim_cobot)/launch/ar_tracker_single.launch.xml" ns="$(arg ns)"/>-->
     <!--<node pkg="snu_idim_cobot" type="snu_dsr_joy.py" name="joy_controller" ns="$(arg ns)" output='screen'/>-->
     <node pkg="snu_idim_cobot" type="snu_drl_interface.py" name="snu_dsr_interface" ns="$(arg ns)" output='screen'/>
+    <node pkg="snu_idim_cobot" type="snu_vision_2d.py" name="snu_2d_vision" ns="$(arg ns)" />
     <!--<node pkg="tf" type="static_transform_publisher" name="link62camera_link"   args="-0.118 0.020 -0.032 0 -1.572 0 link6 camera_link 10" />-->
     <!-- <node pkg="snu_idim_cobot" type="snu_vision_2d.py" name="snu_2d_vision" ns="$(arg ns)" />
         

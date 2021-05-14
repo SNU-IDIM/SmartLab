@@ -42,23 +42,23 @@ class snu_vision_2d():
         self.model = resnet50_segnet(n_classes=2, input_height=448, input_width=448)
         # self.model.load_weights('/home/syscon/specimen_detection_vggunet/weights.h5')
         self.model.load_weights('/home/syscon/catkin_ws/src/SNU_SmartLAB/snu_idim_cobot/src/weights.h5')
-
         self.imagewindowflag = False #False : image pass, True : image show for debugging
         self.vision_status = "filter is working"
         print(self.vision_status)
         np.set_printoptions(threshold=sys.maxsize)
+        self.run_time = 1
 
     def vision(self):
         self.cv_image = None
         while True:
             if os.path.exists('/home/syscon/catkin_ws/src/SNU_SmartLAB/snu_idim_cobot/specimen_image/specimen.png'):
-                time.sleep(0.1)
+                time.sleep(0.2)
                 self.cv_image = cv2.imread('/home/syscon/catkin_ws/src/SNU_SmartLAB/snu_idim_cobot/specimen_image/specimen.png' ,cv2.IMREAD_COLOR)
                 self.specimen_image = copy.deepcopy(self.cv_image) # move this when you draw something in the image and change imagewindowflag
                 break
             else:
-                # print('there is no image file')
-                time.sleep(0.3)
+                print('@@@@@@@@@@@@@@@@@@@@@@@@@@there is no image file')
+                time.sleep(0.1)
 
         if self.imagewindowflag == False :
             pass
@@ -271,7 +271,10 @@ class snu_vision_2d():
 
             # while True : 
             # cv2.imshow('image', edges_bgr)
-            # cv2.waitKey(1000)
+            # cv2.waitKey(10)
+            location = '/home/syscon/catkin_ws/src/SNU_SmartLAB/snu_idim_cobot/previous_image' + str(self.run_time) + '.png'
+            cv2.imwrite(location, edges_bgr)
+            self.run_time += 1
             print(centroid)
             #Calibration 250mm / 551pixels -> sondori
             px2mm_Row=(centroid[0]*2.0+rowStart-320)*250.0/551.0
@@ -279,8 +282,9 @@ class snu_vision_2d():
             print(px2mm_Row, px2mm_Col)
             empty_csv = empty_csv.append(pd.DataFrame([theta, px2mm_Row, px2mm_Col]).T)
             obj_count = obj_count+1
-        
-        os.remove('/home/syscon/catkin_ws/src/SNU_SmartLAB/snu_idim_cobot/specimen_image/specimen.png')
+
+        if os.path.exists('/home/syscon/catkin_ws/src/SNU_SmartLAB/snu_idim_cobot/specimen_image/specimen.png'):
+            os.remove('/home/syscon/catkin_ws/src/SNU_SmartLAB/snu_idim_cobot/specimen_image/specimen.png')
         empty_csv.to_csv('/home/syscon/catkin_ws/src/SNU_SmartLAB/snu_idim_cobot/specimen_image/csv/info.csv')
         self.vision_status = "vision processing complete"
         print(self.vision_status)
@@ -290,10 +294,13 @@ class snu_vision_2d():
 if __name__ == "__main__":
     twod_vision = snu_vision_2d()
     while True:
-        start_time = time.clock()
-        twod_vision.vision()
-        twod_vision.specimen_detection()
-        time_elapsed = time.clock() - start_time
-        print('소요 시간 : %s - %s = %s' % (time.clock(), start_time, time_elapsed))
-        time.sleep(0.5)
+        try:
+            start_time = time.clock()
+            twod_vision.vision()
+            twod_vision.specimen_detection()
+            time_elapsed = time.clock() - start_time
+            print('소요 시간 : %s - %s = %s' % (time.clock(), start_time, time_elapsed))
+            time.sleep(0.5)
+        except KeyboardInterrupt:
+            break
     print('good bye!')
