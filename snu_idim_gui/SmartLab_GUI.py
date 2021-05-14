@@ -15,6 +15,7 @@ from PyQt5.QtCore import Qt, QThread, QUrl, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import *
 # from PyQt5.QtWebEngineWidgets import *
 from PyQt5.QtWidgets import *
+import webbrowser
 
 from SmartLab_Client import SmartLabClient
 
@@ -25,36 +26,14 @@ import pafy
 
 
 global streaming
-streaming = Cam_Streaming_Client(cam_list=['overview', 'cobot'])
+streaming = Cam_Streaming_Client(cam_list=['overview', 'cobot_eef', 'cobot_front'])
 img_con_flag = False
 
-image_cobot    = np.empty((480, 640, 3))
+image_cobot_eef    = np.empty((480, 640, 3))
 image_overview = np.empty((480, 640, 3))
 
 global streaming_mode
-streaming_mode = 0
-
-
-class Roboteefview(QThread):
-    changePixmap = pyqtSignal(QImage)
-
-    def run(self):
-        global img_con_flag
-        global streaming
-        self.streaming = streaming
-        while True:
-            if self.streaming.image_cobot[0][0][0] != 0.0:
-                img_con_flag = True
-            if img_con_flag is True:
-                self.rgbImage = self.streaming.image_cobot
-                h, w, ch = self.rgbImage.shape
-                bytesPerLine = ch * w
-                convertToQtFormat = QImage(self.rgbImage.data, w, h, bytesPerLine, QImage.Format_RGB888)
-                
-                p = convertToQtFormat.scaled(640, 480, Qt.KeepAspectRatio)
-                self.changePixmap.emit(p)
-            else:
-                print("waiting for flag  " +str(img_con_flag))
+streaming_mode = 'overview'
 
 class QCameraStreaming(QThread):
     changePixmap = pyqtSignal(QImage)
@@ -69,10 +48,12 @@ class QCameraStreaming(QThread):
             if self.streaming.image_overview[0][0][0] != 0.0:
                 img_con_flag = True
             if img_con_flag is True:
-                if streaming_mode == 0:
+                if streaming_mode == 'overview':
                     self.rgbImage = self.streaming.image_overview
-                elif streaming_mode == 1:
-                    self.rgbImage = self.streaming.image_cobot
+                elif streaming_mode == 'cobot_eef':
+                    self.rgbImage = self.streaming.image_cobot_eef
+                elif streaming_mode == 'cobot_front':
+                    self.rgbImage = self.streaming.image_cobot_front
                 h, w, ch = self.rgbImage.shape
                 bytesPerLine = ch * w
                 convertToQtFormat = QImage(self.rgbImage.data, w, h, bytesPerLine, QImage.Format_RGB888)
@@ -173,7 +154,7 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         self.smartlab_cmd = dict()
         self.smartlab_cmd['test_mode'] = 'auto'
         self.smartlab_cmd['test_step'] = -1
-        self.smartlab_cmd['setup_device'] = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer1', 'printer2']
+        self.smartlab_cmd['setup_device'] = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer1', 'printer2', 'printer3']
         self.smartlab_cmd['setup_doe'] = dict()
 
         global smartlab_cmd
@@ -189,8 +170,8 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         self.btn_doe_apply.clicked.connect(self.cb_btn_doe_apply)
         self.btn_exp_detail.clicked.connect(self.cb_btn_exp_detail)
         self.btn_overview.clicked.connect(self.cb_btn_overview)
-        self.btn_robot.clicked.connect(self.cb_btn_robot)
-        # self.btn_printer.clicked.connect(self.cb_btn_printer)
+        self.btn_cobot_eef.clicked.connect(self.cb_btn_cobot_eef)
+        self.btn_cobot_front.clicked.connect(self.cb_btn_cobot_front)
 
         self.showlogo()
 
@@ -231,16 +212,7 @@ class SmartLAB_GUI(QMainWindow, QDialog):
 
     @pyqtSlot(QImage)
     def setImageStreaming(self, image):
-        global streaming_mode
         self.image_streaming.setPixmap(QPixmap.fromImage(image))
-
-    @pyqtSlot(QImage)
-    def setImage_cobot_eef(self, image):
-        self.image_cobot_eef.setPixmap(QPixmap.fromImage(image))
-
-    @pyqtSlot(QImage)
-    def setImage_cam_360(self, image):
-        self.cam360_screen.setPixmap(QPixmap.fromImage(image))
 
     def updateTestTable(self, test_info):
         n_col = len(list(test_info[0]))
@@ -372,11 +344,16 @@ class SmartLAB_GUI(QMainWindow, QDialog):
 
     def cb_btn_overview(self):
         global streaming_mode
-        streaming_mode = 0
+        streaming_mode = 'overview'
 
-    def cb_btn_robot(self):
+    def cb_btn_cobot_eef(self):
         global streaming_mode
-        streaming_mode = 1
+        streaming_mode = 'cobot_eef'
+
+    def cb_btn_cobot_front(self):
+        global streaming_mode
+        streaming_mode = 'cobot_front'
+
     
     def cb_btn_control_pause(self):
         print("[DEBUG] 'Control - Pause' button clicked !!! (TBD)")

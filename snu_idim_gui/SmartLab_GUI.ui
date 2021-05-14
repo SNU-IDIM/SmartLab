@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1949</width>
+    <width>1909</width>
     <height>1067</height>
    </rect>
   </property>
@@ -76,7 +76,7 @@
       <string>Overview</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="btn_printer">
+    <widget class="QPushButton" name="btn_cobot_front">
      <property name="geometry">
       <rect>
        <x>149</x>
@@ -86,10 +86,10 @@
       </rect>
      </property>
      <property name="text">
-      <string>3D Printer</string>
+      <string>Cobot (Front)</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="btn_robot">
+    <widget class="QPushButton" name="btn_cobot_eef">
      <property name="geometry">
       <rect>
        <x>279</x>
@@ -99,7 +99,7 @@
       </rect>
      </property>
      <property name="text">
-      <string>Robot (360 °)</string>
+      <string>Cobot (EEF)</string>
      </property>
     </widget>
     <widget class="QLabel" name="image_streaming">
@@ -1538,9 +1538,9 @@
       <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Gulim'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p align=&quot;center&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;50.0 %&lt;/p&gt;
-&lt;p align=&quot;center&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;(6 / 12 runs)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:11pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p align=&quot;center&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Gulim'; font-size:9pt;&quot;&gt;50.0 %&lt;/span&gt;&lt;/p&gt;
+&lt;p align=&quot;center&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Gulim'; font-size:9pt;&quot;&gt;(6 / 12 runs)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
     </widget>
    </widget>
@@ -1575,7 +1575,10 @@ p, li { white-space: pre-wrap; }
       <bool>true</bool>
      </attribute>
      <attribute name="horizontalHeaderDefaultSectionSize">
-      <number>100</number>
+      <number>107</number>
+     </attribute>
+     <attribute name="horizontalHeaderMinimumSectionSize">
+      <number>61</number>
      </attribute>
      <column>
       <property name="text">
@@ -1699,7 +1702,7 @@ p, li { white-space: pre-wrap; }
       <rect>
        <x>10</x>
        <y>10</y>
-       <width>191</width>
+       <width>251</width>
        <height>26</height>
       </rect>
      </property>
@@ -1836,108 +1839,6 @@ p, li { white-space: pre-wrap; }
       <string>Press The Create Button!</string>
      </property>
     </widget>
-   </widget>
-   <widget class="QLineEdit" name="txt_doe_exp_type1">
-    <property name="geometry">
-     <rect>
-      <x>210</x>
-      <y>750</y>
-      <width>545</width>
-      <height>25</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Press the 'Create' button !</string>
-    </property>
-   </widget>
-   <widget class="QLineEdit" name="txt_doe_exp_name1">
-    <property name="geometry">
-     <rect>
-      <x>210</x>
-      <y>790</y>
-      <width>545</width>
-      <height>25</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>And then, press the 'Apply' button !</string>
-    </property>
-   </widget>
-   <widget class="QLineEdit" name="txt_doe_doe_type1">
-    <property name="geometry">
-     <rect>
-      <x>210</x>
-      <y>830</y>
-      <width>545</width>
-      <height>25</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string/>
-    </property>
-   </widget>
-   <widget class="QTableWidget" name="table_doe_factors1">
-    <property name="geometry">
-     <rect>
-      <x>780</x>
-      <y>750</y>
-      <width>545</width>
-      <height>91</height>
-     </rect>
-    </property>
-    <attribute name="horizontalHeaderDefaultSectionSize">
-     <number>175</number>
-    </attribute>
-    <row>
-     <property name="text">
-      <string>1</string>
-     </property>
-    </row>
-    <row>
-     <property name="text">
-      <string>2</string>
-     </property>
-    </row>
-    <column>
-     <property name="text">
-      <string>Factor</string>
-     </property>
-    </column>
-    <column>
-     <property name="text">
-      <string>Range</string>
-     </property>
-    </column>
-    <column>
-     <property name="text">
-      <string>Option</string>
-     </property>
-    </column>
-    <item row="0" column="0">
-     <property name="text">
-      <string/>
-     </property>
-    </item>
-    <item row="0" column="1">
-     <property name="text">
-      <string/>
-     </property>
-    </item>
-    <item row="0" column="2">
-     <property name="text">
-      <string/>
-     </property>
-    </item>
-    <item row="1" column="0">
-     <property name="text">
-      <string/>
-     </property>
-    </item>
-    <item row="1" column="2">
-     <property name="text">
-      <string/>
-     </property>
-    </item>
    </widget>
    <widget class="QFrame" name="frame_6">
     <property name="geometry">
@@ -2139,8 +2040,8 @@ p, li { white-space: pre-wrap; }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1949</width>
-     <height>31</height>
+     <width>1909</width>
+     <height>25</height>
     </rect>
    </property>
   </widget>
