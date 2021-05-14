@@ -63,43 +63,17 @@
       <string>Popup...</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="btn_overview">
-     <property name="geometry">
-      <rect>
-       <x>20</x>
-       <y>370</y>
-       <width>121</width>
-       <height>34</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Overview</string>
-     </property>
-    </widget>
     <widget class="QPushButton" name="btn_cobot_front">
      <property name="geometry">
       <rect>
-       <x>149</x>
-       <y>370</y>
-       <width>121</width>
-       <height>34</height>
+       <x>110</x>
+       <y>363</y>
+       <width>101</width>
+       <height>41</height>
       </rect>
      </property>
      <property name="text">
       <string>Cobot (Front)</string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="btn_cobot_eef">
-     <property name="geometry">
-      <rect>
-       <x>279</x>
-       <y>370</y>
-       <width>131</width>
-       <height>34</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Cobot (EEF)</string>
      </property>
     </widget>
     <widget class="QLabel" name="image_streaming">
@@ -124,6 +98,46 @@
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btn_overview">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>363</y>
+       <width>101</width>
+       <height>41</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Overview</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btn_cobot_eef">
+     <property name="geometry">
+      <rect>
+       <x>220</x>
+       <y>363</y>
+       <width>101</width>
+       <height>41</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Cobot (EEF)</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btn_360cam">
+     <property name="geometry">
+      <rect>
+       <x>330</x>
+       <y>363</y>
+       <width>101</width>
+       <height>41</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>360 Camera
+(Link)</string>
      </property>
     </widget>
    </widget>
@@ -1465,6 +1479,9 @@
      </item>
     </widget>
     <widget class="QPushButton" name="btn_control_run">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="geometry">
       <rect>
        <x>10</x>
@@ -1478,6 +1495,9 @@
      </property>
     </widget>
     <widget class="QPushButton" name="btn_control_pause">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="geometry">
       <rect>
        <x>10</x>
@@ -1491,6 +1511,9 @@
      </property>
     </widget>
     <widget class="QPushButton" name="btn_control_stop">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="geometry">
       <rect>
        <x>10</x>

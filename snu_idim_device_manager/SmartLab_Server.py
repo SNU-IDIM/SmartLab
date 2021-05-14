@@ -525,19 +525,20 @@ class SmartLABCore():
     ''' 
     def checkExecutionMode(self):
         while True:
-            # self.mysql.insert('system_status', {'control_mode': self.req['test_mode']}, conds='ON DUPLICATE KEY UPDATE {} = \'{}\''.format('control_mode', self.req['test_mode']))
-            # self.mysql.insert('system_status', {'control_step': self.test_step}, conds='ON DUPLICATE KEY UPDATE {} = \'{}\''.format('control_step', self.test_step))
-            # self.mysql.insert('system_status', {'control_status': 'Waiting'}, conds='ON DUPLICATE KEY UPDATE {} = \'{}\''.format('control_status', 'Waiting'))
+            mysql = SqlHelper(host='localhost', username='root', password='0000', port=3306, database='SmartLab')
+            mysql.insert('system_status', {'id': '1', 'control_mode': str(self.req['test_mode'])}, conds='ON DUPLICATE KEY UPDATE {} = \'{}\''.format('control_mode', self.req['test_mode']))
+            mysql.insert('system_status', {'id': '1', 'control_step': str(self.test_step)}, conds='ON DUPLICATE KEY UPDATE {} = \'{}\''.format('control_step', self.test_step))
+            mysql.insert('system_status', {'id': '1', 'control_status': 'Waiting'}, conds='ON DUPLICATE KEY UPDATE {} = \'{}\''.format('control_status', 'Waiting'))
             if self.req['test_mode'] == 'auto':
                 print("[AUTO MODE] Execute next step automatically ... (Step: {})".format(self.test_step))
-                # self.mysql.insert('system_status', {'control_status': 'Running'}, conds='ON DUPLICATE KEY UPDATE {} = \'{}\''.format('control_status', 'Running'))
+                mysql.insert('system_status', {'id': '1', 'control_status': 'Running'}, conds='ON DUPLICATE KEY UPDATE {} = \'{}\''.format('control_status', 'Running'))
                 return 0
             elif self.req['test_mode'] == 'step':
                 print("[STEP MODE] Waiting for triggering ... (Step: {})".format(self.test_step))
                 
                 if self.req['test_step'] != -1:
                     print("[STEP MODE] Execute next step ... (Step: {})".format(self.test_step))
-                    # self.mysql.insert('system_status', {'control_status': 'Running'}, conds='ON DUPLICATE KEY UPDATE {} = \'{}\''.format('control_status', 'Running'))
+                    mysql.insert('system_status', {'id': '1', 'control_status': 'Running'}, conds='ON DUPLICATE KEY UPDATE {} = \'{}\''.format('control_status', 'Running'))
                     self.req['test_step'] = -1
                     return 1
             elif self.req['test_mode'] == 'debug':

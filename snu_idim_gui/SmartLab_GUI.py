@@ -101,7 +101,25 @@ class QUpdateTestInfo(QThread):
                 self.changeTestInfo.emit(json.dumps(test_info))
                 time.sleep(3.0)
             except:
-                print("[ERROR] Device information update error !!!")
+                print("[ERROR] Test information update error !!!")
+                pass
+
+class QUpdateSystemInfo(QThread):
+    changeSystemInfo = pyqtSignal(str)
+
+    def __init__(self, parent=None):
+        super(QUpdateSystemInfo, self).__init__(parent)
+
+    def run(self):
+        self.sql = SqlHelper(host='192.168.60.21', username='wjYun', password='0000', port=3306, database='SmartLab')
+        while True:
+            try:
+                system_info = self.sql.select('system_status', conds="id=(SELECT MAX(id) FROM system_status)")[0]
+                print(system_info)
+                self.changeSystemInfo.emit(json.dumps(system_info))
+                time.sleep(3.0)
+            except:
+                print("[ERROR] System information update error !!!")
                 pass
 
 class QSendCommand(QThread):
@@ -146,7 +164,6 @@ class SmartLAB_GUI(QMainWindow, QDialog):
 
         self.sql = SqlHelper(host='192.168.60.21', username='wjYun', password='0000', port=3306, database='SmartLab')
 
-
         self.smartlab = SmartLabClient(ip='192.168.60.21')
         global smartlab
         smartlab = self.smartlab
@@ -160,6 +177,11 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         global smartlab_cmd
         smartlab_cmd = self.smartlab_cmd
 
+        self.system_status = dict()
+        self.system_status['control_mode'] = 'auto'
+        self.system_status['control_step'] = '0'
+        self.system_status['control_status'] = 'Waiting'
+
 
         self.btn_doe_create.clicked.connect(self.cb_btn_doe_create)
         self.btn_control_run.clicked.connect(self.cb_btn_control_run)
@@ -172,6 +194,7 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         self.btn_overview.clicked.connect(self.cb_btn_overview)
         self.btn_cobot_eef.clicked.connect(self.cb_btn_cobot_eef)
         self.btn_cobot_front.clicked.connect(self.cb_btn_cobot_front)
+        self.btn_360cam.clicked.connect(self.cb_btn_360cam)
 
         self.showlogo()
 
@@ -191,6 +214,10 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         qthread_streaming.changePixmap.connect(self.setImageStreaming)
         qthread_streaming.start()
 
+        qthread_sys_status = QUpdateSystemInfo(self)
+        qthread_sys_status.changeSystemInfo.connect(self.setSystemStatus)
+        qthread_sys_status.start()
+        
         # self.cam360_screen.setStyleSheet("background-color: rgb(84, 84, 84);")
         # self.webview = QWebEngineView(self.cam360_screen)
         # self.webview.setUrl(QUrl("https://www.youtube.com/watch?v=avmSkeJwT0o"))
@@ -199,6 +226,22 @@ class SmartLAB_GUI(QMainWindow, QDialog):
     @pyqtSlot()
     def sendCommand(self):
         print('[DEBUG] SmartLab command is sent to the Server.')
+
+    @pyqtSlot(str)
+    def setSystemStatus(self, system_info_str):
+        self.system_status = json.loads(system_info_str)
+        if self.smartlab_cmd['test_mode'] == 'auto':
+            self.btn_control_run.setEnabled(True)
+        elif self.smartlab_cmd['test_mode'] == 'step':
+            if self.system_status['control_status'] == 'Waiting':
+                self.btn_control_run.setEnabled(True)
+            else:
+                self.btn_control_run.setEnabled(False)
+
+
+        print(type(self.system_status))
+        print(self.system_status)
+
 
     @pyqtSlot(str)
     def setDeviceTable(self, device_info_str):
@@ -225,7 +268,7 @@ class SmartLAB_GUI(QMainWindow, QDialog):
     
         for row, item_list in enumerate(test_info):
             for col, key in enumerate(fields):
-                item = test_info[row][key]
+                item = test_info[row][key] if test_info[row][key] != None else ''
                 newitem = QTableWidgetItem(str(item))
                 self.table_exp_info.setItem(row, col, newitem)
 
@@ -353,7 +396,9 @@ class SmartLAB_GUI(QMainWindow, QDialog):
     def cb_btn_cobot_front(self):
         global streaming_mode
         streaming_mode = 'cobot_front'
-
+    
+    def cb_btn_360cam(self):
+        webbrowser.open('http://www.youtube.com/channel/UCec1lf2ZtDUx1Qd7S0mKC3g/live')
     
     def cb_btn_control_pause(self):
         print("[DEBUG] 'Control - Pause' button clicked !!! (TBD)")
