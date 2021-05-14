@@ -16,6 +16,7 @@
 -->
     <include file="$(find snu_idim_cobot)/launch/realsense_setup.launch.xml" ns="$(arg ns)"/>
     <include file="$(find snu_idim_cobot)/launch/ar_tracker_single.launch.xml" ns="$(arg ns)"/>
+    <include file="$(find snu_idim_cobot)/launch/camera_monitoring.launch"/>
 
     <!--<node pkg="snu_idim_cobot" type="snu_drl_interface.py" name="test" ns="$(arg ns)" output='screen'/>-->
     <node pkg="snu_idim_cobot" type="snu_vision_2d.py" name="snu_2d_vision" ns="$(arg ns)" />
