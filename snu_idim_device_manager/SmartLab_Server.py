@@ -390,8 +390,8 @@ class SmartLABCore():
             return robot_task_queue
         
         elif task_type == 'bed_from_robot_to_omm':
-            task_place_bed = [ACTION_HOME, TASK_3DP_BED_IN, ACTION_HOME] # TODO: 로봇 작업 추가 필요
-            self.cobot_recent_work = ACTION_HOME
+            task_place_bed = [ACTION_HOME, TASK_3DP_BED_IN] # TODO: 로봇 작업 추가 필요
+            self.cobot_recent_work = TASK_3DP_BED_IN
             robot_task_queue = task_place_bed
             return robot_task_queue
         
@@ -559,7 +559,7 @@ class SmartLABCore():
 
 
     def executionManager(self):
-        debug = False
+        debug = True
         debug_withoutAMR = False #True
 
         while True:
