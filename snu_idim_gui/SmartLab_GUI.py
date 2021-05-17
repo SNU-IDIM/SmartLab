@@ -72,7 +72,7 @@ class QUpdateDeviceInfo(QThread):
         super(QUpdateDeviceInfo, self).__init__(parent)
 
     def run(self):
-        self.sql = SqlHelper(host='192.168.60.21', username='wjYun', password='0000', port=3306, database='SmartLab')
+        self.sql = SqlHelper(host='192.168.0.88', username='wjYun', password='0000', port=3306, database='SmartLab')
         while True:
             try:
                 device_info = self.sql.select('device_info', conds="id=(SELECT MAX(id) FROM device_info)")[0]
@@ -80,7 +80,7 @@ class QUpdateDeviceInfo(QThread):
                 self.changeDeviceInfo.emit(json.dumps(device_info))
                 time.sleep(3.0)
             except:
-                print("[ERROR] Device information update error !!!")
+                #print("[ERROR] Device information update error !!!")
                 pass
 
 class QUpdateTestInfo(QThread):
@@ -92,7 +92,7 @@ class QUpdateTestInfo(QThread):
     def run(self):
         global smartlab_cmd
         self.smartlab_cmd = smartlab_cmd
-        self.sql = SqlHelper(host='192.168.60.21', username='wjYun', password='0000', port=3306, database='SmartLab')
+        self.sql = SqlHelper(host='192.168.0.88', username='wjYun', password='0000', port=3306, database='SmartLab')
         while True:
             try:
                 fields = ['subject_name', 'Status', 'Thickness', 'Length', 'Width', 'E_modulus', 'U_stress']
@@ -111,7 +111,7 @@ class QUpdateSystemInfo(QThread):
         super(QUpdateSystemInfo, self).__init__(parent)
 
     def run(self):
-        self.sql = SqlHelper(host='192.168.60.21', username='wjYun', password='0000', port=3306, database='SmartLab')
+        self.sql = SqlHelper(host='192.168.0.88', username='wjYun', password='0000', port=3306, database='SmartLab')
         while True:
             try:
                 system_info = self.sql.select('system_status', conds="id=(SELECT MAX(id) FROM system_status)")[0]
@@ -162,9 +162,9 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         init_flag = self.init_flag
         
 
-        self.sql = SqlHelper(host='192.168.60.21', username='wjYun', password='0000', port=3306, database='SmartLab')
+        self.sql = SqlHelper(host='192.168.0.88', username='wjYun', password='0000', port=3306, database='SmartLab')
 
-        self.smartlab = SmartLabClient(ip='192.168.60.21')
+        self.smartlab = SmartLabClient(ip='192.168.0.88')
         global smartlab
         smartlab = self.smartlab
 
@@ -189,12 +189,13 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         self.btn_control_stop.clicked.connect(self.cb_btn_control_stop)
         self.btn_exp_export.clicked.connect(self.cb_btn_exp_export)
         self.cbx_control.currentIndexChanged.connect(self.cb_cbx_control)
-        self.btn_doe_apply.clicked.connect(self.cb_btn_doe_apply)
+        #self.btn_doe_apply.clicked.connect(self.cb_btn_doe_apply)
         self.btn_exp_detail.clicked.connect(self.cb_btn_exp_detail)
         self.btn_overview.clicked.connect(self.cb_btn_overview)
         self.btn_cobot_eef.clicked.connect(self.cb_btn_cobot_eef)
         self.btn_cobot_front.clicked.connect(self.cb_btn_cobot_front)
         self.btn_360cam.clicked.connect(self.cb_btn_360cam)
+        self.btn_camera_popup.clicked.connect(self.cb_btn_popup)
 
         self.showlogo()
 
@@ -407,6 +408,7 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         print("[DEBUG] 'Control - Stop' button clicked !!! (TBD)")
         
     def cb_btn_doe_apply(self):
+        print('%@#$!$!@#%@#%!@$@#$@%!@#%')
         self.txt_doe_exp_name.setText(self.DOE_window.doe['header_id'])
         self.txt_doe_exp_type.setText(self.DOE_window.doe['experiment_type'])
         self.txt_doe_doe_type.setText(self.DOE_window.doe['doe_type'])
@@ -417,7 +419,8 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         
     def cb_btn_doe_create(self):
         self.DOE_window = DOE_Window()
-        self.DOE_window.exec()
+        self.DOE_window.show()
+        self.DOE_window.btn_doe_ok.clicked.connect(self.cb_btn_doe_apply)
 
 
     def cb_cbx_control(self):
@@ -428,7 +431,7 @@ class SmartLAB_GUI(QMainWindow, QDialog):
 
     def showlogo(self):
         SNU_image = QPixmap()
-        SNU_image.load('./src/snu.jpg')
+        SNU_image.load('./src/snu.png')
         SNU_image = SNU_image.scaled(self.logo_SNU.width(), self.logo_SNU.height())
         IDIM_image = QPixmap()
         IDIM_image.load('./src/idim.png')
@@ -437,7 +440,23 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         self.logo_IDIM.setPixmap(IDIM_image)
         self.logo_SNU.setPixmap(SNU_image)
 
+    def cb_btn_popup(self):
+        self.Popup_window = Popup_Window()
+        self.Popup_window.show()
 
+        qthread_streaming_popup = QCameraStreaming(self)
+        qthread_streaming_popup.changePixmap.connect(self.setImageStreamingPopup)
+        qthread_streaming_popup.start()
+
+    @pyqtSlot(QImage)
+    def setImageStreamingPopup(self, image):
+        self.Popup_window.image_streaming.setPixmap(QPixmap.fromImage(image))
+        
+
+class Popup_Window(QDialog):
+    def __init__(self) :
+        super().__init__()
+        uic.loadUi("Popup.ui", self)
 
 class DOE_Window(QDialog) :
     def __init__(self) :
