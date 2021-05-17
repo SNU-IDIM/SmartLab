@@ -62,7 +62,8 @@ class QCameraStreaming(QThread):
                 self.changePixmap.emit(p)
                 time.sleep(0.1)
             else:
-                print("waiting for flag  " +str(img_con_flag))
+                # print("waiting for flag  " +str(img_con_flag))
+                pass
 
 
 class QUpdateDeviceInfo(QThread):
@@ -72,15 +73,16 @@ class QUpdateDeviceInfo(QThread):
         super(QUpdateDeviceInfo, self).__init__(parent)
 
     def run(self):
-        self.sql = SqlHelper(host='192.168.0.88', username='wjYun', password='0000', port=3306, database='SmartLab')
+        self.sql = SqlHelper(host='192.168.0.88', username='wjYun', password='0000', port=3306, database='SmartLab', debug=True)
         while True:
             try:
                 device_info = self.sql.select('device_info', conds="id=(SELECT MAX(id) FROM device_info)")[0]
                 device_info['time_stamp'] = str(device_info['time_stamp'])
                 self.changeDeviceInfo.emit(json.dumps(device_info))
+                print(device_info)
                 time.sleep(3.0)
             except:
-                #print("[ERROR] Device information update error !!!")
+                print("[ERROR] Device information update error !!!")
                 pass
 
 class QUpdateTestInfo(QThread):
@@ -279,10 +281,12 @@ class SmartLAB_GUI(QMainWindow, QDialog):
                 test_info = device_status[device_id]
                 test_info = json.loads(test_info)
                 if   device_id.find('amr') != -1:
+                    print('amr')
                     self.AMR_status.setText(str(test_info['status']))
                     self.AMR_task.setText(str(test_info['current_work']))
                     self.AMR_SN.setText(str(test_info['subject_name'])) ##TBD
                 elif device_id.find('cobot') != -1:
+                    print('cobot')
                     self.Cobot_status.setText(str(test_info['status']))
                     self.Cobot_current.setText(str(test_info['current_work'])) 
                     self.Cobot_comp.setText(str(test_info["compressor"]))

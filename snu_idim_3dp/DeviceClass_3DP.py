@@ -91,7 +91,7 @@ class DeviceClass_3DP:
                 if self.status['connection'].find('Printing') != -1 and self.status['status'].find('Printing') == -1:
                     self.status['recent_work'] = self.status['subject_name']
                     self.status['subject_name'] = self.status['gcode_file'].split('.')[0]
-                    self.status['status'] = "Printing {}".format(self.status['subject_name'])
+                    self.status['status'] = "Printing"
                     # print("[DEBUG] Status: {}".format(self.status['status']))
             
                 ## 'status' : 'Printing {subject_name}' -> 'Done'
