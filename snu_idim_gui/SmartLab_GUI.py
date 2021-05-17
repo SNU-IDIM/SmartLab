@@ -73,13 +73,12 @@ class QUpdateDeviceInfo(QThread):
         super(QUpdateDeviceInfo, self).__init__(parent)
 
     def run(self):
-        self.sql = SqlHelper(host='192.168.0.88', username='wjYun', password='0000', port=3306, database='SmartLab', debug=True)
+        self.sql = SqlHelper(host='192.168.0.88', username='wjYun', password='0000', port=3306, database='SmartLab')
         while True:
             try:
                 device_info = self.sql.select('device_info', conds="id=(SELECT MAX(id) FROM device_info)")[0]
                 device_info['time_stamp'] = str(device_info['time_stamp'])
                 self.changeDeviceInfo.emit(json.dumps(device_info))
-                print(device_info)
                 time.sleep(3.0)
             except:
                 print("[ERROR] Device information update error !!!")

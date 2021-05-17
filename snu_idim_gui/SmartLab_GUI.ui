@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1909</width>
+    <width>1872</width>
     <height>1239</height>
    </rect>
   </property>
@@ -17,9 +17,9 @@
    <widget class="QFrame" name="frame">
     <property name="geometry">
      <rect>
-      <x>1030</x>
+      <x>1020</x>
       <y>300</y>
-      <width>451</width>
+      <width>421</width>
       <height>431</height>
      </rect>
     </property>
@@ -53,7 +53,7 @@
     <widget class="QPushButton" name="btn_camera_popup">
      <property name="geometry">
       <rect>
-       <x>330</x>
+       <x>300</x>
        <y>10</y>
        <width>111</width>
        <height>26</height>
@@ -66,19 +66,22 @@
     <widget class="QPushButton" name="btn_cobot_front">
      <property name="geometry">
       <rect>
-       <x>120</x>
+       <x>110</x>
        <y>370</y>
        <width>101</width>
-       <height>41</height>
+       <height>51</height>
       </rect>
      </property>
      <property name="font">
       <font>
        <pointsize>10</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
       </font>
      </property>
      <property name="text">
-      <string>Cobot (Front)</string>
+      <string>Cobot
+(Front)</string>
      </property>
     </widget>
     <widget class="QLabel" name="image_streaming">
@@ -86,7 +89,7 @@
       <rect>
        <x>10</x>
        <y>50</y>
-       <width>431</width>
+       <width>401</width>
        <height>311</height>
       </rect>
      </property>
@@ -114,12 +117,14 @@
        <x>10</x>
        <y>370</y>
        <width>101</width>
-       <height>41</height>
+       <height>51</height>
       </rect>
      </property>
      <property name="font">
       <font>
        <pointsize>10</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
       </font>
      </property>
      <property name="text">
@@ -129,37 +134,42 @@
     <widget class="QPushButton" name="btn_cobot_eef">
      <property name="geometry">
       <rect>
-       <x>230</x>
+       <x>210</x>
        <y>370</y>
        <width>101</width>
-       <height>41</height>
+       <height>51</height>
       </rect>
      </property>
      <property name="font">
       <font>
        <pointsize>10</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
       </font>
      </property>
      <property name="text">
-      <string>Cobot (EEF)</string>
+      <string>Cobot
+(EEF)</string>
      </property>
     </widget>
     <widget class="QPushButton" name="btn_360cam">
      <property name="geometry">
       <rect>
-       <x>340</x>
+       <x>310</x>
        <y>370</y>
        <width>101</width>
-       <height>41</height>
+       <height>51</height>
       </rect>
      </property>
      <property name="font">
       <font>
        <pointsize>10</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
       </font>
      </property>
      <property name="text">
-      <string>360 Camera
+      <string>360º Camera
 (Link)</string>
      </property>
     </widget>
@@ -167,7 +177,7 @@
    <widget class="QFrame" name="frame_2">
     <property name="geometry">
      <rect>
-      <x>170</x>
+      <x>160</x>
       <y>300</y>
       <width>851</width>
       <height>431</height>
@@ -2058,7 +2068,7 @@
      <rect>
       <x>20</x>
       <y>300</y>
-      <width>141</width>
+      <width>131</width>
       <height>431</height>
      </rect>
     </property>
@@ -2094,7 +2104,7 @@
       <rect>
        <x>10</x>
        <y>50</y>
-       <width>121</width>
+       <width>111</width>
        <height>24</height>
       </rect>
      </property>
@@ -2117,7 +2127,7 @@
       <rect>
        <x>10</x>
        <y>100</y>
-       <width>121</width>
+       <width>111</width>
        <height>91</height>
       </rect>
      </property>
@@ -2133,7 +2143,7 @@
       <rect>
        <x>10</x>
        <y>210</y>
-       <width>121</width>
+       <width>111</width>
        <height>91</height>
       </rect>
      </property>
@@ -2149,7 +2159,7 @@
       <rect>
        <x>10</x>
        <y>320</y>
-       <width>121</width>
+       <width>111</width>
        <height>91</height>
       </rect>
      </property>
@@ -2161,7 +2171,7 @@
    <widget class="QFrame" name="frame_4">
     <property name="geometry">
      <rect>
-      <x>710</x>
+      <x>670</x>
       <y>10</y>
       <width>771</width>
       <height>271</height>
@@ -2262,7 +2272,7 @@
      <rect>
       <x>20</x>
       <y>10</y>
-      <width>681</width>
+      <width>641</width>
       <height>271</height>
      </rect>
     </property>
@@ -2348,7 +2358,7 @@
     <widget class="QPushButton" name="btn_doe_create">
      <property name="geometry">
       <rect>
-       <x>540</x>
+       <x>510</x>
        <y>10</y>
        <width>121</width>
        <height>23</height>
@@ -2369,7 +2379,7 @@
       <rect>
        <x>140</x>
        <y>170</y>
-       <width>521</width>
+       <width>491</width>
        <height>71</height>
       </rect>
      </property>
@@ -2391,7 +2401,7 @@
       <rect>
        <x>140</x>
        <y>130</y>
-       <width>521</width>
+       <width>491</width>
        <height>21</height>
       </rect>
      </property>
@@ -2407,7 +2417,7 @@
       <rect>
        <x>140</x>
        <y>90</y>
-       <width>521</width>
+       <width>491</width>
        <height>21</height>
       </rect>
      </property>
@@ -2426,7 +2436,7 @@
       <rect>
        <x>140</x>
        <y>50</y>
-       <width>521</width>
+       <width>491</width>
        <height>21</height>
       </rect>
      </property>
@@ -2437,17 +2447,17 @@
       <enum>QFrame::StyledPanel</enum>
      </property>
      <property name="text">
-      <string>Press The 'Create DOE' Button To Configure DOE  ↑↑↑↑↑↑</string>
+      <string>Press The 'Create DOE' Button To Configure DOE               ↑↑↑↑↑↑</string>
      </property>
     </widget>
    </widget>
    <widget class="QFrame" name="frame_6">
     <property name="geometry">
      <rect>
-      <x>1490</x>
+      <x>1450</x>
       <y>10</y>
-      <width>411</width>
-      <height>701</height>
+      <width>391</width>
+      <height>721</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -2461,7 +2471,7 @@
       <rect>
        <x>20</x>
        <y>10</y>
-       <width>361</width>
+       <width>351</width>
        <height>31</height>
       </rect>
      </property>
@@ -2485,7 +2495,7 @@
       <rect>
        <x>10</x>
        <y>40</y>
-       <width>391</width>
+       <width>371</width>
        <height>20</height>
       </rect>
      </property>
@@ -2493,36 +2503,12 @@
       <enum>Qt::Horizontal</enum>
      </property>
     </widget>
-    <widget class="QLabel" name="label_2">
-     <property name="geometry">
-      <rect>
-       <x>160</x>
-       <y>320</y>
-       <width>81</width>
-       <height>18</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <family>Arial</family>
-       <pointsize>11</pointsize>
-       <weight>75</weight>
-       <bold>true</bold>
-      </font>
-     </property>
-     <property name="text">
-      <string>Graph</string>
-     </property>
-     <property name="alignment">
-      <set>Qt::AlignCenter</set>
-     </property>
-    </widget>
     <widget class="Line" name="line_2">
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>300</y>
-       <width>391</width>
+       <y>310</y>
+       <width>371</width>
        <height>20</height>
       </rect>
      </property>
@@ -2534,9 +2520,9 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>350</y>
-       <width>391</width>
-       <height>341</height>
+       <y>360</y>
+       <width>371</width>
+       <height>311</height>
       </rect>
      </property>
      <property name="autoFillBackground">
@@ -2551,7 +2537,7 @@
       <rect>
        <x>10</x>
        <y>60</y>
-       <width>391</width>
+       <width>371</width>
        <height>241</height>
       </rect>
      </property>
@@ -2607,13 +2593,37 @@
      </attribute>
      <column/>
     </widget>
+    <widget class="QLabel" name="label_43">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>330</y>
+       <width>351</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>Arial</family>
+       <pointsize>14</pointsize>
+       <weight>50</weight>
+       <bold>false</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>Graph (Stress-strain plot)</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
    </widget>
    <widget class="QFrame" name="frame_7">
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>1160</y>
-      <width>1461</width>
+      <y>750</y>
+      <width>1421</width>
       <height>181</height>
      </rect>
     </property>
@@ -2627,7 +2637,7 @@
      <property name="geometry">
       <rect>
        <x>220</x>
-       <y>40</y>
+       <y>30</y>
        <width>181</width>
        <height>51</height>
       </rect>
@@ -2843,7 +2853,7 @@
      <property name="geometry">
       <rect>
        <x>220</x>
-       <y>120</y>
+       <y>110</y>
        <width>171</width>
        <height>51</height>
       </rect>
@@ -2863,9 +2873,9 @@
     <widget class="QLabel" name="txt_system_status_3">
      <property name="geometry">
       <rect>
-       <x>390</x>
-       <y>40</y>
-       <width>1051</width>
+       <x>400</x>
+       <y>30</y>
+       <width>1011</width>
        <height>51</height>
       </rect>
      </property>
@@ -2882,8 +2892,8 @@
     <widget class="QLabel" name="txt_system_status_5">
      <property name="geometry">
       <rect>
-       <x>390</x>
-       <y>120</y>
+       <x>400</x>
+       <y>110</y>
        <width>1051</width>
        <height>51</height>
       </rect>
@@ -2903,10 +2913,10 @@
    <widget class="QFrame" name="frame_8">
     <property name="geometry">
      <rect>
-      <x>1490</x>
-      <y>720</y>
-      <width>411</width>
-      <height>91</height>
+      <x>1450</x>
+      <y>750</y>
+      <width>391</width>
+      <height>181</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -2915,38 +2925,12 @@
     <property name="frameShadow">
      <enum>QFrame::Raised</enum>
     </property>
-    <widget class="QLabel" name="logo_SNU">
-     <property name="geometry">
-      <rect>
-       <x>320</x>
-       <y>10</y>
-       <width>81</width>
-       <height>81</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>SNU</string>
-     </property>
-    </widget>
-    <widget class="QLabel" name="logo_IDIM">
-     <property name="geometry">
-      <rect>
-       <x>20</x>
-       <y>20</y>
-       <width>281</width>
-       <height>81</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>IDIM</string>
-     </property>
-    </widget>
    </widget>
    <widget class="QWidget" name="gridLayoutWidget_4">
     <property name="geometry">
      <rect>
-      <x>180</x>
-      <y>780</y>
+      <x>850</x>
+      <y>1120</y>
       <width>851</width>
       <height>391</height>
      </rect>
@@ -4098,85 +4082,30 @@
      </item>
     </layout>
    </widget>
-   <widget class="QLabel" name="label_22">
+   <widget class="QLabel" name="logo_SNU">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>770</y>
-      <width>186</width>
-      <height>17</height>
+      <x>1820</x>
+      <y>960</y>
+      <width>81</width>
+      <height>81</height>
      </rect>
     </property>
-    <property name="sizePolicy">
-     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-      <horstretch>0</horstretch>
-      <verstretch>0</verstretch>
-     </sizepolicy>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>12</pointsize>
-      <weight>75</weight>
-      <italic>true</italic>
-      <bold>true</bold>
-     </font>
-    </property>
     <property name="text">
-     <string>AMR</string>
+     <string>SNU</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label_43">
+   <widget class="QLabel" name="logo_IDIM">
     <property name="geometry">
      <rect>
-      <x>0</x>
-      <y>840</y>
-      <width>186</width>
-      <height>17</height>
+      <x>1520</x>
+      <y>970</y>
+      <width>281</width>
+      <height>81</height>
      </rect>
     </property>
-    <property name="sizePolicy">
-     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-      <horstretch>0</horstretch>
-      <verstretch>0</verstretch>
-     </sizepolicy>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>12</pointsize>
-      <weight>75</weight>
-      <italic>true</italic>
-      <bold>true</bold>
-     </font>
-    </property>
     <property name="text">
-     <string>Collaborative Robot</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_61">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>910</y>
-      <width>181</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="sizePolicy">
-     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-      <horstretch>0</horstretch>
-      <verstretch>0</verstretch>
-     </sizepolicy>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>12</pointsize>
-      <weight>75</weight>
-      <italic>true</italic>
-      <bold>true</bold>
-     </font>
-    </property>
-    <property name="text">
-     <string>Measurement Station</string>
+     <string>IDIM</string>
     </property>
    </widget>
   </widget>
@@ -4186,7 +4115,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1909</width>
+     <width>1872</width>
      <height>25</height>
     </rect>
    </property>
