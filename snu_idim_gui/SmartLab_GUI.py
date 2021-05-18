@@ -155,7 +155,7 @@ class QSendCommand(QThread):
 class SmartLAB_GUI(QMainWindow, QDialog):
     def __init__(self):
         super(QDialog, self).__init__()
-        uic.loadUi("SmartLab_GUI.ui", self)
+        uic.loadUi("SmartLab_GUI_betaver.ui", self)
         QDialog().setFixedSize(self.size())
 
         self.init_flag = False
@@ -198,7 +198,7 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         self.btn_360cam.clicked.connect(self.cb_btn_360cam)
         self.btn_camera_popup.clicked.connect(self.cb_btn_popup)
 
-        self.showlogo()
+        self.showLogo()
 
         qthread_device = QUpdateDeviceInfo(self)
         qthread_device.changeDeviceInfo.connect(self.setDeviceTable)
@@ -364,7 +364,7 @@ class SmartLAB_GUI(QMainWindow, QDialog):
 
             if Plot is not None:
                 Graph_binary    = base64.b64decode(Plot)
-                image           = Image.open(io.BytesIO(Graph_binary))
+                #image           = Image.open(io.BytesIO(Graph_binary))
                 qPixmapVar = QPixmap()
                 qPixmapVar.loadFromData(Graph_binary)
                 qPixmapVar = qPixmapVar.scaled(self.graph.width(), self.graph.height())
@@ -432,7 +432,7 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         smartlab_cmd = self.smartlab_cmd
         print("[DEBUG] Execution mode: {}".format(self.smartlab_cmd['test_mode']))
 
-    def showlogo(self):
+    def showLogo(self):
         SNU_image = QPixmap()
         SNU_image.load('./src/snu.png')
         SNU_image = SNU_image.scaled(self.logo_SNU.width(), self.logo_SNU.height())

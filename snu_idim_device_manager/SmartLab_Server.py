@@ -559,7 +559,7 @@ class SmartLABCore():
 
 
     def executionManager(self):
-        debug = False
+        debug = True
         debug_withoutAMR = False #True
 
         while True:
