@@ -62,7 +62,7 @@ class SmartLABCore():
         self.test_step = 0
 
         ## Connect to the database server
-        self.mysql = SqlHelper(host='localhost', username='root', password='0000', port=3306, database='SmartLab', debug=True)
+        self.mysql = SqlHelper(host='localhost', username='root', password='0000', port=3306, database='SmartLab')
 
         ## Check existing columns and data
         column_list = self.mysql.get_table_columns(tablename='result')
@@ -102,7 +102,7 @@ class SmartLABCore():
         self.test_info['completed'] = list()
 
         ## Camera Streaming
-        self.streaming_server = Cam_Streaming_Server(cam_list=['overview', 'cobot'])
+        self.streaming_server = Cam_Streaming_Server(cam_list=['overview', 'cobot_eef', 'cobot_front'])
 
         ## ZMQ: ROS(server) <-> Python(client)
         self.context = zmq.Context()
@@ -343,8 +343,8 @@ class SmartLABCore():
                         if device_status['status'].find('Idle') != -1:
                             try:
                                 print_next = self.printing_queue.pop(0)
-                                # if self.req['setup_doe']['header_id'] != 'DRY_TEST':
-                                self.tapping(device_id, print_next)
+                                if self.req['setup_doe']['header_id'] != 'DRY_TEST':
+                                    self.tapping(device_id, print_next)
                                 self.device_dict[device_id].sendCommand({'print': print_next})
                                 self.mysql.insert('result', {'subject_name': print_next}, conds='ON DUPLICATE KEY UPDATE Status = "Fabrication"')
                                 sleep(2.0)
@@ -390,8 +390,8 @@ class SmartLABCore():
             return robot_task_queue
         
         elif task_type == 'bed_from_robot_to_omm':
-            task_place_bed = [ACTION_HOME, TASK_3DP_BED_IN, ACTION_HOME] # TODO: 로봇 작업 추가 필요
-            self.cobot_recent_work = ACTION_HOME
+            task_place_bed = [ACTION_HOME, TASK_3DP_BED_IN] # TODO: 로봇 작업 추가 필요
+            self.cobot_recent_work = TASK_3DP_BED_IN
             robot_task_queue = task_place_bed
             return robot_task_queue
         
@@ -525,13 +525,20 @@ class SmartLABCore():
     ''' 
     def checkExecutionMode(self):
         while True:
+            mysql = SqlHelper(host='localhost', username='root', password='0000', port=3306, database='SmartLab')
+            mysql.insert('system_status', {'id': '1', 'control_mode': str(self.req['test_mode'])}, conds='ON DUPLICATE KEY UPDATE {} = \'{}\''.format('control_mode', self.req['test_mode']))
+            mysql.insert('system_status', {'id': '1', 'control_step': str(self.test_step)}, conds='ON DUPLICATE KEY UPDATE {} = \'{}\''.format('control_step', self.test_step))
+            mysql.insert('system_status', {'id': '1', 'control_status': 'Waiting'}, conds='ON DUPLICATE KEY UPDATE {} = \'{}\''.format('control_status', 'Waiting'))
             if self.req['test_mode'] == 'auto':
                 print("[AUTO MODE] Execute next step automatically ... (Step: {})".format(self.test_step))
+                mysql.insert('system_status', {'id': '1', 'control_status': 'Running'}, conds='ON DUPLICATE KEY UPDATE {} = \'{}\''.format('control_status', 'Running'))
                 return 0
             elif self.req['test_mode'] == 'step':
                 print("[STEP MODE] Waiting for triggering ... (Step: {})".format(self.test_step))
+                
                 if self.req['test_step'] != -1:
                     print("[STEP MODE] Execute next step ... (Step: {})".format(self.test_step))
+                    mysql.insert('system_status', {'id': '1', 'control_status': 'Running'}, conds='ON DUPLICATE KEY UPDATE {} = \'{}\''.format('control_status', 'Running'))
                     self.req['test_step'] = -1
                     return 1
             elif self.req['test_mode'] == 'debug':

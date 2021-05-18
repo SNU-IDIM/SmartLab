@@ -15,6 +15,7 @@ from PyQt5.QtCore import Qt, QThread, QUrl, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import *
 # from PyQt5.QtWebEngineWidgets import *
 from PyQt5.QtWidgets import *
+import webbrowser
 
 from SmartLab_Client import SmartLabClient
 
@@ -25,36 +26,14 @@ import pafy
 
 
 global streaming
-streaming = Cam_Streaming_Client(cam_list=['overview', 'cobot'])
+streaming = Cam_Streaming_Client(cam_list=['overview', 'cobot_eef', 'cobot_front'])
 img_con_flag = False
 
-image_cobot    = np.empty((480, 640, 3))
+image_cobot_eef    = np.empty((480, 640, 3))
 image_overview = np.empty((480, 640, 3))
 
 global streaming_mode
-streaming_mode = 0
-
-
-class Roboteefview(QThread):
-    changePixmap = pyqtSignal(QImage)
-
-    def run(self):
-        global img_con_flag
-        global streaming
-        self.streaming = streaming
-        while True:
-            if self.streaming.image_cobot[0][0][0] != 0.0:
-                img_con_flag = True
-            if img_con_flag is True:
-                self.rgbImage = self.streaming.image_cobot
-                h, w, ch = self.rgbImage.shape
-                bytesPerLine = ch * w
-                convertToQtFormat = QImage(self.rgbImage.data, w, h, bytesPerLine, QImage.Format_RGB888)
-                
-                p = convertToQtFormat.scaled(640, 480, Qt.KeepAspectRatio)
-                self.changePixmap.emit(p)
-            else:
-                print("waiting for flag  " +str(img_con_flag))
+streaming_mode = 'overview'
 
 class QCameraStreaming(QThread):
     changePixmap = pyqtSignal(QImage)
@@ -69,10 +48,12 @@ class QCameraStreaming(QThread):
             if self.streaming.image_overview[0][0][0] != 0.0:
                 img_con_flag = True
             if img_con_flag is True:
-                if streaming_mode == 0:
+                if streaming_mode == 'overview':
                     self.rgbImage = self.streaming.image_overview
-                elif streaming_mode == 1:
-                    self.rgbImage = self.streaming.image_cobot
+                elif streaming_mode == 'cobot_eef':
+                    self.rgbImage = self.streaming.image_cobot_eef
+                elif streaming_mode == 'cobot_front':
+                    self.rgbImage = self.streaming.image_cobot_front
                 h, w, ch = self.rgbImage.shape
                 bytesPerLine = ch * w
                 convertToQtFormat = QImage(self.rgbImage.data, w, h, bytesPerLine, QImage.Format_RGB888)
@@ -81,7 +62,8 @@ class QCameraStreaming(QThread):
                 self.changePixmap.emit(p)
                 time.sleep(0.1)
             else:
-                print("waiting for flag  " +str(img_con_flag))
+                # print("waiting for flag  " +str(img_con_flag))
+                pass
 
 
 class QUpdateDeviceInfo(QThread):
@@ -91,7 +73,7 @@ class QUpdateDeviceInfo(QThread):
         super(QUpdateDeviceInfo, self).__init__(parent)
 
     def run(self):
-        self.sql = SqlHelper(host='192.168.60.21', username='wjYun', password='0000', port=3306, database='SmartLab')
+        self.sql = SqlHelper(host='192.168.0.88', username='wjYun', password='0000', port=3306, database='SmartLab')
         while True:
             try:
                 device_info = self.sql.select('device_info', conds="id=(SELECT MAX(id) FROM device_info)")[0]
@@ -111,7 +93,7 @@ class QUpdateTestInfo(QThread):
     def run(self):
         global smartlab_cmd
         self.smartlab_cmd = smartlab_cmd
-        self.sql = SqlHelper(host='192.168.60.21', username='wjYun', password='0000', port=3306, database='SmartLab')
+        self.sql = SqlHelper(host='192.168.0.88', username='wjYun', password='0000', port=3306, database='SmartLab')
         while True:
             try:
                 fields = ['subject_name', 'Status', 'Thickness', 'Length', 'Width', 'E_modulus', 'U_stress']
@@ -120,7 +102,25 @@ class QUpdateTestInfo(QThread):
                 self.changeTestInfo.emit(json.dumps(test_info))
                 time.sleep(3.0)
             except:
-                print("[ERROR] Device information update error !!!")
+                print("[ERROR] Test information update error !!!")
+                pass
+
+class QUpdateSystemInfo(QThread):
+    changeSystemInfo = pyqtSignal(str)
+
+    def __init__(self, parent=None):
+        super(QUpdateSystemInfo, self).__init__(parent)
+
+    def run(self):
+        self.sql = SqlHelper(host='192.168.0.88', username='wjYun', password='0000', port=3306, database='SmartLab')
+        while True:
+            try:
+                system_info = self.sql.select('system_status', conds="id=(SELECT MAX(id) FROM system_status)")[0]
+                print(system_info)
+                self.changeSystemInfo.emit(json.dumps(system_info))
+                time.sleep(3.0)
+            except:
+                print("[ERROR] System information update error !!!")
                 pass
 
 class QSendCommand(QThread):
@@ -163,21 +163,25 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         init_flag = self.init_flag
         
 
-        self.sql = SqlHelper(host='192.168.60.21', username='wjYun', password='0000', port=3306, database='SmartLab')
+        self.sql = SqlHelper(host='192.168.0.88', username='wjYun', password='0000', port=3306, database='SmartLab')
 
-
-        self.smartlab = SmartLabClient(ip='192.168.60.21')
+        self.smartlab = SmartLabClient(ip='192.168.0.88')
         global smartlab
         smartlab = self.smartlab
 
         self.smartlab_cmd = dict()
         self.smartlab_cmd['test_mode'] = 'auto'
         self.smartlab_cmd['test_step'] = -1
-        self.smartlab_cmd['setup_device'] = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer1', 'printer2']
+        self.smartlab_cmd['setup_device'] = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer1', 'printer2', 'printer3']
         self.smartlab_cmd['setup_doe'] = dict()
 
         global smartlab_cmd
         smartlab_cmd = self.smartlab_cmd
+
+        self.system_status = dict()
+        self.system_status['control_mode'] = 'auto'
+        self.system_status['control_step'] = '0'
+        self.system_status['control_status'] = 'Waiting'
 
 
         self.btn_doe_create.clicked.connect(self.cb_btn_doe_create)
@@ -186,11 +190,13 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         self.btn_control_stop.clicked.connect(self.cb_btn_control_stop)
         self.btn_exp_export.clicked.connect(self.cb_btn_exp_export)
         self.cbx_control.currentIndexChanged.connect(self.cb_cbx_control)
-        self.btn_doe_apply.clicked.connect(self.cb_btn_doe_apply)
+        #self.btn_doe_apply.clicked.connect(self.cb_btn_doe_apply)
         self.btn_exp_detail.clicked.connect(self.cb_btn_exp_detail)
         self.btn_overview.clicked.connect(self.cb_btn_overview)
-        self.btn_robot.clicked.connect(self.cb_btn_robot)
-        # self.btn_printer.clicked.connect(self.cb_btn_printer)
+        self.btn_cobot_eef.clicked.connect(self.cb_btn_cobot_eef)
+        self.btn_cobot_front.clicked.connect(self.cb_btn_cobot_front)
+        self.btn_360cam.clicked.connect(self.cb_btn_360cam)
+        self.btn_camera_popup.clicked.connect(self.cb_btn_popup)
 
         self.showlogo()
 
@@ -210,6 +216,10 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         qthread_streaming.changePixmap.connect(self.setImageStreaming)
         qthread_streaming.start()
 
+        qthread_sys_status = QUpdateSystemInfo(self)
+        qthread_sys_status.changeSystemInfo.connect(self.setSystemStatus)
+        qthread_sys_status.start()
+        
         # self.cam360_screen.setStyleSheet("background-color: rgb(84, 84, 84);")
         # self.webview = QWebEngineView(self.cam360_screen)
         # self.webview.setUrl(QUrl("https://www.youtube.com/watch?v=avmSkeJwT0o"))
@@ -218,6 +228,22 @@ class SmartLAB_GUI(QMainWindow, QDialog):
     @pyqtSlot()
     def sendCommand(self):
         print('[DEBUG] SmartLab command is sent to the Server.')
+
+    @pyqtSlot(str)
+    def setSystemStatus(self, system_info_str):
+        self.system_status = json.loads(system_info_str)
+        if self.smartlab_cmd['test_mode'] == 'auto':
+            self.btn_control_run.setEnabled(True)
+        elif self.smartlab_cmd['test_mode'] == 'step':
+            if self.system_status['control_status'] == 'Waiting':
+                self.btn_control_run.setEnabled(True)
+            else:
+                self.btn_control_run.setEnabled(False)
+
+
+        print(type(self.system_status))
+        print(self.system_status)
+
 
     @pyqtSlot(str)
     def setDeviceTable(self, device_info_str):
@@ -231,16 +257,7 @@ class SmartLAB_GUI(QMainWindow, QDialog):
 
     @pyqtSlot(QImage)
     def setImageStreaming(self, image):
-        global streaming_mode
         self.image_streaming.setPixmap(QPixmap.fromImage(image))
-
-    @pyqtSlot(QImage)
-    def setImage_cobot_eef(self, image):
-        self.image_cobot_eef.setPixmap(QPixmap.fromImage(image))
-
-    @pyqtSlot(QImage)
-    def setImage_cam_360(self, image):
-        self.cam360_screen.setPixmap(QPixmap.fromImage(image))
 
     def updateTestTable(self, test_info):
         n_col = len(list(test_info[0]))
@@ -253,7 +270,7 @@ class SmartLAB_GUI(QMainWindow, QDialog):
     
         for row, item_list in enumerate(test_info):
             for col, key in enumerate(fields):
-                item = test_info[row][key]
+                item = test_info[row][key] if test_info[row][key] != None else ''
                 newitem = QTableWidgetItem(str(item))
                 self.table_exp_info.setItem(row, col, newitem)
 
@@ -263,10 +280,12 @@ class SmartLAB_GUI(QMainWindow, QDialog):
                 test_info = device_status[device_id]
                 test_info = json.loads(test_info)
                 if   device_id.find('amr') != -1:
+                    print('amr')
                     self.AMR_status.setText(str(test_info['status']))
                     self.AMR_task.setText(str(test_info['current_work']))
                     self.AMR_SN.setText(str(test_info['subject_name'])) ##TBD
                 elif device_id.find('cobot') != -1:
+                    print('cobot')
                     self.Cobot_status.setText(str(test_info['status']))
                     self.Cobot_current.setText(str(test_info['current_work'])) 
                     self.Cobot_comp.setText(str(test_info["compressor"]))
@@ -372,11 +391,18 @@ class SmartLAB_GUI(QMainWindow, QDialog):
 
     def cb_btn_overview(self):
         global streaming_mode
-        streaming_mode = 0
+        streaming_mode = 'overview'
 
-    def cb_btn_robot(self):
+    def cb_btn_cobot_eef(self):
         global streaming_mode
-        streaming_mode = 1
+        streaming_mode = 'cobot_eef'
+
+    def cb_btn_cobot_front(self):
+        global streaming_mode
+        streaming_mode = 'cobot_front'
+    
+    def cb_btn_360cam(self):
+        webbrowser.open('http://www.youtube.com/channel/UCec1lf2ZtDUx1Qd7S0mKC3g/live')
     
     def cb_btn_control_pause(self):
         print("[DEBUG] 'Control - Pause' button clicked !!! (TBD)")
@@ -385,6 +411,7 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         print("[DEBUG] 'Control - Stop' button clicked !!! (TBD)")
         
     def cb_btn_doe_apply(self):
+        print('%@#$!$!@#%@#%!@$@#$@%!@#%')
         self.txt_doe_exp_name.setText(self.DOE_window.doe['header_id'])
         self.txt_doe_exp_type.setText(self.DOE_window.doe['experiment_type'])
         self.txt_doe_doe_type.setText(self.DOE_window.doe['doe_type'])
@@ -395,7 +422,8 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         
     def cb_btn_doe_create(self):
         self.DOE_window = DOE_Window()
-        self.DOE_window.exec()
+        self.DOE_window.show()
+        self.DOE_window.btn_doe_ok.clicked.connect(self.cb_btn_doe_apply)
 
 
     def cb_cbx_control(self):
@@ -406,7 +434,7 @@ class SmartLAB_GUI(QMainWindow, QDialog):
 
     def showlogo(self):
         SNU_image = QPixmap()
-        SNU_image.load('./src/snu.jpg')
+        SNU_image.load('./src/snu.png')
         SNU_image = SNU_image.scaled(self.logo_SNU.width(), self.logo_SNU.height())
         IDIM_image = QPixmap()
         IDIM_image.load('./src/idim.png')
@@ -415,7 +443,23 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         self.logo_IDIM.setPixmap(IDIM_image)
         self.logo_SNU.setPixmap(SNU_image)
 
+    def cb_btn_popup(self):
+        self.Popup_window = Popup_Window()
+        self.Popup_window.show()
 
+        qthread_streaming_popup = QCameraStreaming(self)
+        qthread_streaming_popup.changePixmap.connect(self.setImageStreamingPopup)
+        qthread_streaming_popup.start()
+
+    @pyqtSlot(QImage)
+    def setImageStreamingPopup(self, image):
+        self.Popup_window.image_streaming.setPixmap(QPixmap.fromImage(image))
+        
+
+class Popup_Window(QDialog):
+    def __init__(self) :
+        super().__init__()
+        uic.loadUi("Popup.ui", self)
 
 class DOE_Window(QDialog) :
     def __init__(self) :
