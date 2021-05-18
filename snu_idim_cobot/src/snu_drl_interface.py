@@ -741,7 +741,9 @@ class DeviceClass_Cobot():
                 waypoint_3_right2 = self.calcRelMove([-6, +10, 0, 0, 0, 0], True)
                 waypoint_3_down = self.calcRelMove([-6,  0, 20, 0, 0, 0], True)
                 waypoint_4 = self.calcRelMove([0, 0, -50, 0, 0, 0], True)
-                waypoint_5 = self.calcRelMove([200, 0, -50, 0, 0, 0], True)
+                waypoint_5 = self.calcRelMove([450, 0, -150, 0, 0, 0], True)
+                waypoint_6 = self.calcRelMove([0, 0, 0, 0, 0, 135], True)
+                waypoint_7 = self.calcRelMove([0, 0, 0, 0, -50, 0], True)
 
                 # movel(waypoint_1, ref=DR_TOOL, mod=DR_MV_MOD_REL)
                 # movej(posj(waypoint_1), mod=DR_MV_MOD_REL)
@@ -763,7 +765,10 @@ class DeviceClass_Cobot():
                 self.suction_cup_off();  rospy.sleep(1)
                 movel(waypoint_4, ref=DR_TOOL, mod=DR_MV_MOD_REL)
                 movel(waypoint_5, ref=DR_TOOL, mod=DR_MV_MOD_REL)
-                movej(Q_TOP_PLATE)
+                movel(waypoint_6, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+                movel(waypoint_7, ref=DR_TOOL, mod=DR_MV_MOD_REL)
+                #movej(Q_TOP_PLATE)
+
                 self.ARupdateParam(-0.12, 0.0, 0.25, rx=180.0, ry=0.0, rz=180.0)
             
 
@@ -1223,6 +1228,8 @@ class DeviceClass_Cobot():
             self.logging("10010 command Bed: {}, Stage: {}".format(tag_id_bed, tag_id_stage))
             if tag_id_stage != None and tag_id_bed != None:
                 self.moveBedFromRobotToStage(tag_id_bed=tag_id_bed, tag_id_stage=tag_id_stage)
+
+            
 
         # Task [-10010]: "TASK_3DP_BED_OUT" - (3DP-#1~4 Bed) Printer -> Jig 
         elif(self.cmd_protocol == TASK_3DP_BED_OUT):
