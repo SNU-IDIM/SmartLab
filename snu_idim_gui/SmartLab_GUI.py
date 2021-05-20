@@ -169,6 +169,8 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         global smartlab
         smartlab = self.smartlab
 
+        self.test_info = list()
+
         self.smartlab_cmd = dict()
         self.smartlab_cmd['test_mode'] = 'auto'
         self.smartlab_cmd['test_step'] = -1
@@ -232,17 +234,33 @@ class SmartLAB_GUI(QMainWindow, QDialog):
     @pyqtSlot(str)
     def setSystemStatus(self, system_info_str):
         self.system_status = json.loads(system_info_str)
+        self.txt_system_step.setText(str(self.system_status['control_step']))
+        self.updateSystemStep(self.system_status['control_step'])
+        n_test_total = len(self.test_info)
+        n_test_done = 0
+        for test_info in self.test_info:
+            if test_info['Status'] == 'Done':
+                n_test_done += 1
+        try:
+            progress = (n_test_done / n_test_total) * 100.0
+            self.pBar_system.setValue(progress)
+        except:
+            progress = 0
+            self.pBar_system.setValue(0)
+
+        self.txt_system_progress.setText('{}%\n({}/{} runs)'.format(round(progress, 1), n_test_done, n_test_total))
         if self.smartlab_cmd['test_mode'] == 'auto':
             self.btn_control_run.setEnabled(True)
+            self.txt_system_mode.setText('Auto')
+            self.txt_system_guide.setText('The system is running automatically !')
         elif self.smartlab_cmd['test_mode'] == 'step':
+            self.txt_system_mode.setText('Step')
             if self.system_status['control_status'] == 'Waiting':
                 self.btn_control_run.setEnabled(True)
+                self.txt_system_guide.setText('Please click the \'RUN\' button !')
             else:
+                self.txt_system_guide.setText('Please wait until the task is done !')
                 self.btn_control_run.setEnabled(False)
-
-
-        print(type(self.system_status))
-        print(self.system_status)
 
 
     @pyqtSlot(str)
@@ -259,7 +277,25 @@ class SmartLAB_GUI(QMainWindow, QDialog):
     def setImageStreaming(self, image):
         self.image_streaming.setPixmap(QPixmap.fromImage(image))
 
+    def updateSystemStep(self, step):
+        step = int(step)
+        if step == 0:
+            self.txt_system_status.setText('Fabricating specimens')
+        elif step == 1:
+            self.txt_system_status.setText('Get printing bed from 3D printer')
+        elif step == 2:
+            self.txt_system_status.setText('Measuring dimension of the specimen')
+        elif step == 3:
+            self.txt_system_status.setText('Detaching the specimen')
+        elif step == 4:
+            self.txt_system_status.setText('Feeding specimen to Universal testing machine')
+        elif step == 5:
+            self.txt_system_status.setText('Experiment setting')
+        elif step == 6:
+            self.txt_system_status.setText('Conducting an experiment (Tensile test)')
+
     def updateTestTable(self, test_info):
+        self.test_info = test_info
         n_col = len(list(test_info[0]))
         n_row = len(test_info)
 
@@ -280,12 +316,10 @@ class SmartLAB_GUI(QMainWindow, QDialog):
                 test_info = device_status[device_id]
                 test_info = json.loads(test_info)
                 if   device_id.find('amr') != -1:
-                    print('amr')
                     self.AMR_status.setText(str(test_info['status']))
                     self.AMR_task.setText(str(test_info['current_work']))
                     self.AMR_SN.setText(str(test_info['subject_name'])) ##TBD
                 elif device_id.find('cobot') != -1:
-                    print('cobot')
                     self.Cobot_status.setText(str(test_info['status']))
                     self.Cobot_current.setText(str(test_info['current_work'])) 
                     self.Cobot_comp.setText(str(test_info["compressor"]))
@@ -411,7 +445,6 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         print("[DEBUG] 'Control - Stop' button clicked !!! (TBD)")
         
     def cb_btn_doe_apply(self):
-        print('%@#$!$!@#%@#%!@$@#$@%!@#%')
         self.txt_doe_exp_name.setText(self.DOE_window.doe['header_id'])
         self.txt_doe_exp_type.setText(self.DOE_window.doe['experiment_type'])
         self.txt_doe_doe_type.setText(self.DOE_window.doe['doe_type'])

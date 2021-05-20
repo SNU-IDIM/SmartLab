@@ -564,9 +564,9 @@
      <widget class="QLabel" name="TDP1_SN">
       <property name="geometry">
        <rect>
-        <x>70</x>
+        <x>100</x>
         <y>70</y>
-        <width>121</width>
+        <width>101</width>
         <height>21</height>
        </rect>
       </property>
@@ -589,9 +589,9 @@
      <widget class="QLabel" name="TDP1_status">
       <property name="geometry">
        <rect>
-        <x>70</x>
+        <x>100</x>
         <y>40</y>
-        <width>121</width>
+        <width>101</width>
         <height>21</height>
        </rect>
       </property>
@@ -642,10 +642,10 @@
      <widget class="QLabel" name="TDP1_time">
       <property name="geometry">
        <rect>
-        <x>70</x>
-        <y>160</y>
-        <width>121</width>
-        <height>21</height>
+        <x>100</x>
+        <y>150</y>
+        <width>101</width>
+        <height>41</height>
        </rect>
       </property>
       <property name="font">
@@ -730,33 +730,11 @@
        <bool>true</bool>
       </property>
      </widget>
-     <widget class="QLabel" name="label_47">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>110</y>
-        <width>61</width>
-        <height>21</height>
-       </rect>
-      </property>
-      <property name="font">
-       <font>
-        <family>Ubuntu</family>
-        <pointsize>10</pointsize>
-        <weight>75</weight>
-        <italic>false</italic>
-        <bold>true</bold>
-       </font>
-      </property>
-      <property name="text">
-       <string>Task:</string>
-      </property>
-     </widget>
      <widget class="QLabel" name="label_48">
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>80</y>
+        <y>140</y>
         <width>81</width>
         <height>21</height>
        </rect>
@@ -778,33 +756,8 @@
       <property name="geometry">
        <rect>
         <x>100</x>
-        <y>80</y>
+        <y>140</y>
         <width>61</width>
-        <height>21</height>
-       </rect>
-      </property>
-      <property name="font">
-       <font>
-        <family>Ubuntu</family>
-        <pointsize>10</pointsize>
-       </font>
-      </property>
-      <property name="text">
-       <string>-</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-      <property name="wordWrap">
-       <bool>true</bool>
-      </property>
-     </widget>
-     <widget class="QLabel" name="Cobot_current">
-      <property name="geometry">
-       <rect>
-        <x>70</x>
-        <y>110</y>
-        <width>121</width>
         <height>21</height>
        </rect>
       </property>
@@ -850,7 +803,7 @@
       <property name="geometry">
        <rect>
         <x>70</x>
-        <y>140</y>
+        <y>110</y>
         <width>121</width>
         <height>21</height>
        </rect>
@@ -875,7 +828,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>140</y>
+        <y>110</y>
         <width>61</width>
         <height>21</height>
        </rect>
@@ -923,6 +876,53 @@
        <string>Collaborative Robot</string>
       </property>
      </widget>
+     <widget class="QLabel" name="Cobot_current">
+      <property name="geometry">
+       <rect>
+        <x>70</x>
+        <y>80</y>
+        <width>121</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <family>Ubuntu</family>
+        <pointsize>10</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>-</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_47">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>80</y>
+        <width>61</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <family>Ubuntu</family>
+        <pointsize>10</pointsize>
+        <weight>75</weight>
+        <italic>false</italic>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>Task:</string>
+      </property>
+     </widget>
     </widget>
     <widget class="QFrame" name="frame_14">
      <property name="geometry">
@@ -968,9 +968,9 @@
       <property name="geometry">
        <rect>
         <x>70</x>
-        <y>50</y>
+        <y>40</y>
         <width>121</width>
-        <height>21</height>
+        <height>41</height>
        </rect>
       </property>
       <property name="font">
@@ -1086,9 +1086,9 @@
       <property name="geometry">
        <rect>
         <x>70</x>
-        <y>50</y>
+        <y>40</y>
         <width>121</width>
-        <height>21</height>
+        <height>41</height>
        </rect>
       </property>
       <property name="font">
@@ -1371,9 +1371,9 @@
      <widget class="QLabel" name="TDP2_SN">
       <property name="geometry">
        <rect>
-        <x>70</x>
+        <x>100</x>
         <y>70</y>
-        <width>121</width>
+        <width>101</width>
         <height>21</height>
        </rect>
       </property>
@@ -1396,9 +1396,9 @@
      <widget class="QLabel" name="TDP2_status">
       <property name="geometry">
        <rect>
-        <x>70</x>
+        <x>100</x>
         <y>40</y>
-        <width>121</width>
+        <width>101</width>
         <height>21</height>
        </rect>
       </property>
@@ -1449,10 +1449,10 @@
      <widget class="QLabel" name="TDP2_time">
       <property name="geometry">
        <rect>
-        <x>70</x>
-        <y>160</y>
-        <width>121</width>
-        <height>21</height>
+        <x>100</x>
+        <y>150</y>
+        <width>101</width>
+        <height>41</height>
        </rect>
       </property>
       <property name="font">
@@ -1655,9 +1655,9 @@
      <widget class="QLabel" name="TDP3_SN">
       <property name="geometry">
        <rect>
-        <x>70</x>
+        <x>100</x>
         <y>70</y>
-        <width>121</width>
+        <width>101</width>
         <height>21</height>
        </rect>
       </property>
@@ -1680,9 +1680,9 @@
      <widget class="QLabel" name="TDP3_status">
       <property name="geometry">
        <rect>
-        <x>70</x>
+        <x>100</x>
         <y>40</y>
-        <width>121</width>
+        <width>101</width>
         <height>21</height>
        </rect>
       </property>
@@ -1733,10 +1733,10 @@
      <widget class="QLabel" name="TDP3_time">
       <property name="geometry">
        <rect>
-        <x>70</x>
-        <y>160</y>
-        <width>121</width>
-        <height>21</height>
+        <x>100</x>
+        <y>150</y>
+        <width>101</width>
+        <height>41</height>
        </rect>
       </property>
       <property name="font">
@@ -1939,9 +1939,9 @@
      <widget class="QLabel" name="TDP4_SN">
       <property name="geometry">
        <rect>
-        <x>70</x>
+        <x>100</x>
         <y>70</y>
-        <width>121</width>
+        <width>101</width>
         <height>21</height>
        </rect>
       </property>
@@ -1964,9 +1964,9 @@
      <widget class="QLabel" name="TDP4_status">
       <property name="geometry">
        <rect>
-        <x>70</x>
+        <x>100</x>
         <y>40</y>
-        <width>121</width>
+        <width>101</width>
         <height>21</height>
        </rect>
       </property>
@@ -2017,10 +2017,10 @@
      <widget class="QLabel" name="TDP4_time">
       <property name="geometry">
        <rect>
-        <x>70</x>
-        <y>160</y>
-        <width>121</width>
-        <height>21</height>
+        <x>100</x>
+        <y>150</y>
+        <width>101</width>
+        <height>41</height>
        </rect>
       </property>
       <property name="font">
@@ -2131,6 +2131,13 @@
        <height>91</height>
       </rect>
      </property>
+     <property name="font">
+      <font>
+       <pointsize>20</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
      <property name="text">
       <string>RUN</string>
      </property>
@@ -2147,6 +2154,13 @@
        <height>91</height>
       </rect>
      </property>
+     <property name="font">
+      <font>
+       <pointsize>20</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
      <property name="text">
       <string>PAUSE</string>
      </property>
@@ -2162,6 +2176,13 @@
        <width>111</width>
        <height>91</height>
       </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>20</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
      </property>
      <property name="text">
       <string>STOP</string>
@@ -2624,7 +2645,7 @@
       <x>20</x>
       <y>750</y>
       <width>1421</width>
-      <height>181</height>
+      <height>231</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -2633,11 +2654,11 @@
     <property name="frameShadow">
      <enum>QFrame::Raised</enum>
     </property>
-    <widget class="QLabel" name="txt_system_status">
+    <widget class="QLabel" name="label_2">
      <property name="geometry">
       <rect>
-       <x>220</x>
-       <y>30</y>
+       <x>240</x>
+       <y>50</y>
        <width>181</width>
        <height>51</height>
       </rect>
@@ -2675,13 +2696,13 @@
       <string>System Status</string>
      </property>
     </widget>
-    <widget class="QProgressBar" name="pBar_control">
+    <widget class="QProgressBar" name="pBar_system">
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>150</y>
-       <width>161</width>
-       <height>21</height>
+       <y>180</y>
+       <width>191</width>
+       <height>31</height>
       </rect>
      </property>
      <property name="value">
@@ -2702,7 +2723,7 @@
       <rect>
        <x>20</x>
        <y>40</y>
-       <width>161</width>
+       <width>191</width>
        <height>41</height>
       </rect>
      </property>
@@ -2717,12 +2738,13 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>61</width>
+        <width>71</width>
         <height>41</height>
        </rect>
       </property>
       <property name="font">
        <font>
+        <pointsize>14</pointsize>
         <weight>75</weight>
         <bold>true</bold>
        </font>
@@ -2734,14 +2756,20 @@
        <string>Mode:</string>
       </property>
      </widget>
-     <widget class="QLabel" name="label_30">
+     <widget class="QLabel" name="txt_system_mode">
       <property name="geometry">
        <rect>
-        <x>60</x>
+        <x>70</x>
         <y>0</y>
-        <width>101</width>
+        <width>121</width>
         <height>41</height>
        </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>16</pointsize>
+        <italic>true</italic>
+       </font>
       </property>
       <property name="autoFillBackground">
        <bool>false</bool>
@@ -2765,8 +2793,8 @@
       <rect>
        <x>20</x>
        <y>80</y>
-       <width>161</width>
-       <height>61</height>
+       <width>191</width>
+       <height>91</height>
       </rect>
      </property>
      <property name="frameShape">
@@ -2780,12 +2808,13 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>61</width>
-        <height>61</height>
+        <width>71</width>
+        <height>91</height>
        </rect>
       </property>
       <property name="font">
        <font>
+        <pointsize>14</pointsize>
         <weight>75</weight>
         <bold>true</bold>
        </font>
@@ -2797,14 +2826,20 @@
        <string>Step:</string>
       </property>
      </widget>
-     <widget class="QLabel" name="label_39">
+     <widget class="QLabel" name="txt_system_step">
       <property name="geometry">
        <rect>
-        <x>60</x>
+        <x>70</x>
         <y>0</y>
-        <width>101</width>
-        <height>21</height>
+        <width>121</width>
+        <height>31</height>
        </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>16</pointsize>
+        <italic>true</italic>
+       </font>
       </property>
       <property name="autoFillBackground">
        <bool>false</bool>
@@ -2822,14 +2857,20 @@
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
-     <widget class="QLabel" name="label_41">
+     <widget class="QLabel" name="txt_system_progress">
       <property name="geometry">
        <rect>
-        <x>60</x>
-        <y>20</y>
-        <width>101</width>
-        <height>41</height>
+        <x>70</x>
+        <y>30</y>
+        <width>121</width>
+        <height>61</height>
        </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>16</pointsize>
+        <italic>true</italic>
+       </font>
       </property>
       <property name="autoFillBackground">
        <bool>false</bool>
@@ -2849,11 +2890,11 @@
       </property>
      </widget>
     </widget>
-    <widget class="QLabel" name="txt_system_status_2">
+    <widget class="QLabel" name="label_22">
      <property name="geometry">
       <rect>
-       <x>220</x>
-       <y>110</y>
+       <x>240</x>
+       <y>140</y>
        <width>171</width>
        <height>51</height>
       </rect>
@@ -2870,12 +2911,12 @@
       <string>Guide:</string>
      </property>
     </widget>
-    <widget class="QLabel" name="txt_system_status_3">
+    <widget class="QLabel" name="txt_system_status">
      <property name="geometry">
       <rect>
-       <x>400</x>
-       <y>30</y>
-       <width>1011</width>
+       <x>420</x>
+       <y>50</y>
+       <width>991</width>
        <height>51</height>
       </rect>
      </property>
@@ -2889,12 +2930,12 @@
       <string>Measuring dimension of specimen(DRY_TEST_0)</string>
      </property>
     </widget>
-    <widget class="QLabel" name="txt_system_status_5">
+    <widget class="QLabel" name="txt_system_guide">
      <property name="geometry">
       <rect>
-       <x>400</x>
-       <y>110</y>
-       <width>1051</width>
+       <x>420</x>
+       <y>140</y>
+       <width>991</width>
        <height>51</height>
       </rect>
      </property>
@@ -2916,7 +2957,7 @@
       <x>1450</x>
       <y>750</y>
       <width>391</width>
-      <height>181</height>
+      <height>231</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -4085,8 +4126,8 @@
    <widget class="QLabel" name="logo_SNU">
     <property name="geometry">
      <rect>
-      <x>1820</x>
-      <y>960</y>
+      <x>1790</x>
+      <y>1120</y>
       <width>81</width>
       <height>81</height>
      </rect>
@@ -4098,8 +4139,8 @@
    <widget class="QLabel" name="logo_IDIM">
     <property name="geometry">
      <rect>
-      <x>1520</x>
-      <y>970</y>
+      <x>1690</x>
+      <y>1130</y>
       <width>281</width>
       <height>81</height>
      </rect>
