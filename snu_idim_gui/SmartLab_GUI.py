@@ -174,7 +174,7 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         self.smartlab_cmd = dict()
         self.smartlab_cmd['test_mode'] = 'auto'
         self.smartlab_cmd['test_step'] = -1
-        self.smartlab_cmd['setup_device'] = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer1', 'printer2', 'printer3']
+        self.smartlab_cmd['setup_device'] = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer2', 'printer3']
         self.smartlab_cmd['setup_doe'] = dict()
 
         global smartlab_cmd
