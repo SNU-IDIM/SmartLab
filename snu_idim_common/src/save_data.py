@@ -5,7 +5,7 @@ import base64
 from io import BytesIO
 import time
 import json
-import sys, os
+import os, sys;     sys.dont_write_bytecode = True
 
 ##-------------------------------------------------------------------------------------------
 ##-----------------------------------need to change------------------------------------------

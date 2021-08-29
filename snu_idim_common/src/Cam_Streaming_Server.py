@@ -1,7 +1,8 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import sys, time
+import os, sys;     sys.dont_write_bytecode = True
+import time
 import json
 
 import numpy as np

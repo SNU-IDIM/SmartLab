@@ -6,7 +6,7 @@ processing. See API and Usage Examples for details.
 Copyright (c) 2019 by Jeff Bass.
 License: MIT, see LICENSE for more details.
 """
-
+import os, sys;     sys.dont_write_bytecode = True
 import zmq
 import numpy as np
 

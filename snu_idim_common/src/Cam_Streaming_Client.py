@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os, sys, time, json, zmq
+import os, sys;     sys.dont_write_bytecode = True
+import time, json, zmq
 import numpy as np
 import imagezmq
 from threading import Thread

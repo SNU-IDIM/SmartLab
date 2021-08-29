@@ -3,7 +3,7 @@
 
 import platform;   os_ = platform.system();   print('OS: {}'.format(os_))
 import cv2
-import os
+import os, sys;     sys.dont_write_bytecode = True
 import numpy as np
 import pytesseract
 import pyautogui
@@ -150,7 +150,7 @@ class cropIcon():
             
             elif self.findtxtFlag == True:
                 self.icon_click = 3
-                self.icon_texting = raw_input("Please enter text to find: ")
+                self.icon_texting = input("Please enter text to find: ")
                 self.logFile.write("find" + "," + self.icon_texting + "\n")
                 self.initFlag()
             
@@ -159,7 +159,7 @@ class cropIcon():
                 print("Click: {} time(s)".format(self.icon_click))
                 self.execute()
                 
-                self.icon_texting = raw_input("Please enter text to write: ")
+                self.icon_texting = input("Please enter text to write: ")
                 self.logFile.write("text" + "," + self.icon_texting + "\n")
                 self.initFlag()
                 
@@ -220,7 +220,7 @@ class cropIcon():
         cv2.destroyAllWindows() # close all open windows
         print('4')
 
-        self.icon_name = raw_input("Please name the icon: ")
+        self.icon_name = input("Please name the icon: ")
         os.path.join(self.ns, self.icon_name+".png")
         cv2.imwrite(os.path.join(self.ns, self.icon_name+".png"), self.image_cropped)
         self.logFile.write('click' + "," + str(self.icon_click) + "," + self.icon_name + "\n")

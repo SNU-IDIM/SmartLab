@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import pymysql
-import os
+import os, sys;     sys.dont_write_bytecode = True
 import csv
 from datetime import datetime
 import json

@@ -1,0 +1,10 @@
+program,3
+wait,10,panel_work
+click,1,panel_work
+wait,3,work_setting
+click,1,panel_test
+click,1,test_current_position
+wait,3,work_setting
+click,1,test_focus
+wait,3,work_setting
+click,1,work_start

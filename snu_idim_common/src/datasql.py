@@ -1,9 +1,12 @@
+import os, sys;     sys.dont_write_bytecode = True
+import base64
+import time
+from io import BytesIO
+
+from PIL import Image
 import pymysql
 import pandas as pd
-from PIL import Image
-import base64
-from io import BytesIO
-import time
+
 
 # ifconfig eth0 102.168.60.101
 

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import platform;   os_ = platform.system();   print('OS: {}'.format(os_))
-import os, sys;     sys.dont_write_bytecode = True
+import os, sys
 import time
 import cv2
 import numpy as np
@@ -26,7 +26,7 @@ else:
     print('[ERROR] Screen resolution: W{} x H{}'.format(-1, -1))
 
 
-class idimAutomation():
+class executeLaserCutter():
 
     def __init__(self, namespace):
         time.sleep(1.0)
@@ -232,6 +232,6 @@ class idimAutomation():
 if __name__ == "__main__":
     namespace = "src"
 
-    test = idimAutomation('testing')
+    test = executeLaserCutter('testing')
     test.execute('{}.txt'.format('testing'))
     # test.execute('start_experiment.txt')
