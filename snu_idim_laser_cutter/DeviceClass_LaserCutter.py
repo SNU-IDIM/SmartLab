@@ -6,29 +6,26 @@ from time import sleep
 import json
 import zmq
 from threading import Thread
+import serial
+import serial.tools.list_ports
 
 sys.path.append( os.path.abspath(os.path.join(os.path.dirname(__file__), "../snu_idim_common/src")) )
 from autoRun import *
+from ArduinoInterface import ArduinoInterface
 
 class DeviceClass_LaserCutter:
-    def __init__(self, device_name='laser_cutter', ip_=None, port_=None, usb_port_=None):
-        ## Common init for all devices
-        self.device_id = int(device_name.split('printer')[1]) if usb_port_ == None else usb_port_
+    def __init__(self, device_name='laser_cutter', ip_=None, port_=9448, usb_port_=None):
 
-        self.autoRun = idimAutomation('laser_cutter')
+        ## GUI-based automation for laser cutter
+        self.autoRun = idimAutomation(namespace='laser_cutter')
+        self.arduino = ArduinoInterface(port=self.getSerialPort(desc='Arduino'))
 
         # Socket to talk to server
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REP)
-        self.socket.bind("tcp://*:{}".format(9448))
-
-
-        self.ip = 'localhost' if ip_ == None else ip_
-        self.port = 5000 + self.device_id if port_ == None else int(port_)
+        self.socket.bind("tcp://*:{}".format(port_))
 
         self.status = dict()
-        self.status['ip_port'] = 'http://{}:{}/?#temp'.format(self.ip, self.port)
-        print(self.status['ip_port'])
         self.status['device_type'] = 'LaserCutter'
         self.status['device_name'] = device_name
         self.status['connection'] = ''
@@ -51,6 +48,18 @@ class DeviceClass_LaserCutter:
         self.driver.close()
         self.thread_1.terminate()
         self.thread_2.terminate()
+
+    def getSerialPort(self, desc='Arduino'):
+        ports = list(serial.tools.list_ports.comports())
+        port = ''
+
+        for p in ports:
+            print(p)
+            if p.description.find(desc) != -1:
+                port = p.device
+                
+        port = port if port != '' else None
+        return port
 
     def zmqServer(self):
         while True:
