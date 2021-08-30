@@ -52,12 +52,9 @@ class DeviceClass_LaserCutter:
     def getSerialPort(self, desc='Arduino'):
         ports = list(serial.tools.list_ports.comports())
         port = ''
-
         for p in ports:
-            print(p)
             if p.description.find(desc) != -1:
                 port = p.device
-                
         port = port if port != '' else None
         return port
 

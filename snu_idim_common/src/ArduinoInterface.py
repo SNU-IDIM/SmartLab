@@ -32,14 +32,6 @@ class ArduinoInterface():
 
         for idx, pin in enumerate(self.p_PWM['pin']):
             self.p_PWM['cursor'].append(self.board.get_pin('d:{}:p'.format(pin)))
-        
-        self.thread_1 = threading.Thread(target=self.communicationLoop)
-        self.thread_1.daemon=True
-        self.thread_1.start()
-
-
-    def __del__(self):
-        self.thread_1.terminate()
 
 
     def writeCommand(self, command):
@@ -72,8 +64,9 @@ class ArduinoInterface():
                 self.p_PWM['status'][idx] = self.p_PWM['command'][idx]
 
 
-a = ArduinoInterface()
-while True:
-    a.writeCommand({'p_PWM': [1, 0, 0, 0, 0, 0], 'p_Dout': [1, 0]})
-    print(a.readStatus())
-    time.sleep(1.)
+if __name__ == '__main__':  
+    a = ArduinoInterface()
+    while True:
+        a.writeCommand({'p_PWM': [1, 0, 0, 0, 0, 0], 'p_Dout': [1, 0]})
+        print(a.readStatus())
+        time.sleep(1.)
