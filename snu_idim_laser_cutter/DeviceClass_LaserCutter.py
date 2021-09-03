@@ -19,6 +19,7 @@ class DeviceClass_LaserCutter:
         ## GUI-based automation for laser cutter
         self.autoRun = idimAutomation(namespace='laser_cutter')
         self.arduino = ArduinoInterface(port=self.getSerialPort(desc='Arduino'))
+        print(self.arduino.readStatus())
 
         # Socket to talk to server
         self.context = zmq.Context()
@@ -32,6 +33,8 @@ class DeviceClass_LaserCutter:
         self.status['subject_name'] = ''
         self.status['status'] = ''
         self.status['recent_work'] = ''
+
+        self.status['jig'] = ''
 
 
         self.thread_1 = Thread(target=self.updateStatus)
@@ -52,12 +55,9 @@ class DeviceClass_LaserCutter:
     def getSerialPort(self, desc='Arduino'):
         ports = list(serial.tools.list_ports.comports())
         port = ''
-
         for p in ports:
-            print(p)
             if p.description.find(desc) != -1:
                 port = p.device
-                
         port = port if port != '' else None
         return port
 
@@ -106,15 +106,28 @@ class DeviceClass_LaserCutter:
         print(type(cmd_keys), cmd_keys)
 
         for i in range(len(cmd_keys)):
+            
             if cmd_keys[i] == 'focus':
-                self.status = 'focusing'
-                print("Engrave!!!")
+                self.status['status'] = 'focusing'
+                print("[DEBUG] Focusing laser ...")
                 self.autoRun.execute('{}.txt'.format('focus'))
+
             if cmd_keys[i] == 'engrave':
-                self.status = 'engraving'
-                print("Engrave!!!")
+                self.status['status'] = 'engraving'
+                print("[DEBUG] Start engraving ...")
                 self.autoRun.execute('{}.txt'.format('engrave'))
-        self.status = 'Idle'
+
+            if cmd_keys[i] == 'jig':
+                if cmd_values[i] == 'open':
+                    print("[DEBUG] Opening universal jig ...")
+                    self.arduino.writeCommand({'p_Dout': [0, 0]})
+                    self.status['jig'] = 'opened'
+                elif cmd_values[i] == 'close':
+                    print("[DEBUG] Closing universal jig ...")
+                    self.arduino.writeCommand({'p_Dout': [1, 1]})
+                    self.status['jig'] = 'closed'
+
+        self.status['status'] = 'Idle'
 
 
 

@@ -11,10 +11,10 @@ if len(sys.argv) > 1:
 
 context = zmq.Context()
 socket = context.socket(zmq.REQ)
-socket.connect ("tcp://localhost:%s" % 9448)
+socket.connect ("tcp://localhost:%s" % 5001)
 
 while True:
-    command = {'focus': 1}
+    command = {'jig': 'open'}
     print('good')
     socket.send_string(json.dumps(command))
     message = json.loads(socket.recv())
