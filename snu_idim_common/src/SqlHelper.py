@@ -258,9 +258,9 @@ class SqlHelper():
         if cond_dict!='':
             for k, v in cond_dict.items():
                 v = "\'" + str(v) + "\'"
-                consql = consql + "`" + tablename +"`." + "`" + str(k) + "`" + '=' + v + ' and '
-        consql = consql + ' 1=1 '
-        sql = "UPDATE {} SET {} WHERE {}".format(tablename, attrs_sql, consql)
+                consql = consql + "`" + tablename +"`." + "`" + str(k) + "`" + '=' + v + ', '
+        consql = consql[:-2]
+        sql = "UPDATE {} SET {} WHERE {}".format(tablename, consql, attrs_sql)
         self.printSQL(sql)
         return self.execute_commit(sql)
 
@@ -380,7 +380,12 @@ if __name__ == "__main__":
     ## Use database (Database: 'SmartLab')
     mysql.select_db('SmartLab')
     # print(mysql.select('device_info', conds="id=(SELECT MAX(id) FROM device_info)")[0])
-    mysql.add_column('result', 'status', 'varchar(256)')
+    # mysql.add_column('result', 'status', 'varchar(256)')
+    measurement_data = {'Thickness': 3.05, 'Length': 165.3, 'Width': 13.3}
+    mysql.update(tablename='result', attrs_dict={'subject_name': 'DRY_TEST_2'}, cond_dict=measurement_data)
+    # subject_id = 'DRY_TEST_0'
+    # mysql.sendResult(measurement_data)
+    
 
     '''
     ## Create table if not exists (Table: 'device_info')

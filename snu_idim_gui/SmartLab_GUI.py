@@ -174,7 +174,7 @@ class SmartLAB_GUI(QMainWindow, QDialog):
         self.smartlab_cmd = dict()
         self.smartlab_cmd['test_mode'] = 'auto'
         self.smartlab_cmd['test_step'] = -1
-        self.smartlab_cmd['setup_device'] = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer2', 'printer3']
+        self.smartlab_cmd['setup_device'] = ['R_001/amr', 'R_001/cobot', 'instron', 'MS', 'printer1']
         self.smartlab_cmd['setup_doe'] = dict()
 
         global smartlab_cmd
@@ -501,6 +501,14 @@ class DOE_Window(QDialog) :
         # self.setupUi(self)
         self.cbx_doe_type.textActivated.connect(self.cb_cbx_doe_type)
         self.btn_doe_ok.clicked.connect(self.cb_btn_doe_ok)
+        self.info_image_show()
+
+    def info_image_show(self):
+        info_image = QPixmap()
+        info_image.load('./src/tonghab.png')
+        info_image = info_image.scaled(self.info_image.width(), self.info_image.height())
+
+        self.info_image.setPixmap(info_image)
 
     def cb_cbx_doe_type(self, QString):
         if QString == 'GENERALIZED_FACTORIAL':
