@@ -1,6 +1,6 @@
 import os, sys;     sys.dont_write_bytecode = True
 import time
-import threading
+from threading import Thread
 import numpy as np
 
 from pyfirmata import Arduino, util
@@ -12,14 +12,14 @@ class ArduinoInterface():
 
         self.board = Arduino(port)
         
-        self.p_Dout = dict();   self.p_Dout['pin'] = [7, 8]
+        self.p_Dout = dict();   self.p_Dout['pin'] = [7, 8, 9, 10]
         self.p_Dout['status']  = np.zeros(len(self.p_Dout['pin']))
         self.p_Dout['command'] = np.zeros(len(self.p_Dout['pin']))
 
         self.p_Ain  = dict();   self.p_Ain['pin']  = [0, 1, 2, 3, 4, 5]
         self.p_Ain['status']  = np.zeros(len(self.p_Ain['pin']))
 
-        self.p_PWM  = dict();   self.p_PWM['pin']  = [3, 5, 6, 9, 10, 11]
+        self.p_PWM  = dict();   self.p_PWM['pin']  = [5, 6, 11]
         self.p_PWM['status']  = np.zeros(len(self.p_PWM['pin']))
         self.p_PWM['command'] = np.zeros(len(self.p_PWM['pin']))
         self.p_PWM['cursor']  = list()
@@ -32,6 +32,9 @@ class ArduinoInterface():
 
         for idx, pin in enumerate(self.p_PWM['pin']):
             self.p_PWM['cursor'].append(self.board.get_pin('d:{}:p'.format(pin)))
+
+        self.thread = Thread(target=self.communicationLoop)
+        self.thread.start()
 
 
     def writeCommand(self, command):
@@ -63,10 +66,14 @@ class ArduinoInterface():
                 self.p_PWM['cursor'][idx].write(self.p_PWM['command'][idx])
                 self.p_PWM['status'][idx] = self.p_PWM['command'][idx]
 
+            time.sleep(0.1)
+
 
 if __name__ == '__main__':  
     a = ArduinoInterface()
     while True:
-        a.writeCommand({'p_PWM': [1, 0, 0, 0, 0, 0], 'p_Dout': [1, 0]})
+        a.writeCommand({'p_PWM': [1, 0, 0], 'p_Dout': [1, 0, 0, 0]})
         print(a.readStatus())
+        time.sleep(1.)
+        a.writeCommand({'p_PWM': [1, 0, 0], 'p_Dout': [0, 0, 0, 0]})
         time.sleep(1.)
