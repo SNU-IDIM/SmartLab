@@ -70,25 +70,31 @@ class JET:
 			GPIO.output(IN1, GPIO.HIGH)	
 			# time.sleep(10)
 
-			print('[DEBUG] Experiment - Running')
-			self.jetson_publisher.publish("running")
-			self.uart.write_data("1\n")
+			print('[DEBUG] Experiment - Setting')
+			self.jetson_publisher.publish("setting")
+			self.uart.write_data("0\n")
 			self.uart.read_data()
 
-			print('[DEBUG] Experiment - Finnished')
-			GPIO.output(IN1, False)
+			print('[DEBUG] Experiment - Setting done')
+			# GPIO.output(IN1, False)
 			time.sleep(5)
 			self.jetson_publisher.publish("done")
 
 
 		if (self.start_flag == 20):
-			rospy.loginfo("Start_flag = %s",self.start_flag)
-			#do something ex) self.open_valve
-			#self.jetson_publisher.publish("running")
+			print('[DEBUG] Experiment - Start')
+			self.jetson_publisher.publish("start")
 			self.wait_for_complete()
-			self.instron_flag = 1
-			# GPIO.output(IN1, False)
+
+			print('[DEBUG] Experiment - Running')
+			self.jetson_publisher.publish("running")
+			self.uart.write_data("1\n")
+			self.uart.read_data()
+
+			print('[DEBUG] Experiment - Finished')
+			GPIO.output(IN1, False)
 			time.sleep(5)
+			self.jetson_publisher.publish("done")
 
 		if (self.start_flag == 30):
 			rospy.loginfo("Start_flag = %s",self.start_flag)
